@@ -1,0 +1,25 @@
+package com.grondona.model.dto
+
+import com.grondona.model.User
+import java.time.LocalDateTime
+import java.util.UUID
+
+data class UserResponse(
+    val id: UUID,
+    val fullname: String,
+    val username: String,
+    val email: String,
+    val createdAt: LocalDateTime,
+    val updatedAt: LocalDateTime
+) {
+    companion object {
+        fun from(user: User): UserResponse = UserResponse(
+            id = user.id!!,
+            fullname = user.fullname,
+            username = user.username,
+            email = user.email,
+            createdAt = user.createdAt,
+            updatedAt = user.updatedAt
+        )
+    }
+}
