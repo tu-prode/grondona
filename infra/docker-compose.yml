@@ -14,17 +14,17 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U grondona -d grondona"]
+      test: [ "CMD-SHELL", "pg_isready -U grondona -d grondona" ]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - grondona-network
+      - prode-network
 
   app:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: infra/Dockerfile
     container_name: grondona-app
     environment:
       DB_HOST: db
@@ -40,11 +40,13 @@ services:
       db:
         condition: service_healthy
     networks:
-      - grondona-network
+      - prode-network
 
 volumes:
   postgres_data:
 
+
 networks:
-  grondona-network:
+  prode-network:
+    name: prode-network
     driver: bridge

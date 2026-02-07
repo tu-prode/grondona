@@ -1,0 +1,29 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Grondona - Debugger",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": 5005,
+            "projectName": "grondona-server"
+        },
+        {
+            "type": "java",
+            "name": "Debug Local (Spring Boot)",
+            "request": "launch",
+            "mainClass": "com.grondona.GrondonaApplication",
+            "projectName": "grondona-server",
+            "env": {
+                "DB_HOST": "localhost",
+                "DB_PORT": "5432",
+                "DB_NAME": "grondona",
+                "DB_USER": "grondona",
+                "DB_PASSWORD": "grondona",
+                "JWT_SECRET": "mySecretKeyForJwtTokenGenerationThatIsAtLeast256BitsLong!",
+                "JWT_EXPIRATION": "86400000"
+            }
+        }
+    ]
+}

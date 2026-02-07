@@ -1,50 +1,74 @@
-.PHONY: help build start stop restart logs clean db-only test
+.PHONY: help build system-up system-down restart debugger-up debugger-down logs-db clean db-only test
+
+# Docker compose files location
+COMPOSE_FILE := infra/docker-compose.yml
+COMPOSE_DEBUG_FILE := infra/docker-compose.debug.yml
 
 # Default target
 help:
 	@echo "Grondona Server - Available commands:"
 	@echo ""
-	@echo "  make build      - Build the Docker images"
-	@echo "  make start      - Start all services (PostgreSQL + App)"
-	@echo "  make stop       - Stop all services"
-	@echo "  make restart    - Restart all services"
-	@echo "  make logs       - View application logs"
-	@echo "  make logs-db    - View database logs"
-	@echo "  make clean      - Stop services and remove volumes"
-	@echo "  make db-only    - Start only the database"
-	@echo "  make shell      - Open a shell in the app container"
-	@echo "  make psql       - Connect to PostgreSQL CLI"
-	@echo "  make test       - Run tests"
-	@echo "  make build-jar  - Build JAR file locally"
+	@echo "  make build      	- Build the Docker images"
+	@echo "  make system-up     - Start all services (PostgreSQL + App)"
+	@echo "  make system-down   - Stop all services"
+	@echo "  make restart    	- Restart all services"
+	@echo "  make clean      	- Stop services and remove volumes"
+	@echo "  make db-only    	- Start only the database"
+	@echo "  make shell      	- Open a shell in the app container"
+	@echo "  make psql       	- Connect to PostgreSQL CLI"
+	@echo "  make test       	- Run tests"
+	@echo "  make build-jar  	- Build JAR file locally"
+	@echo "  make debugger-up   - Start services in debug mode (port 5005)"
+	@echo "  make debugger-down - Stop debug services"
 	@echo ""
 
 # Build Docker images
 build:
 	@echo "Building Docker images..."
-	docker-compose build
+	docker-compose -f $(COMPOSE_FILE) build
 
 # Start all services
-start: build
+system-up: build
 	@echo "Starting all services..."
-	docker-compose up -d
+	docker-compose -f $(COMPOSE_FILE) up -d
 	@echo ""
 	@echo "Services started successfully!"
 	@echo "  - API: http://localhost:8080"
 	@echo "  - PostgreSQL: localhost:5432"
 	@echo ""
-	@echo "Run 'make logs' to view application logs"
+	docker-compose -f $(COMPOSE_FILE) logs --follow app
 
 # Stop all services
-stop:
+system-down:
 	@echo "Stopping all services..."
-	docker-compose down
+	docker-compose -f $(COMPOSE_FILE) down
 
 # Restart all services
 restart: stop start
 
-# View application logs
-logs:
-	docker-compose logs -f app
+# Start services in debug mode with JDWP enabled on port 5005
+debugger-up:
+	@echo "Building Docker images for debug mode..."
+	docker-compose -f $(COMPOSE_FILE) -f $(COMPOSE_DEBUG_FILE) build
+	@echo "Starting services in debug mode..."
+	docker-compose -f $(COMPOSE_FILE) -f $(COMPOSE_DEBUG_FILE) up -d
+	@echo ""
+	@echo "Services started in DEBUG mode!"
+	@echo "  - API: http://localhost:8080"
+	@echo "  - Debug Port: localhost:5005"
+	@echo "  - PostgreSQL: localhost:5432"
+	@echo ""
+	@echo "To attach debugger in Cursor/VS Code:"
+	@echo "  1. Go to Run and Debug (Cmd+Shift+D)"
+	@echo "  2. Select 'Attach to Docker Debug' configuration"
+	@echo "  3. Press F5 or click the green play button"
+	@echo ""
+	docker-compose -f $(COMPOSE_FILE) -f $(COMPOSE_DEBUG_FILE) logs --follow
+
+# Stop debug services
+debugger-down:
+	@echo "Stopping debug services..."
+	docker-compose -f $(COMPOSE_FILE) -f $(COMPOSE_DEBUG_FILE) down
 
 # View database logs
 logs-db:
@@ -53,22 +77,22 @@ logs-db:
 # Clean up everything including volumes
 clean:
 	@echo "Stopping services and removing volumes..."
-	docker-compose down -v
+	docker-compose -f $(COMPOSE_FILE) down -v
 	@echo "Cleanup complete!"
 
 # Start only the database (useful for local development)
 db-only:
 	@echo "Starting PostgreSQL..."
-	docker-compose up -d db
+	docker-compose -f $(COMPOSE_FILE) up -d db
 	@echo "PostgreSQL is running on localhost:5432"
 
 # Open shell in app container
 shell:
-	docker-compose exec app /bin/sh
+	docker-compose -f $(COMPOSE_FILE) exec app /bin/sh
 
 # Connect to PostgreSQL CLI
 psql:
-	docker-compose exec db psql -U grondona -d grondona
+	docker-compose -f $(COMPOSE_FILE) exec db psql -U grondona -d grondona
 
 # Run tests
 test:

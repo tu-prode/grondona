@@ -1,0 +1,15 @@
+version: '3.8'
+
+# Override file for running the application in debug mode
+# Use with: docker-compose -f infra/docker-compose.yml -f infra/docker-compose.debug.yml up
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.debug
+    ports:
+      - "8080:8080"
+      - "5005:5005"  # JDWP Debug port
+    environment:
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
