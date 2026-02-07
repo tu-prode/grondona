@@ -32,94 +32,31 @@ make logs
 make stop
 ```
 
-## API Endpoints
+## API Documentation
 
-### Create User
+Full API documentation is available in OpenAPI 3.0 format at [`docs/openapi.yaml`](docs/openapi.yaml).
+
+### Quick Reference
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/api/users` | Create a new user | No |
+| POST | `/api/users/login` | User login | No |
+| GET | `/api/users/me` | Get current user profile | Yes |
+| PATCH | `/api/users` | Update current user | Yes |
+| DELETE | `/api/users/{userId}` | Delete user | Yes |
+
+### Viewing the API Documentation
+
+You can view the OpenAPI specification using:
+
+- **Swagger Editor**: Open [editor.swagger.io](https://editor.swagger.io) and paste the contents of `docs/openapi.yaml`
+- **VS Code**: Install the "OpenAPI (Swagger) Editor" extension
+- **Redoc**: Use the [Redoc CLI](https://github.com/Redocly/redoc) to generate HTML documentation
+
 ```bash
-POST /api/users
-Content-Type: application/json
-
-{
-    "fullname": "John Doe",
-    "username": "johndoe",
-    "email": "john@example.com",
-    "password": "secret123"
-}
-
-# Response: 201 Created
-{
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "userId": "uuid",
-    "username": "johndoe",
-    "email": "john@example.com",
-    "fullname": "John Doe"
-}
-```
-
-### Login
-```bash
-POST /api/users/login
-Content-Type: application/json
-
-{
-    "username": "johndoe",
-    "password": "secret123"
-}
-
-# Response: 200 OK
-{
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "userId": "uuid",
-    "username": "johndoe",
-    "email": "john@example.com",
-    "fullname": "John Doe"
-}
-```
-
-### Update User (Partial Update)
-```bash
-PATCH /api/users
-Authorization: Bearer <jwt-token>
-Content-Type: application/json
-
-{
-    "fullname": "John Smith",
-    "email": "john.smith@example.com"
-}
-
-# Response: 200 OK
-{
-    "id": "uuid",
-    "fullname": "John Smith",
-    "username": "johndoe",
-    "email": "john.smith@example.com",
-    "createdAt": "2024-01-01T00:00:00",
-    "updatedAt": "2024-01-02T00:00:00"
-}
-```
-
-### Delete User
-```bash
-DELETE /api/users/{userId}
-Authorization: Bearer <jwt-token>
-
-# Response: 204 No Content
-```
-
-### Get Current User
-```bash
-GET /api/users/me
-Authorization: Bearer <jwt-token>
-
-# Response: 200 OK
-{
-    "id": "uuid",
-    "fullname": "John Doe",
-    "username": "johndoe",
-    "email": "john@example.com",
-    "createdAt": "2024-01-01T00:00:00",
-    "updatedAt": "2024-01-01T00:00:00"
-}
+# Generate HTML documentation with Redoc
+npx @redocly/cli build-docs docs/openapi.yaml -o docs/api.html
 ```
 
 ## Project Structure
@@ -149,9 +86,15 @@ grondona/
 │       └── UserService.kt       # Business logic
 ├── src/main/resources/
 │   └── application.properties   # Application configuration
-├── docker-compose.yml           # Docker services
-├── Dockerfile                   # Application container
-├── init.sql                     # Database initialization
+├── src/test/kotlin/             # Unit and integration tests
+├── docs/
+│   └── openapi.yaml             # OpenAPI 3.0 specification
+├── infra/
+│   ├── docker-compose.yml       # Docker services
+│   ├── docker-compose.debug.yml # Debug mode override
+│   ├── Dockerfile               # Production container
+│   ├── Dockerfile.debug         # Debug container
+│   └── init.sql                 # Database initialization
 ├── Makefile                     # Convenience commands
 └── pom.xml                      # Maven configuration
 ```
@@ -206,6 +149,8 @@ make run-local
 | `make db-only` | Start only PostgreSQL |
 | `make psql` | Connect to PostgreSQL CLI |
 | `make test` | Run tests |
+| `make debug` | Start in debug mode (port 5005) |
+| `make debug-stop` | Stop debug services |
 
 ## License
 

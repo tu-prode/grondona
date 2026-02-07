@@ -10,7 +10,11 @@ class NotFoundException(message: String) : RuntimeException(message)
 class BadRequestException(message: String) : RuntimeException(message)
 
 @ResponseStatus(HttpStatus.CONFLICT)
-class ConflictException(message: String) : RuntimeException(message)
+class ConflictException(
+    message: String,
+    val field: String,
+    val rejectedValue: String
+) : RuntimeException(message)
 
 @ResponseStatus(HttpStatus.FORBIDDEN)
 class ForbiddenException(message: String) : RuntimeException(message)

@@ -15,6 +15,16 @@ data class ErrorResponse(
     val path: String? = null
 )
 
+data class ConflictErrorResponse(
+    val timestamp: LocalDateTime = LocalDateTime.now(),
+    val status: Int,
+    val error: String,
+    val message: String,
+    val field: String,
+    val rejectedValue: String,
+    val path: String? = null
+)
+
 @RestControllerAdvice
 class GlobalExceptionHandler {
 
@@ -39,11 +49,13 @@ class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ConflictException::class)
-    fun handleConflictException(ex: ConflictException): ResponseEntity<ErrorResponse> {
-        val errorResponse = ErrorResponse(
+    fun handleConflictException(ex: ConflictException): ResponseEntity<ConflictErrorResponse> {
+        val errorResponse = ConflictErrorResponse(
             status = HttpStatus.CONFLICT.value(),
             error = HttpStatus.CONFLICT.reasonPhrase,
-            message = ex.message ?: "Conflict"
+            message = ex.message ?: "Conflict",
+            field = ex.field,
+            rejectedValue = ex.rejectedValue
         )
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse)
     }

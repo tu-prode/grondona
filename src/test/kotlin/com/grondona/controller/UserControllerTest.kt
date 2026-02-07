@@ -120,7 +120,11 @@ class UserControllerTest {
                 email = "test@example.com",
                 password = "password123"
             )
-            every { userService.createUser(any()) } throws ConflictException("Username 'existinguser' already exists")
+            every { userService.createUser(any()) } throws ConflictException(
+                message = "Username 'existinguser' already exists",
+                field = "username",
+                rejectedValue = "existinguser"
+            )
 
             // When/Then
             mockMvc.perform(
@@ -129,6 +133,8 @@ class UserControllerTest {
                     .content(objectMapper.writeValueAsString(request))
             )
                 .andExpect(status().isConflict)
+                .andExpect(jsonPath("$.field").value("username"))
+                .andExpect(jsonPath("$.rejectedValue").value("existinguser"))
         }
     }
 

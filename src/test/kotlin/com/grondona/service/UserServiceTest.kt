@@ -104,7 +104,9 @@ class UserServiceTest {
             val exception = assertThrows<ConflictException> {
                 userService.createUser(request)
             }
-            assertEquals("Username 'existinguser' already exists", exception.message)
+            assertEquals("Nombre de usuario ya registrado", exception.message)
+            assertEquals("username", exception.field)
+            assertEquals("existinguser", exception.rejectedValue)
         }
 
         @Test
@@ -123,7 +125,9 @@ class UserServiceTest {
             val exception = assertThrows<ConflictException> {
                 userService.createUser(request)
             }
-            assertEquals("Email 'existing@example.com' already exists", exception.message)
+            assertEquals("Email ya registrado", exception.message)
+            assertEquals("email", exception.field)
+            assertEquals("existing@example.com", exception.rejectedValue)
         }
     }
 
@@ -156,7 +160,7 @@ class UserServiceTest {
             val exception = assertThrows<BadRequestException> {
                 userService.login(request)
             }
-            assertEquals("Invalid username or password", exception.message)
+            assertEquals("Nombre de usuario o contraseña incorrectos", exception.message)
         }
 
         @Test
@@ -169,7 +173,7 @@ class UserServiceTest {
             val exception = assertThrows<BadRequestException> {
                 userService.login(request)
             }
-            assertEquals("Invalid username or password", exception.message)
+            assertEquals("Nombre de usuario o contraseña incorrectos", exception.message)
         }
     }
 
@@ -214,9 +218,11 @@ class UserServiceTest {
             every { userRepository.existsByUsername("takenusername") } returns true
 
             // When/Then
-            assertThrows<ConflictException> {
+            val exception = assertThrows<ConflictException> {
                 userService.updateUser(testUserId, request)
             }
+            assertEquals("username", exception.field)
+            assertEquals("takenusername", exception.rejectedValue)
         }
 
         @Test
@@ -229,7 +235,7 @@ class UserServiceTest {
             val exception = assertThrows<NotFoundException> {
                 userService.updateUser(testUserId, request)
             }
-            assertEquals("User not found", exception.message)
+            assertEquals("Usuario no encontrado", exception.message)
         }
 
         @Test
@@ -256,9 +262,11 @@ class UserServiceTest {
             every { userRepository.existsByEmail("taken@example.com") } returns true
 
             // When/Then
-            assertThrows<ConflictException> {
+            val exception = assertThrows<ConflictException> {
                 userService.updateUser(testUserId, request)
             }
+            assertEquals("email", exception.field)
+            assertEquals("taken@example.com", exception.rejectedValue)
         }
     }
 
@@ -287,7 +295,7 @@ class UserServiceTest {
             val exception = assertThrows<ForbiddenException> {
                 userService.deleteUser(testUserId, otherUserId)
             }
-            assertEquals("You can only delete your own account", exception.message)
+            assertEquals("Sólo puedes eliminar tu propia cuenta", exception.message)
         }
 
         @Test
@@ -299,7 +307,7 @@ class UserServiceTest {
             val exception = assertThrows<NotFoundException> {
                 userService.deleteUser(testUserId, testUserId)
             }
-            assertEquals("User not found", exception.message)
+            assertEquals("Usuario ya encontrado", exception.message)
         }
     }
 
@@ -329,7 +337,7 @@ class UserServiceTest {
             val exception = assertThrows<NotFoundException> {
                 userService.getUserById(testUserId)
             }
-            assertEquals("User not found", exception.message)
+            assertEquals("Usuario no encontrado", exception.message)
         }
     }
 }
