@@ -32,7 +32,7 @@ class UserController(
 
     @PostMapping("/login")
     fun login(@Valid @RequestBody request: LoginRequest): ResponseEntity<AuthResponse> {
-        logger.info("POST /api/users/login - Login attempt: username='{}'", request.username)
+        logger.info("POST /api/users/login - Login attempt: user='{}'", request.user)
         val response = userService.login(request)
         logger.info("POST /api/users/login - Login successful: userId={}", response.userId)
         return ResponseEntity.ok(response)

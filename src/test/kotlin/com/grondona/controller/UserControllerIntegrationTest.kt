@@ -130,7 +130,7 @@ class UserControllerIntegrationTest {
         fun `should login successfully with valid credentials`() {
             // Given
             val request = LoginRequest(
-                username = "integrationuser",
+                user = "integrationuser",
                 password = "password123"
             )
 
@@ -158,7 +158,7 @@ class UserControllerIntegrationTest {
         fun `should fail login with invalid password`() {
             // Given
             val request = LoginRequest(
-                username = "integrationuser",
+                user = "integrationuser",
                 password = "wrongpassword"
             )
 

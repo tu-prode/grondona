@@ -3,13 +3,13 @@ info:
   title: Grondona API
   description: |
     A Kotlin HTTP server with user management, built with Spring Boot.
-    
+
     ## Authentication
-    
+
     Most endpoints require JWT Bearer token authentication. To obtain a token:
     1. Create a user via `POST /api/users` or
     2. Login via `POST /api/users/login`
-    
+
     Include the token in subsequent requests:
     ```
     Authorization: Bearer <your-jwt-token>
@@ -45,44 +45,44 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateUserRequest'
+              $ref: "#/components/schemas/CreateUserRequest"
             example:
               fullname: John Doe
               username: johndoe
               email: john@example.com
               password: secret123
       responses:
-        '201':
+        "201":
           description: User created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
+                $ref: "#/components/schemas/AuthResponse"
               example:
                 token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
                 userId: 550e8400-e29b-41d4-a716-446655440000
                 username: johndoe
                 email: john@example.com
                 fullname: John Doe
-        '400':
+        "400":
           description: Invalid request body or validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
           description: Username or email already exists
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ConflictErrorResponse'
+                $ref: "#/components/schemas/ConflictErrorResponse"
               example:
                 status: 409
                 error: Conflict
                 message: Username 'johndoe' already exists
                 field: username
                 rejectedValue: johndoe
-                timestamp: '2024-01-01T12:00:00'
+                timestamp: "2024-01-01T12:00:00"
 
     patch:
       tags:
@@ -99,48 +99,48 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateUserRequest'
+              $ref: "#/components/schemas/UpdateUserRequest"
             example:
               fullname: John Smith
               email: john.smith@example.com
       responses:
-        '200':
+        "200":
           description: User updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserResponse'
-        '400':
+                $ref: "#/components/schemas/UserResponse"
+        "400":
           description: Invalid request body or validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: User not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
           description: Username or email already exists
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ConflictErrorResponse'
+                $ref: "#/components/schemas/ConflictErrorResponse"
               example:
                 status: 409
                 error: Conflict
                 message: Email 'john@example.com' already exists
                 field: email
                 rejectedValue: john@example.com
-                timestamp: '2024-01-01T12:00:00'
+                timestamp: "2024-01-01T12:00:00"
 
   /api/users/login:
     post:
@@ -148,7 +148,7 @@ paths:
         - Users
       summary: User login
       description: |
-        Authenticate a user with username and password. 
+        Authenticate a user with user (username or email) and password. 
         Returns a JWT token for subsequent authenticated requests.
       operationId: login
       requestBody:
@@ -156,28 +156,28 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginRequest'
+              $ref: "#/components/schemas/LoginRequest"
             example:
               username: johndoe
               password: secret123
       responses:
-        '200':
+        "200":
           description: Login successful
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '400':
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
           description: Invalid username or password
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 status: 400
                 error: Bad Request
                 message: Invalid username or password
-                timestamp: '2024-01-01T12:00:00'
+                timestamp: "2024-01-01T12:00:00"
 
   /api/users/me:
     get:
@@ -190,31 +190,31 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: User profile retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserResponse'
+                $ref: "#/components/schemas/UserResponse"
               example:
                 id: 550e8400-e29b-41d4-a716-446655440000
                 fullname: John Doe
                 username: johndoe
                 email: john@example.com
-                createdAt: '2024-01-01T00:00:00'
-                updatedAt: '2024-01-01T00:00:00'
-        '401':
+                createdAt: "2024-01-01T00:00:00"
+                updatedAt: "2024-01-01T00:00:00"
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: User not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/users/{userId}:
     delete:
@@ -236,31 +236,31 @@ paths:
             format: uuid
           example: 550e8400-e29b-41d4-a716-446655440000
       responses:
-        '204':
+        "204":
           description: User deleted successfully
-        '401':
+        "401":
           description: Authentication required
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: Cannot delete another user's account
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 status: 403
                 error: Forbidden
                 message: You can only delete your own account
-                timestamp: '2024-01-01T12:00:00'
-        '404':
+                timestamp: "2024-01-01T12:00:00"
+        "404":
           description: User not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/groups:
     get:
@@ -281,14 +281,14 @@ paths:
             type: string
           example: gen
       responses:
-        '200':
+        "200":
           description: Groups retrieved successfully
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/GroupResponse'
+                  $ref: "#/components/schemas/GroupResponse"
 
     post:
       tags:
@@ -304,30 +304,30 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateGroupRequest'
+              $ref: "#/components/schemas/CreateGroupRequest"
             example:
               name: My Group
               private: false
               maxMembers: 20
       responses:
-        '201':
+        "201":
           description: Group created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GroupResponse'
-        '400':
+                $ref: "#/components/schemas/GroupResponse"
+        "400":
           description: Invalid request body or validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
           description: Group name already exists
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ConflictErrorResponse'
+                $ref: "#/components/schemas/ConflictErrorResponse"
 
   /api/groups/{groupId}:
     get:
@@ -348,18 +348,18 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Group retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GroupResponse'
-        '404':
+                $ref: "#/components/schemas/GroupResponse"
+        "404":
           description: Group not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
     patch:
       tags:
@@ -383,35 +383,35 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateGroupRequest'
+              $ref: "#/components/schemas/UpdateGroupRequest"
             example:
               name: Updated Name
               maxMembers: 30
       responses:
-        '200':
+        "200":
           description: Group updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GroupResponse'
-        '400':
+                $ref: "#/components/schemas/GroupResponse"
+        "400":
           description: Invalid request body or validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Group not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
           description: Group name already exists
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ConflictErrorResponse'
+                $ref: "#/components/schemas/ConflictErrorResponse"
 
     delete:
       tags:
@@ -431,14 +431,14 @@ paths:
             type: string
             format: uuid
       responses:
-        '204':
+        "204":
           description: Group deleted successfully
-        '404':
+        "404":
           description: Group not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
 components:
   securitySchemes:
@@ -483,12 +483,12 @@ components:
     LoginRequest:
       type: object
       required:
-        - username
+        - user
         - password
       properties:
         username:
           type: string
-          description: Username for authentication
+          description: User for authentication (either username or email)
           example: johndoe
         password:
           type: string
@@ -573,12 +573,12 @@ components:
           type: string
           format: date-time
           description: Account creation timestamp
-          example: '2024-01-01T00:00:00'
+          example: "2024-01-01T00:00:00"
         updatedAt:
           type: string
           format: date-time
           description: Last update timestamp
-          example: '2024-01-01T00:00:00'
+          example: "2024-01-01T00:00:00"
 
     ErrorResponse:
       type: object
@@ -599,7 +599,7 @@ components:
           type: string
           format: date-time
           description: Error timestamp
-          example: '2024-01-01T12:00:00'
+          example: "2024-01-01T12:00:00"
 
     CreateGroupRequest:
       type: object
@@ -666,12 +666,12 @@ components:
           type: string
           format: date-time
           description: Group creation timestamp
-          example: '2024-01-01T00:00:00'
+          example: "2024-01-01T00:00:00"
         updatedAt:
           type: string
           format: date-time
           description: Last update timestamp
-          example: '2024-01-01T00:00:00'
+          example: "2024-01-01T00:00:00"
 
     ConflictErrorResponse:
       type: object
@@ -702,4 +702,4 @@ components:
           type: string
           format: date-time
           description: Error timestamp
-          example: '2024-01-01T12:00:00'
+          example: "2024-01-01T12:00:00"

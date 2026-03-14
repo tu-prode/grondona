@@ -137,8 +137,8 @@ class UserServiceTest {
         @Test
         fun `login should return AuthResponse when credentials are valid`() {
             // Given
-            val request = LoginRequest(username = "testuser", password = "test")
-            every { userRepository.findByUsername(request.username) } returns Optional.of(testUser)
+            val request = LoginRequest(user = "testuser", password = "test")
+            every { userRepository.findByUsername(request.user) } returns Optional.of(testUser)
             every { jwtService.generateToken(testUserId, testUser.username) } returns testToken
 
             // When
@@ -153,21 +153,22 @@ class UserServiceTest {
         @Test
         fun `login should throw BadRequestException when user not found`() {
             // Given
-            val request = LoginRequest(username = "nonexistent", password = "password")
-            every { userRepository.findByUsername(request.username) } returns Optional.empty()
+            val request = LoginRequest(user = "nonexistent", password = "password")
+            every { userRepository.findByUsername(request.user) } returns Optional.empty()
+            every { userRepository.findByEmail(request.user) } returns Optional.empty()
 
             // When/Then
             val exception = assertThrows<BadRequestException> {
                 userService.login(request)
             }
-            assertEquals("Nombre de usuario o contraseña incorrectos", exception.message)
+            assertEquals("No hay usuario con ese username o email", exception.message)
         }
 
         @Test
         fun `login should throw BadRequestException when password is incorrect`() {
             // Given
-            val request = LoginRequest(username = "testuser", password = "wrongpassword")
-            every { userRepository.findByUsername(request.username) } returns Optional.of(testUser)
+            val request = LoginRequest(user = "testuser", password = "wrongpassword")
+            every { userRepository.findByUsername(request.user) } returns Optional.of(testUser)
 
             // When/Then
             val exception = assertThrows<BadRequestException> {

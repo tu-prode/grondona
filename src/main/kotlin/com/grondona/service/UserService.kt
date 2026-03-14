@@ -55,7 +55,11 @@ class UserService(private val userRepository: UserRepository, private val jwtSer
         val savedUser = userRepository.save(user)
         val token = jwtService.generateToken(savedUser.id!!, savedUser.username)
 
-        logger.info("User created successfully: id={}, username='{}'", savedUser.id, savedUser.username)
+        logger.info(
+                "User created successfully: id={}, username='{}'",
+                savedUser.id,
+                savedUser.username
+        )
         return AuthResponse(
                 token = token,
                 userId = savedUser.id,
@@ -66,23 +70,27 @@ class UserService(private val userRepository: UserRepository, private val jwtSer
     }
 
     fun login(request: LoginRequest): AuthResponse {
-        logger.info("Login attempt: username='{}'", request.username)
+        logger.info("Login attempt: user='{}'", request.user)
 
         val user =
-                userRepository.findByUsername(request.username).orElseThrow {
-                    logger.warn("Login failed: username '{}' not found", request.username)
-                    BadRequestException("Nombre de usuario o contraseña incorrectos")
-                }
+                userRepository
+                        .findByUsername(request.user)
+                        .orElseGet {
+                            userRepository.findByEmail(request.user).orElseThrow {
+                                logger.warn("Login failed: user '{}' not found", request.user)
+                                BadRequestException("No hay usuario con ese username o email")
+                            }
+                        }
 
         val hashedPassword = hashMd5(request.password)
         if (user.passwordHash != hashedPassword) {
-            logger.warn("Login failed: invalid password for username '{}'", request.username)
+            logger.warn("Login failed: invalid password for username '{}'", request.user)
             throw BadRequestException("Nombre de usuario o contraseña incorrectos")
         }
 
         val token = jwtService.generateToken(user.id!!, user.username)
 
-        logger.info("Login successful: userId={}, username='{}'", user.id, user.username)
+        logger.info("Login successful: userId={}, user='{}'", user.id, user.username)
         return AuthResponse(
                 token = token,
                 userId = user.id,
@@ -139,10 +147,18 @@ class UserService(private val userRepository: UserRepository, private val jwtSer
 
     @Transactional
     fun deleteUser(authenticatedUserId: UUID, targetUserId: UUID) {
-        logger.info("Deleting user: targetUserId={}, requestedBy={}", targetUserId, authenticatedUserId)
+        logger.info(
+                "Deleting user: targetUserId={}, requestedBy={}",
+                targetUserId,
+                authenticatedUserId
+        )
 
         if (authenticatedUserId != targetUserId) {
-            logger.warn("Delete forbidden: user {} tried to delete user {}", authenticatedUserId, targetUserId)
+            logger.warn(
+                    "Delete forbidden: user {} tried to delete user {}",
+                    authenticatedUserId,
+                    targetUserId
+            )
             throw ForbiddenException("Sólo puedes eliminar tu propia cuenta")
         }
 

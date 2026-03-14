@@ -144,11 +144,11 @@ class UserControllerTest {
         @Test
         fun `POST api users login should return 200 with token on successful login`() {
             // Given
-            val request = LoginRequest(username = "testuser", password = "password123")
+            val request = LoginRequest(user = "testuser", password = "password123")
             val response = AuthResponse(
                 token = testToken,
                 userId = testUserId,
-                username = request.username,
+                username = request.user,
                 email = "test@example.com",
                 fullname = "Test User"
             )
@@ -162,7 +162,7 @@ class UserControllerTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.token").value(testToken))
-                .andExpect(jsonPath("$.username").value(request.username))
+                .andExpect(jsonPath("$.username").value(request.user))
         }
     }
 
