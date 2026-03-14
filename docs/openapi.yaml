@@ -28,6 +28,8 @@ servers:
 tags:
   - name: Users
     description: User management operations
+  - name: Groups
+    description: Group management operations
 
 paths:
   /api/users:
@@ -260,6 +262,184 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/groups:
+    get:
+      tags:
+        - Groups
+      summary: Get all groups
+      description: |
+        Retrieve all groups. Optionally filter by name substring.
+      operationId: getAllGroups
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: Text substring to filter groups by name (case-insensitive)
+          schema:
+            type: string
+          example: gen
+      responses:
+        '200':
+          description: Groups retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupResponse'
+
+    post:
+      tags:
+        - Groups
+      summary: Create a new group
+      description: |
+        Create a new group with the given name, privacy setting, and member limit.
+      operationId: createGroup
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupRequest'
+            example:
+              name: My Group
+              private: false
+              maxMembers: 20
+      responses:
+        '201':
+          description: Group created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupResponse'
+        '400':
+          description: Invalid request body or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Group name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictErrorResponse'
+
+  /api/groups/{groupId}:
+    get:
+      tags:
+        - Groups
+      summary: Get a group by ID
+      description: |
+        Retrieve a specific group by its UUID.
+      operationId: getGroup
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: UUID of the group
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Group retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupResponse'
+        '404':
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      tags:
+        - Groups
+      summary: Update a group
+      description: |
+        Partially update a group. Only provided fields will be updated.
+      operationId: updateGroup
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: UUID of the group to update
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGroupRequest'
+            example:
+              name: Updated Name
+              maxMembers: 30
+      responses:
+        '200':
+          description: Group updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupResponse'
+        '400':
+          description: Invalid request body or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Group name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictErrorResponse'
+
+    delete:
+      tags:
+        - Groups
+      summary: Delete a group
+      description: |
+        Delete a group by its UUID.
+      operationId: deleteGroup
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: UUID of the group to delete
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Group deleted successfully
+        '404':
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -421,6 +601,78 @@ components:
           description: Error timestamp
           example: '2024-01-01T12:00:00'
 
+    CreateGroupRequest:
+      type: object
+      required:
+        - name
+        - maxMembers
+      properties:
+        name:
+          type: string
+          description: Unique group name
+          maxLength: 100
+          example: My Group
+        private:
+          type: boolean
+          description: Whether the group is private (defaults to false)
+          default: false
+          example: false
+        maxMembers:
+          type: integer
+          description: Maximum number of members allowed
+          minimum: 1
+          example: 20
+
+    UpdateGroupRequest:
+      type: object
+      description: All fields are optional. Only provided fields will be updated.
+      properties:
+        name:
+          type: string
+          description: New group name (must be unique)
+          maxLength: 100
+          example: Updated Group Name
+        private:
+          type: boolean
+          description: New privacy setting
+          example: true
+        maxMembers:
+          type: integer
+          description: New maximum members limit
+          minimum: 1
+          example: 30
+
+    GroupResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique group identifier
+          example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+        name:
+          type: string
+          description: Group name
+          example: General
+        private:
+          type: boolean
+          description: Whether the group is private
+          example: false
+        maxMembers:
+          type: integer
+          description: Maximum number of members allowed
+          example: 50
+        createdAt:
+          type: string
+          format: date-time
+          description: Group creation timestamp
+          example: '2024-01-01T00:00:00'
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: '2024-01-01T00:00:00'
+
     ConflictErrorResponse:
       type: object
       description: Error response for 409 Conflict, includes field information for UI validation
@@ -439,8 +691,8 @@ components:
           example: Username 'johndoe' already exists
         field:
           type: string
-          description: The field that caused the conflict (username or email)
-          enum: [username, email]
+          description: The field that caused the conflict
+          enum: [username, email, name]
           example: username
         rejectedValue:
           type: string

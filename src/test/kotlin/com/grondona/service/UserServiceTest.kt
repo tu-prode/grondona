@@ -307,7 +307,7 @@ class UserServiceTest {
             val exception = assertThrows<NotFoundException> {
                 userService.deleteUser(testUserId, testUserId)
             }
-            assertEquals("Usuario ya encontrado", exception.message)
+            assertEquals("Usuario no encontrado", exception.message)
         }
     }
 

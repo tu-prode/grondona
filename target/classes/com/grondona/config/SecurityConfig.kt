@@ -29,6 +29,7 @@ class SecurityConfig(
                     .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/users/login").permitAll()
                     .requestMatchers("/api/users/**").authenticated()
+                    .requestMatchers("/api/groups", "/api/groups/**").authenticated()
                     .anyRequest().permitAll()
             }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
