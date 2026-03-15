@@ -6,6 +6,7 @@ import com.grondona.exception.GlobalExceptionHandler
 import com.grondona.exception.NotFoundException
 import com.grondona.model.dto.*
 import com.grondona.security.JwtUserPrincipal
+import com.grondona.service.GroupMembershipService
 import com.grondona.service.UserService
 import io.mockk.every
 import io.mockk.just
@@ -33,13 +34,13 @@ class UserControllerTest {
 
     private lateinit var mockMvc: MockMvc
     private lateinit var userService: UserService
+    private lateinit var groupMembershipService: GroupMembershipService
     private lateinit var userController: UserController
     private lateinit var objectMapper: ObjectMapper
 
     private val testUserId = UUID.randomUUID()
     private val testToken = "test.jwt.token"
 
-    // Custom argument resolver to inject JwtUserPrincipal in tests
     private inner class TestPrincipalArgumentResolver : HandlerMethodArgumentResolver {
         override fun supportsParameter(parameter: MethodParameter): Boolean {
             return parameter.parameterType == JwtUserPrincipal::class.java
@@ -59,7 +60,8 @@ class UserControllerTest {
     @BeforeEach
     fun setUp() {
         userService = mockk()
-        userController = UserController(userService)
+        groupMembershipService = mockk()
+        userController = UserController(userService, groupMembershipService)
         objectMapper = ObjectMapper()
         mockMvc = MockMvcBuilders
             .standaloneSetup(userController)
@@ -83,7 +85,6 @@ class UserControllerTest {
 
         @Test
         fun `POST api users should return 201 when user created successfully`() {
-            // Given
             val request = CreateUserRequest(
                 fullname = "Test User",
                 username = "testuser",
@@ -99,7 +100,6 @@ class UserControllerTest {
             )
             every { userService.createUser(any()) } returns response
 
-            // When/Then
             mockMvc.perform(
                 post("/api/users")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -113,7 +113,6 @@ class UserControllerTest {
 
         @Test
         fun `POST api users should return 409 when username exists`() {
-            // Given
             val request = CreateUserRequest(
                 fullname = "Test User",
                 username = "existinguser",
@@ -126,7 +125,6 @@ class UserControllerTest {
                 rejectedValue = "existinguser"
             )
 
-            // When/Then
             mockMvc.perform(
                 post("/api/users")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -143,7 +141,6 @@ class UserControllerTest {
 
         @Test
         fun `POST api users login should return 200 with token on successful login`() {
-            // Given
             val request = LoginRequest(user = "testuser", password = "password123")
             val response = AuthResponse(
                 token = testToken,
@@ -154,7 +151,6 @@ class UserControllerTest {
             )
             every { userService.login(any()) } returns response
 
-            // When/Then
             mockMvc.perform(
                 post("/api/users/login")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -171,7 +167,6 @@ class UserControllerTest {
 
         @Test
         fun `PATCH api users should return 200 when user updated successfully`() {
-            // Given
             setAuthenticatedUser(testUserId, "testuser")
             val request = UpdateUserRequest(fullname = "Updated Name")
             val response = UserResponse(
@@ -184,7 +179,6 @@ class UserControllerTest {
             )
             every { userService.updateUser(testUserId, any()) } returns response
 
-            // When/Then
             mockMvc.perform(
                 patch("/api/users")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -202,14 +196,10 @@ class UserControllerTest {
 
         @Test
         fun `DELETE api users userId should return 204 when user deleted successfully`() {
-            // Given
             setAuthenticatedUser(testUserId, "testuser")
             every { userService.deleteUser(testUserId, testUserId) } just Runs
 
-            // When/Then
-            mockMvc.perform(
-                delete("/api/users/{userId}", testUserId)
-            )
+            mockMvc.perform(delete("/api/users/{userId}", testUserId))
                 .andExpect(status().isNoContent)
 
             clearAuthentication()
@@ -221,7 +211,6 @@ class UserControllerTest {
 
         @Test
         fun `GET api users me should return 200 with user details`() {
-            // Given
             setAuthenticatedUser(testUserId, "testuser")
             val response = UserResponse(
                 id = testUserId,
@@ -233,10 +222,7 @@ class UserControllerTest {
             )
             every { userService.getUserById(testUserId) } returns response
 
-            // When/Then
-            mockMvc.perform(
-                get("/api/users/me")
-            )
+            mockMvc.perform(get("/api/users/me"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.id").value(testUserId.toString()))
                 .andExpect(jsonPath("$.username").value("testuser"))
@@ -246,15 +232,51 @@ class UserControllerTest {
 
         @Test
         fun `GET api users me should return 404 when user not found`() {
-            // Given
             setAuthenticatedUser(testUserId, "testuser")
             every { userService.getUserById(testUserId) } throws NotFoundException("User not found")
 
-            // When/Then
-            mockMvc.perform(
-                get("/api/users/me")
-            )
+            mockMvc.perform(get("/api/users/me"))
                 .andExpect(status().isNotFound)
+
+            clearAuthentication()
+        }
+    }
+
+    @Nested
+    inner class GetMyGroupsEndpointTests {
+
+        @Test
+        fun `GET api users me groups should return 200 with list of groups`() {
+            setAuthenticatedUser(testUserId, "testuser")
+            val groupId = UUID.randomUUID()
+            val groups = listOf(
+                UserGroupResponse(
+                    groupId = groupId,
+                    name = "My Group",
+                    memberCount = 5L,
+                    joinedAt = LocalDateTime.now()
+                )
+            )
+            every { groupMembershipService.getMyGroups(testUserId) } returns groups
+
+            mockMvc.perform(get("/api/users/me/groups"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].groupId").value(groupId.toString()))
+                .andExpect(jsonPath("$[0].name").value("My Group"))
+                .andExpect(jsonPath("$[0].memberCount").value(5))
+
+            clearAuthentication()
+        }
+
+        @Test
+        fun `GET api users me groups should return empty list when not in any group`() {
+            setAuthenticatedUser(testUserId, "testuser")
+            every { groupMembershipService.getMyGroups(testUserId) } returns emptyList()
+
+            mockMvc.perform(get("/api/users/me/groups"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.length()").value(0))
 
             clearAuthentication()
         }

@@ -52,3 +52,20 @@ INSERT INTO groups (id, name, is_private, max_members) VALUES
     ('b5d4c3a2-1e0f-4d9c-8b7a-6f5e4d3c2b1a', 'Baldosa', FALSE, 27),
     ('e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', 'Maldolar', FALSE, 12)
 ON CONFLICT (id) DO NOTHING;
+
+-- Create group_users table (membership)
+CREATE TABLE IF NOT EXISTS group_users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+    joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_group_users UNIQUE (user_id, group_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_group_users_user_id ON group_users(user_id);
+CREATE INDEX IF NOT EXISTS idx_group_users_group_id ON group_users(group_id);
+
+COMMENT ON TABLE group_users IS 'Group membership table';
+COMMENT ON COLUMN group_users.user_id IS 'Reference to the user';
+COMMENT ON COLUMN group_users.group_id IS 'Reference to the group';
+COMMENT ON COLUMN group_users.joined_at IS 'Timestamp when the user joined the group';

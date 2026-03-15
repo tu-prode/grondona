@@ -1,10 +1,13 @@
 package com.grondona.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.grondona.exception.BadRequestException
 import com.grondona.exception.ConflictException
 import com.grondona.exception.GlobalExceptionHandler
 import com.grondona.exception.NotFoundException
 import com.grondona.model.dto.*
+import com.grondona.security.JwtUserPrincipal
+import com.grondona.service.GroupMembershipService
 import com.grondona.service.GroupService
 import io.mockk.every
 import io.mockk.just
@@ -13,11 +16,18 @@ import io.mockk.Runs
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.core.MethodParameter
 import org.springframework.http.MediaType
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
+import org.springframework.web.bind.support.WebDataBinderFactory
+import org.springframework.web.context.request.NativeWebRequest
+import org.springframework.web.method.support.HandlerMethodArgumentResolver
+import org.springframework.web.method.support.ModelAndViewContainer
 import java.time.LocalDateTime
 import java.util.*
 
@@ -25,8 +35,10 @@ class GroupControllerTest {
 
     private lateinit var mockMvc: MockMvc
     private lateinit var groupService: GroupService
+    private lateinit var groupMembershipService: GroupMembershipService
     private lateinit var objectMapper: ObjectMapper
 
+    private val testUserId = UUID.randomUUID()
     private val testGroupId = UUID.randomUUID()
     private val testGroupResponse = GroupResponse(
         id = testGroupId,
@@ -37,15 +49,40 @@ class GroupControllerTest {
         updatedAt = LocalDateTime.now()
     )
 
+    private inner class TestPrincipalArgumentResolver : HandlerMethodArgumentResolver {
+        override fun supportsParameter(parameter: MethodParameter): Boolean =
+            parameter.parameterType == JwtUserPrincipal::class.java
+
+        override fun resolveArgument(
+            parameter: MethodParameter,
+            mavContainer: ModelAndViewContainer?,
+            webRequest: NativeWebRequest,
+            binderFactory: WebDataBinderFactory?
+        ): Any? {
+            val auth = SecurityContextHolder.getContext().authentication
+            return auth?.principal as? JwtUserPrincipal
+        }
+    }
+
     @BeforeEach
     fun setUp() {
         groupService = mockk()
+        groupMembershipService = mockk()
         objectMapper = ObjectMapper().findAndRegisterModules()
         mockMvc = MockMvcBuilders
-            .standaloneSetup(GroupController(groupService))
+            .standaloneSetup(GroupController(groupService, groupMembershipService))
             .setControllerAdvice(GlobalExceptionHandler())
+            .setCustomArgumentResolvers(TestPrincipalArgumentResolver())
             .build()
     }
+
+    private fun setAuthenticatedUser(userId: UUID) {
+        val principal = JwtUserPrincipal(userId, "testuser")
+        val auth = UsernamePasswordAuthenticationToken(principal, null, emptyList())
+        SecurityContextHolder.getContext().authentication = auth
+    }
+
+    private fun clearAuthentication() = SecurityContextHolder.clearContext()
 
     @Nested
     inner class CreateGroupEndpointTests {
@@ -244,6 +281,95 @@ class GroupControllerTest {
             mockMvc.perform(get("/api/groups").param("search", "xyz"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.length()").value(0))
+        }
+    }
+
+    @Nested
+    inner class JoinGroupEndpointTests {
+
+        @Test
+        fun `POST api groups groupId join should return 201 when join succeeds`() {
+            setAuthenticatedUser(testUserId)
+            every { groupMembershipService.joinGroup(testUserId, testGroupId) } just Runs
+
+            mockMvc.perform(post("/api/groups/{groupId}/join", testGroupId))
+                .andExpect(status().isCreated)
+
+            clearAuthentication()
+        }
+
+        @Test
+        fun `POST api groups groupId join should return 404 when group not found`() {
+            setAuthenticatedUser(testUserId)
+            every { groupMembershipService.joinGroup(testUserId, testGroupId) } throws NotFoundException("Grupo no encontrado")
+
+            mockMvc.perform(post("/api/groups/{groupId}/join", testGroupId))
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.message").value("Grupo no encontrado"))
+
+            clearAuthentication()
+        }
+
+        @Test
+        fun `POST api groups groupId join should return 400 when already a member`() {
+            setAuthenticatedUser(testUserId)
+            every { groupMembershipService.joinGroup(testUserId, testGroupId) } throws BadRequestException("Ya eres miembro de este grupo")
+
+            mockMvc.perform(post("/api/groups/{groupId}/join", testGroupId))
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.message").value("Ya eres miembro de este grupo"))
+
+            clearAuthentication()
+        }
+
+        @Test
+        fun `POST api groups groupId join should return 400 when group is full`() {
+            setAuthenticatedUser(testUserId)
+            every { groupMembershipService.joinGroup(testUserId, testGroupId) } throws BadRequestException("El grupo está lleno")
+
+            mockMvc.perform(post("/api/groups/{groupId}/join", testGroupId))
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.message").value("El grupo está lleno"))
+
+            clearAuthentication()
+        }
+    }
+
+    @Nested
+    inner class LeaveGroupEndpointTests {
+
+        @Test
+        fun `DELETE api groups groupId leave should return 204 when leave succeeds`() {
+            setAuthenticatedUser(testUserId)
+            every { groupMembershipService.leaveGroup(testUserId, testGroupId) } just Runs
+
+            mockMvc.perform(delete("/api/groups/{groupId}/leave", testGroupId))
+                .andExpect(status().isNoContent)
+
+            clearAuthentication()
+        }
+
+        @Test
+        fun `DELETE api groups groupId leave should return 404 when group not found`() {
+            setAuthenticatedUser(testUserId)
+            every { groupMembershipService.leaveGroup(testUserId, testGroupId) } throws NotFoundException("Grupo no encontrado")
+
+            mockMvc.perform(delete("/api/groups/{groupId}/leave", testGroupId))
+                .andExpect(status().isNotFound)
+
+            clearAuthentication()
+        }
+
+        @Test
+        fun `DELETE api groups groupId leave should return 404 when not a member`() {
+            setAuthenticatedUser(testUserId)
+            every { groupMembershipService.leaveGroup(testUserId, testGroupId) } throws NotFoundException("No eres miembro de este grupo")
+
+            mockMvc.perform(delete("/api/groups/{groupId}/leave", testGroupId))
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.message").value("No eres miembro de este grupo"))
+
+            clearAuthentication()
         }
     }
 }
