@@ -11,16 +11,23 @@ import com.grondona.security.JwtService
 import java.security.MessageDigest
 import java.time.LocalDateTime
 import java.util.UUID
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class UserService(private val userRepository: UserRepository, private val jwtService: JwtService) {
 
+    companion object {
+        private val logger = LoggerFactory.getLogger(UserService::class.java)
+    }
+
     @Transactional
     fun createUser(request: CreateUserRequest): AuthResponse {
-        // Check if username already exists
+        logger.info("Creating user: username='{}', email='{}'", request.username, request.email)
+
         if (userRepository.existsByUsername(request.username)) {
+            logger.warn("User creation failed: username '{}' already exists", request.username)
             throw ConflictException(
                     message = "Nombre de usuario ya registrado",
                     field = "username",
@@ -28,8 +35,8 @@ class UserService(private val userRepository: UserRepository, private val jwtSer
             )
         }
 
-        // Check if email already exists
         if (userRepository.existsByEmail(request.email)) {
+            logger.warn("User creation failed: email '{}' already exists", request.email)
             throw ConflictException(
                     message = "Email ya registrado",
                     field = "email",
@@ -48,6 +55,11 @@ class UserService(private val userRepository: UserRepository, private val jwtSer
         val savedUser = userRepository.save(user)
         val token = jwtService.generateToken(savedUser.id!!, savedUser.username)
 
+        logger.info(
+                "User created successfully: id={}, username='{}'",
+                savedUser.id,
+                savedUser.username
+        )
         return AuthResponse(
                 token = token,
                 userId = savedUser.id,
@@ -58,18 +70,27 @@ class UserService(private val userRepository: UserRepository, private val jwtSer
     }
 
     fun login(request: LoginRequest): AuthResponse {
+        logger.info("Login attempt: user='{}'", request.user)
+
         val user =
-                userRepository.findByUsername(request.username).orElseThrow {
-                    BadRequestException("Nombre de usuario o contraseña incorrectos")
-                }
+                userRepository
+                        .findByUsername(request.user)
+                        .orElseGet {
+                            userRepository.findByEmail(request.user).orElseThrow {
+                                logger.warn("Login failed: user '{}' not found", request.user)
+                                BadRequestException("No hay usuario con ese username o email")
+                            }
+                        }
 
         val hashedPassword = hashMd5(request.password)
         if (user.passwordHash != hashedPassword) {
+            logger.warn("Login failed: invalid password for username '{}'", request.user)
             throw BadRequestException("Nombre de usuario o contraseña incorrectos")
         }
 
         val token = jwtService.generateToken(user.id!!, user.username)
 
+        logger.info("Login successful: userId={}, user='{}'", user.id, user.username)
         return AuthResponse(
                 token = token,
                 userId = user.id,
@@ -81,16 +102,19 @@ class UserService(private val userRepository: UserRepository, private val jwtSer
 
     @Transactional
     fun updateUser(authenticatedUserId: UUID, request: UpdateUserRequest): UserResponse {
+        logger.info("Updating user: userId={}", authenticatedUserId)
+
         val user =
                 userRepository.findById(authenticatedUserId).orElseThrow {
+                    logger.warn("User not found for update: userId={}", authenticatedUserId)
                     NotFoundException("Usuario no encontrado")
                 }
 
-        // Update fields if provided
         request.fullname?.let { user.fullname = it }
 
         request.username?.let { newUsername ->
             if (newUsername != user.username && userRepository.existsByUsername(newUsername)) {
+                logger.warn("User update failed: username '{}' already exists", newUsername)
                 throw ConflictException(
                         message = "Nombre de usuario '$newUsername' ya registrado",
                         field = "username",
@@ -102,6 +126,7 @@ class UserService(private val userRepository: UserRepository, private val jwtSer
 
         request.email?.let { newEmail ->
             if (newEmail != user.email && userRepository.existsByEmail(newEmail)) {
+                logger.warn("User update failed: email '{}' already exists", newEmail)
                 throw ConflictException(
                         message = "Email '$newEmail' ya registrado",
                         field = "email",
@@ -116,27 +141,47 @@ class UserService(private val userRepository: UserRepository, private val jwtSer
         user.updatedAt = LocalDateTime.now()
 
         val savedUser = userRepository.save(user)
+        logger.info("User updated successfully: userId={}", savedUser.id)
         return UserResponse.from(savedUser)
     }
 
     @Transactional
     fun deleteUser(authenticatedUserId: UUID, targetUserId: UUID) {
-        // Only allow users to delete their own account
+        logger.info(
+                "Deleting user: targetUserId={}, requestedBy={}",
+                targetUserId,
+                authenticatedUserId
+        )
+
         if (authenticatedUserId != targetUserId) {
+            logger.warn(
+                    "Delete forbidden: user {} tried to delete user {}",
+                    authenticatedUserId,
+                    targetUserId
+            )
             throw ForbiddenException("Sólo puedes eliminar tu propia cuenta")
         }
 
         val user =
                 userRepository.findById(targetUserId).orElseThrow {
-                    NotFoundException("Usuario ya encontrado")
+                    logger.warn("User not found for deletion: userId={}", targetUserId)
+                    NotFoundException("Usuario no encontrado")
                 }
 
         userRepository.delete(user)
+        logger.info("User deleted successfully: userId={}", targetUserId)
     }
 
     fun getUserById(userId: UUID): UserResponse {
+        logger.info("Fetching user: userId={}", userId)
+
         val user =
-                userRepository.findById(userId).orElseThrow { NotFoundException("Usuario no encontrado") }
+                userRepository.findById(userId).orElseThrow {
+                    logger.warn("User not found: userId={}", userId)
+                    NotFoundException("Usuario no encontrado")
+                }
+
+        logger.info("User fetched successfully: userId={}, username='{}'", user.id, user.username)
         return UserResponse.from(user)
     }
 

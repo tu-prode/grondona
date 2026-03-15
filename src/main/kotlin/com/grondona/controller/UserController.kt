@@ -3,8 +3,10 @@ package com.grondona.controller
 import com.grondona.exception.UnauthorizedException
 import com.grondona.model.dto.*
 import com.grondona.security.JwtUserPrincipal
+import com.grondona.service.GroupMembershipService
 import com.grondona.service.UserService
 import jakarta.validation.Valid
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -14,34 +16,30 @@ import java.util.UUID
 @RestController
 @RequestMapping("/api/users")
 class UserController(
-    private val userService: UserService
+    private val userService: UserService,
+    private val groupMembershipService: GroupMembershipService
 ) {
 
-    /**
-     * Create a new user
-     * POST /api/users
-     */
+    companion object {
+        private val logger = LoggerFactory.getLogger(UserController::class.java)
+    }
+
     @PostMapping
     fun createUser(@Valid @RequestBody request: CreateUserRequest): ResponseEntity<AuthResponse> {
+        logger.info("POST /api/users - Creating user: username='{}', email='{}'", request.username, request.email)
         val response = userService.createUser(request)
+        logger.info("POST /api/users - User created: id={}, username='{}'", response.userId, response.username)
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 
-    /**
-     * User login
-     * POST /api/users/login
-     */
     @PostMapping("/login")
     fun login(@Valid @RequestBody request: LoginRequest): ResponseEntity<AuthResponse> {
+        logger.info("POST /api/users/login - Login attempt: user='{}'", request.user)
         val response = userService.login(request)
+        logger.info("POST /api/users/login - Login successful: userId={}", response.userId)
         return ResponseEntity.ok(response)
     }
 
-    /**
-     * Update current user (partial update)
-     * PATCH /api/users
-     * Requires JWT Authentication
-     */
     @PatchMapping
     fun updateUser(
         @AuthenticationPrincipal principal: JwtUserPrincipal?,
@@ -50,15 +48,12 @@ class UserController(
         val userId = principal?.userId
             ?: throw UnauthorizedException("Authentication required")
 
+        logger.info("PATCH /api/users - Updating user: userId={}", userId)
         val response = userService.updateUser(userId, request)
+        logger.info("PATCH /api/users - User updated: userId={}", userId)
         return ResponseEntity.ok(response)
     }
 
-    /**
-     * Delete a user by ID
-     * DELETE /api/users/{userId}
-     * Requires JWT Authentication
-     */
     @DeleteMapping("/{userId}")
     fun deleteUser(
         @AuthenticationPrincipal principal: JwtUserPrincipal?,
@@ -67,15 +62,12 @@ class UserController(
         val authenticatedUserId = principal?.userId
             ?: throw UnauthorizedException("Authentication required")
 
+        logger.info("DELETE /api/users/{} - Delete request by userId={}", userId, authenticatedUserId)
         userService.deleteUser(authenticatedUserId, userId)
+        logger.info("DELETE /api/users/{} - User deleted", userId)
         return ResponseEntity.noContent().build()
     }
 
-    /**
-     * Get current user profile
-     * GET /api/users/me
-     * Requires JWT Authentication
-     */
     @GetMapping("/me")
     fun getCurrentUser(
         @AuthenticationPrincipal principal: JwtUserPrincipal?
@@ -83,7 +75,21 @@ class UserController(
         val userId = principal?.userId
             ?: throw UnauthorizedException("Authentication required")
 
+        logger.info("GET /api/users/me - Fetching profile: userId={}", userId)
         val response = userService.getUserById(userId)
+        return ResponseEntity.ok(response)
+    }
+
+    @GetMapping("/me/groups")
+    fun getMyGroups(
+        @AuthenticationPrincipal principal: JwtUserPrincipal?
+    ): ResponseEntity<List<UserGroupResponse>> {
+        val userId = principal?.userId
+            ?: throw UnauthorizedException("Authentication required")
+
+        logger.info("GET /api/users/me/groups - Fetching groups for userId={}", userId)
+        val response = groupMembershipService.getMyGroups(userId)
+        logger.info("GET /api/users/me/groups - Returning {} groups for userId={}", response.size, userId)
         return ResponseEntity.ok(response)
     }
 }

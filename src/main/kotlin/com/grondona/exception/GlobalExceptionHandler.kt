@@ -1,5 +1,6 @@
 package com.grondona.exception
 
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
@@ -28,8 +29,13 @@ data class ConflictErrorResponse(
 @RestControllerAdvice
 class GlobalExceptionHandler {
 
+    companion object {
+        private val logger = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
+    }
+
     @ExceptionHandler(NotFoundException::class)
     fun handleNotFoundException(ex: NotFoundException): ResponseEntity<ErrorResponse> {
+        logger.warn("Resource not found: {}", ex.message)
         val errorResponse = ErrorResponse(
             status = HttpStatus.NOT_FOUND.value(),
             error = HttpStatus.NOT_FOUND.reasonPhrase,
@@ -40,6 +46,7 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(BadRequestException::class)
     fun handleBadRequestException(ex: BadRequestException): ResponseEntity<ErrorResponse> {
+        logger.warn("Bad request: {}", ex.message)
         val errorResponse = ErrorResponse(
             status = HttpStatus.BAD_REQUEST.value(),
             error = HttpStatus.BAD_REQUEST.reasonPhrase,
@@ -50,6 +57,7 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(ConflictException::class)
     fun handleConflictException(ex: ConflictException): ResponseEntity<ConflictErrorResponse> {
+        logger.warn("Conflict: {} (field={}, value={})", ex.message, ex.field, ex.rejectedValue)
         val errorResponse = ConflictErrorResponse(
             status = HttpStatus.CONFLICT.value(),
             error = HttpStatus.CONFLICT.reasonPhrase,
@@ -62,6 +70,7 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(ForbiddenException::class)
     fun handleForbiddenException(ex: ForbiddenException): ResponseEntity<ErrorResponse> {
+        logger.warn("Forbidden: {}", ex.message)
         val errorResponse = ErrorResponse(
             status = HttpStatus.FORBIDDEN.value(),
             error = HttpStatus.FORBIDDEN.reasonPhrase,
@@ -72,6 +81,7 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(UnauthorizedException::class)
     fun handleUnauthorizedException(ex: UnauthorizedException): ResponseEntity<ErrorResponse> {
+        logger.warn("Unauthorized: {}", ex.message)
         val errorResponse = ErrorResponse(
             status = HttpStatus.UNAUTHORIZED.value(),
             error = HttpStatus.UNAUTHORIZED.reasonPhrase,
@@ -85,6 +95,7 @@ class GlobalExceptionHandler {
         val errors = ex.bindingResult.fieldErrors.joinToString(", ") { 
             "${it.field}: ${it.defaultMessage}" 
         }
+        logger.warn("Validation failed: {}", errors)
         val errorResponse = ErrorResponse(
             status = HttpStatus.BAD_REQUEST.value(),
             error = HttpStatus.BAD_REQUEST.reasonPhrase,
@@ -95,6 +106,7 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception::class)
     fun handleGenericException(ex: Exception): ResponseEntity<ErrorResponse> {
+        logger.error("Unexpected error: {}", ex.message, ex)
         val errorResponse = ErrorResponse(
             status = HttpStatus.INTERNAL_SERVER_ERROR.value(),
             error = HttpStatus.INTERNAL_SERVER_ERROR.reasonPhrase,
