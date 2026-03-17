@@ -12,11 +12,11 @@ import java.util.UUID
 @Repository
 interface GroupUserRepository : JpaRepository<GroupUser, UUID> {
 
-    fun existsByUser_IdAndGroup_Id(userId: UUID, groupId: UUID): Boolean
+    fun existsByUserIdAndGroupId(userId: UUID, groupId: UUID): Boolean
 
-    fun findByUser_IdAndGroup_Id(userId: UUID, groupId: UUID): Optional<GroupUser>
+    fun findByUserIdAndGroupId(userId: UUID, groupId: UUID): Optional<GroupUser>
 
-    fun countByGroup_Id(groupId: UUID): Long
+    fun countByGroupId(groupId: UUID): Long
 
     @Query("""
         SELECT new com.grondona.model.dto.UserGroupResponse(

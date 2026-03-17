@@ -45,8 +45,7 @@ class UserController(
         @AuthenticationPrincipal principal: JwtUserPrincipal?,
         @Valid @RequestBody request: UpdateUserRequest
     ): ResponseEntity<UserResponse> {
-        val userId = principal?.userId
-            ?: throw UnauthorizedException("Authentication required")
+        val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
 
         logger.info("PATCH /api/users - Updating user: userId={}", userId)
         val response = userService.updateUser(userId, request)
@@ -59,8 +58,7 @@ class UserController(
         @AuthenticationPrincipal principal: JwtUserPrincipal?,
         @PathVariable userId: UUID
     ): ResponseEntity<Void> {
-        val authenticatedUserId = principal?.userId
-            ?: throw UnauthorizedException("Authentication required")
+        val authenticatedUserId = principal?.userId ?: throw UnauthorizedException("Authentication required")
 
         logger.info("DELETE /api/users/{} - Delete request by userId={}", userId, authenticatedUserId)
         userService.deleteUser(authenticatedUserId, userId)
@@ -72,8 +70,7 @@ class UserController(
     fun getCurrentUser(
         @AuthenticationPrincipal principal: JwtUserPrincipal?
     ): ResponseEntity<UserResponse> {
-        val userId = principal?.userId
-            ?: throw UnauthorizedException("Authentication required")
+        val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
 
         logger.info("GET /api/users/me - Fetching profile: userId={}", userId)
         val response = userService.getUserById(userId)
@@ -84,8 +81,7 @@ class UserController(
     fun getMyGroups(
         @AuthenticationPrincipal principal: JwtUserPrincipal?
     ): ResponseEntity<List<UserGroupResponse>> {
-        val userId = principal?.userId
-            ?: throw UnauthorizedException("Authentication required")
+        val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
 
         logger.info("GET /api/users/me/groups - Fetching groups for userId={}", userId)
         val response = groupMembershipService.getMyGroups(userId)

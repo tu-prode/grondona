@@ -7,5 +7,14 @@ data class UserGroupResponse(
     val groupId: UUID,
     val name: String,
     val memberCount: Long,
-    val joinedAt: LocalDateTime
-)
+    val joinedAt: LocalDateTime,
+    val points: Float = 0F,
+    val rank: Int? = null
+) {
+    constructor(
+        groupId: UUID,
+        name: String,
+        memberCount: Long,
+        joinedAt: LocalDateTime
+    ) : this(groupId, name, memberCount, joinedAt, 0F, null)
+}

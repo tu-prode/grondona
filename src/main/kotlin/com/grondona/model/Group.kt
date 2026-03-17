@@ -24,5 +24,8 @@ data class Group(
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now()
+    var updatedAt: LocalDateTime = LocalDateTime.now(),
+
+    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
+    val groupUsers: List<GroupUser> = emptyList()
 )

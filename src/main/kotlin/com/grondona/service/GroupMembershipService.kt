@@ -37,12 +37,12 @@ class GroupMembershipService(
             NotFoundException("Usuario no encontrado")
         }
 
-        if (groupUserRepository.existsByUser_IdAndGroup_Id(userId, groupId)) {
+        if (groupUserRepository.existsByUserIdAndGroupId(userId, groupId)) {
             logger.warn("Join failed: user {} is already a member of group {}", userId, groupId)
             throw BadRequestException("Ya eres miembro de este grupo")
         }
 
-        val memberCount = groupUserRepository.countByGroup_Id(groupId)
+        val memberCount = groupUserRepository.countByGroupId(groupId)
         if (memberCount >= group.maxMembers) {
             logger.warn("Join failed: group {} is full ({}/{})", groupId, memberCount, group.maxMembers)
             throw BadRequestException("El grupo está lleno")
@@ -63,7 +63,7 @@ class GroupMembershipService(
             NotFoundException("Grupo no encontrado")
         }
 
-        val membership = groupUserRepository.findByUser_IdAndGroup_Id(userId, groupId).orElseThrow {
+        val membership = groupUserRepository.findByUserIdAndGroupId(userId, groupId).orElseThrow {
             logger.warn("Leave failed: user {} is not a member of group {}", userId, groupId)
             NotFoundException("No eres miembro de este grupo")
         }

@@ -3,8 +3,11 @@ package com.grondona.service
 import com.grondona.exception.ConflictException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.Group
+import com.grondona.model.GroupUser
 import com.grondona.model.dto.*
 import com.grondona.repository.GroupRepository
+import jakarta.persistence.criteria.JoinType
+import jakarta.persistence.criteria.Predicate
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -110,5 +113,31 @@ class GroupService(private val groupRepository: GroupRepository) {
         val groups = groupRepository.findByNameContainingIgnoreCase(search)
         logger.info("Found {} groups matching '{}'", groups.size, search)
         return groups.map { GroupResponse.from(it) }
+    }
+
+    fun findGroups(search: String?, joined: Boolean?): List<GroupResponse> {
+        return groupRepository.findAll { root, query, builder ->
+            val predicates = mutableListOf<Predicate>()
+
+            query.distinct(true)
+
+            // 🔎 search filter
+            if (!search.isNullOrBlank()) {
+                predicates.add(builder.like(builder.lower(root.get("name")), "%${search.lowercase()}%"))
+            }
+
+            // 👥 joined filter
+            if (joined != null) {
+                val join = root.join<Group, GroupUser>("groupUsers", JoinType.LEFT)
+
+                if (joined) {
+                    predicates.add(builder.isNotNull(join.get<Long>("id")))
+                } else {
+                    predicates.add(builder.isNull(join.get<Long>("id")))
+                }
+            }
+
+            builder.and(*predicates.toTypedArray())
+        }.map(GroupResponse::from)
     }
 }

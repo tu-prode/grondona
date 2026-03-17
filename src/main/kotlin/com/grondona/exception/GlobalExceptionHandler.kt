@@ -92,8 +92,8 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationException(ex: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
-        val errors = ex.bindingResult.fieldErrors.joinToString(", ") { 
-            "${it.field}: ${it.defaultMessage}" 
+        val errors = ex.bindingResult.fieldErrors.joinToString(", ") {
+            "${it.field}: ${it.defaultMessage}"
         }
         logger.warn("Validation failed: {}", errors)
         val errorResponse = ErrorResponse(
@@ -106,7 +106,7 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception::class)
     fun handleGenericException(ex: Exception): ResponseEntity<ErrorResponse> {
-        logger.error("Unexpected error: {}", ex.message, ex)
+        logger.error("Unexpected error: {}\n{}", ex.message, ex.filteredStackTrace())
         val errorResponse = ErrorResponse(
             status = HttpStatus.INTERNAL_SERVER_ERROR.value(),
             error = HttpStatus.INTERNAL_SERVER_ERROR.reasonPhrase,
@@ -114,4 +114,7 @@ class GlobalExceptionHandler {
         )
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse)
     }
+
+    fun Throwable.filteredStackTrace(basePackage: String = "com.grondona"): String =
+        this.stackTrace.filter { it.className.startsWith(basePackage) }.joinToString("\n") { "\tat $it" }
 }
