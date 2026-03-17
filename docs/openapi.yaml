@@ -645,7 +645,7 @@ components:
           type: string
           description: JWT authentication token
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        userId:
+        user_id:
           type: string
           format: uuid
           description: Unique user identifier
@@ -685,12 +685,12 @@ components:
           format: email
           description: Email address
           example: john@example.com
-        createdAt:
+        created_at:
           type: string
           format: date-time
           description: Account creation timestamp
           example: "2024-01-01T00:00:00"
-        updatedAt:
+        updated_at:
           type: string
           format: date-time
           description: Last update timestamp
@@ -721,7 +721,7 @@ components:
       type: object
       description: A group the authenticated user has joined, with current member count
       properties:
-        groupId:
+        group_id:
           type: string
           format: uuid
           description: Unique group identifier
@@ -730,12 +730,12 @@ components:
           type: string
           description: Group name
           example: General
-        memberCount:
+        member_count:
           type: integer
           format: int64
           description: Current number of members in the group
           example: 12
-        joinedAt:
+        joined_at:
           type: string
           format: date-time
           description: Timestamp when the user joined the group
@@ -757,7 +757,7 @@ components:
           description: Whether the group is private (defaults to false)
           default: false
           example: false
-        maxMembers:
+        max_members:
           type: integer
           description: Maximum number of members allowed
           minimum: 1
@@ -776,7 +776,7 @@ components:
           type: boolean
           description: New privacy setting
           example: true
-        maxMembers:
+        max_members:
           type: integer
           description: New maximum members limit
           minimum: 1
@@ -798,16 +798,16 @@ components:
           type: boolean
           description: Whether the group is private
           example: false
-        maxMembers:
+        max_members:
           type: integer
           description: Maximum number of members allowed
           example: 50
-        createdAt:
+        created_at:
           type: string
           format: date-time
           description: Group creation timestamp
           example: "2024-01-01T00:00:00"
-        updatedAt:
+        updated_at:
           type: string
           format: date-time
           description: Last update timestamp
@@ -834,7 +834,7 @@ components:
           description: The field that caused the conflict
           enum: [username, email, name]
           example: username
-        rejectedValue:
+        rejected_value:
           type: string
           description: The value that was rejected due to conflict
           example: johndoe

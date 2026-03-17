@@ -28,3 +28,7 @@ replay_pid*
 
 # Built files
 target/
+
+IDEs
+.vscode/
+.idea/

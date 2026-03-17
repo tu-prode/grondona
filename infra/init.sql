@@ -8,12 +8,14 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(32) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP DEFAULT NULL,
+    CONSTRAINT uq_users UNIQUE (id)
 );
 
 -- Create indexes for better query performance
-CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username) WHERE deleted_at IS NULL;
 
 -- Add comments to table and columns
 COMMENT ON TABLE users IS 'User accounts table';
@@ -24,6 +26,7 @@ COMMENT ON COLUMN users.email IS 'Unique email address';
 COMMENT ON COLUMN users.password_hash IS 'MD5 hashed password';
 COMMENT ON COLUMN users.created_at IS 'Timestamp when the user was created';
 COMMENT ON COLUMN users.updated_at IS 'Timestamp when the user was last updated';
+COMMENT ON COLUMN users.deleted_at IS 'Timestamp when the user was deleted';
 
 -- Create groups table
 CREATE TABLE IF NOT EXISTS groups (
@@ -32,10 +35,12 @@ CREATE TABLE IF NOT EXISTS groups (
     is_private BOOLEAN NOT NULL DEFAULT FALSE,
     max_members INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP DEFAULT NULL,
+    CONSTRAINT uq_groups UNIQUE (id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_groups_name ON groups(name);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_groups_name ON groups(name) WHERE deleted_at IS NULL;
 
 COMMENT ON TABLE groups IS 'Prode groups table';
 COMMENT ON COLUMN groups.id IS 'Unique identifier for the group';
@@ -44,6 +49,7 @@ COMMENT ON COLUMN groups.is_private IS 'Whether the group is private';
 COMMENT ON COLUMN groups.max_members IS 'Maximum number of members allowed';
 COMMENT ON COLUMN groups.created_at IS 'Timestamp when the group was created';
 COMMENT ON COLUMN groups.updated_at IS 'Timestamp when the group was last updated';
+COMMENT ON COLUMN groups.deleted_at IS 'Timestamp when the group was deleted';
 
 -- Seed default groups
 INSERT INTO groups (id, name, is_private, max_members) VALUES
@@ -59,7 +65,8 @@ CREATE TABLE IF NOT EXISTS group_users (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
     joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_group_users UNIQUE (user_id, group_id)
+    deleted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_group_users UNIQUE (id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_group_users_user_id ON group_users(user_id);
@@ -69,3 +76,4 @@ COMMENT ON TABLE group_users IS 'Group membership table';
 COMMENT ON COLUMN group_users.user_id IS 'Reference to the user';
 COMMENT ON COLUMN group_users.group_id IS 'Reference to the group';
 COMMENT ON COLUMN group_users.joined_at IS 'Timestamp when the user joined the group';
+COMMENT ON COLUMN group_users.deleted_at IS 'Timestamp when the user left the group';
