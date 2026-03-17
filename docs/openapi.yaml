@@ -751,6 +751,10 @@ components:
           type: number
           description: Amount of points scored in the group
           example: 43.7
+        rank:
+          type: integer
+          description: Rank in the group
+          example: 3
 
     CreateGroupRequest:
       type: object
