@@ -11,7 +11,7 @@ help:
 	@echo "  make build      	- Build the Docker images"
 	@echo "  make system-up     - Start all services (PostgreSQL + App)"
 	@echo "  make system-down   - Stop all services"
-	@echo "  make restart    	- Restart all services"
+	@echo "  make reset    	    - Restart all services and rebuild DB"
 	@echo "  make clean      	- Stop services and remove volumes"
 	@echo "  make db-only    	- Start only the database"
 	@echo "  make shell      	- Open a shell in the app container"
@@ -43,8 +43,8 @@ system-down:
 	@echo "Stopping all services..."
 	docker-compose -f $(COMPOSE_FILE) down
 
-# Restart all services
-restart: stop start
+# Reset all services
+reset: system-down clean system-up
 
 # Start services in debug mode with JDWP enabled on port 5005
 debugger-up:
