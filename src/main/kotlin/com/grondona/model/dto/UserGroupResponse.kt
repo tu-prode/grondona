@@ -7,5 +7,6 @@ data class UserGroupResponse(
     val groupId: UUID,
     val name: String,
     val memberCount: Long,
-    val joinedAt: LocalDateTime
+    val joinedAt: LocalDateTime,
+    val points: Int = 0
 )

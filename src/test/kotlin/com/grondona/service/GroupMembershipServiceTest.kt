@@ -75,8 +75,8 @@ class GroupMembershipServiceTest {
         fun `joinGroup should succeed when all conditions are met`() {
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
-            every { groupUserRepository.existsByUser_IdAndGroup_Id(testUserId, testGroupId) } returns false
-            every { groupUserRepository.countByGroup_Id(testGroupId) } returns 5L
+            every { groupUserRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns false
+            every { groupUserRepository.countByGroupId(testGroupId) } returns 5L
             every { groupUserRepository.save(any()) } returns testMembership
 
             groupMembershipService.joinGroup(testUserId, testGroupId)
@@ -111,7 +111,7 @@ class GroupMembershipServiceTest {
         fun `joinGroup should throw BadRequestException when user is already a member`() {
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
-            every { groupUserRepository.existsByUser_IdAndGroup_Id(testUserId, testGroupId) } returns true
+            every { groupUserRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns true
 
             val exception = assertThrows<BadRequestException> {
                 groupMembershipService.joinGroup(testUserId, testGroupId)
@@ -125,8 +125,8 @@ class GroupMembershipServiceTest {
             // testGroup.maxMembers = 10, count = 10 → full
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
-            every { groupUserRepository.existsByUser_IdAndGroup_Id(testUserId, testGroupId) } returns false
-            every { groupUserRepository.countByGroup_Id(testGroupId) } returns 10L
+            every { groupUserRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns false
+            every { groupUserRepository.countByGroupId(testGroupId) } returns 10L
 
             val exception = assertThrows<BadRequestException> {
                 groupMembershipService.joinGroup(testUserId, testGroupId)
@@ -140,8 +140,8 @@ class GroupMembershipServiceTest {
             // maxMembers = 10, current = 9 → one slot left
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
-            every { groupUserRepository.existsByUser_IdAndGroup_Id(testUserId, testGroupId) } returns false
-            every { groupUserRepository.countByGroup_Id(testGroupId) } returns 9L
+            every { groupUserRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns false
+            every { groupUserRepository.countByGroupId(testGroupId) } returns 9L
             every { groupUserRepository.save(any()) } returns testMembership
 
             groupMembershipService.joinGroup(testUserId, testGroupId)
@@ -156,7 +156,7 @@ class GroupMembershipServiceTest {
         @Test
         fun `leaveGroup should succeed when user is a member`() {
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
-            every { groupUserRepository.findByUser_IdAndGroup_Id(testUserId, testGroupId) } returns Optional.of(testMembership)
+            every { groupUserRepository.findByUserIdAndGroupId(testUserId, testGroupId) } returns Optional.of(testMembership)
             every { groupUserRepository.delete(testMembership) } just Runs
 
             groupMembershipService.leaveGroup(testUserId, testGroupId)
@@ -178,7 +178,7 @@ class GroupMembershipServiceTest {
         @Test
         fun `leaveGroup should throw NotFoundException when user is not a member`() {
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
-            every { groupUserRepository.findByUser_IdAndGroup_Id(testUserId, testGroupId) } returns Optional.empty()
+            every { groupUserRepository.findByUserIdAndGroupId(testUserId, testGroupId) } returns Optional.empty()
 
             val exception = assertThrows<NotFoundException> {
                 groupMembershipService.leaveGroup(testUserId, testGroupId)

@@ -280,6 +280,13 @@ paths:
           schema:
             type: string
           example: gen
+        - name: joined
+          in: query
+          required: false
+          description: Flag indicating if it should show only non-joined groups or not
+          schema:
+            type: boolean
+          example: false
       responses:
         "200":
           description: Groups retrieved successfully
@@ -740,6 +747,10 @@ components:
           format: date-time
           description: Timestamp when the user joined the group
           example: '2024-01-15T10:30:00'
+        points:
+          type: number
+          description: Amount of points scored in the group
+          example: 43.7
 
     CreateGroupRequest:
       type: object

@@ -59,13 +59,12 @@ class GroupController(
     }
 
     @GetMapping
-    fun getAllGroups(@RequestParam(required = false) search: String?): ResponseEntity<List<GroupResponse>> {
-        logger.info("GET /api/groups - Fetching groups, search='{}'", search)
-        val response = if (search != null) {
-            groupService.searchGroups(search)
-        } else {
-            groupService.getAllGroups()
-        }
+    fun getAllGroups(
+        @RequestParam(required = false) search: String?,
+        @RequestParam(required = false) joined: Boolean?
+    ): ResponseEntity<List<GroupResponse>> {
+        logger.info("GET /api/groups - Fetching groups, search='{}', joined='{}'", search, joined)
+        val response = groupService.findGroups(search, joined)
         logger.info("GET /api/groups - Returning {} groups", response.size)
         return ResponseEntity.ok(response)
     }
