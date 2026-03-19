@@ -1,22 +1,11 @@
 openapi: 3.0.3
 info:
   title: Grondona API
-  description: |
-    A Kotlin HTTP server with user management, built with Spring Boot.
-
-    ## Authentication
-
-    Most endpoints require JWT Bearer token authentication. To obtain a token:
-    1. Create a user via `POST /api/users` or
-    2. Login via `POST /api/users/login`
-
-    Include the token in subsequent requests:
-    ```
-    Authorization: Bearer <your-jwt-token>
-    ```
+  description: A Kotlin HTTP server for the PRODE Norteamérica 2026, built with Spring Boot.
   version: 1.0.0
   contact:
     name: Grondona API Support
+    email: cristian.rana8@gmail.com
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -30,6 +19,10 @@ tags:
     description: User management operations
   - name: Groups
     description: Group management operations
+  - name: Membership
+    description: Group membership operations
+  - name: Predictions
+    description: Match predictions operations
 
 paths:
   /api/users:
@@ -75,14 +68,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ConflictErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 status: 409
                 error: Conflict
                 message: Username 'johndoe' already exists
-                field: username
-                rejectedValue: johndoe
                 timestamp: "2024-01-01T12:00:00"
+                data:
+                  field: username
+                  rejectedValue: johndoe
+
 
     patch:
       tags:
@@ -93,7 +88,7 @@ paths:
         Only provided fields will be updated.
       operationId: updateUser
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -133,14 +128,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ConflictErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 status: 409
                 error: Conflict
                 message: Email 'john@example.com' already exists
-                field: email
-                rejectedValue: john@example.com
                 timestamp: "2024-01-01T12:00:00"
+                data:
+                  field: email
+                  rejectedValue: john@example.com
 
   /api/users/login:
     post:
@@ -188,7 +184,7 @@ paths:
         Retrieve the profile of the currently authenticated user.
       operationId: getCurrentUser
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       responses:
         "200":
           description: User profile retrieved successfully
@@ -225,7 +221,7 @@ paths:
         Delete a user account. Users can only delete their own account.
       operationId: deleteUser
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - name: userId
           in: path
@@ -271,7 +267,7 @@ paths:
         Retrieve all groups. Optionally filter by name substring.
       operationId: getAllGroups
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - name: search
           in: query
@@ -305,7 +301,7 @@ paths:
         Create a new group with the given name, privacy setting, and member limit.
       operationId: createGroup
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -334,7 +330,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ConflictErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: 409
+                error: Conflict
+                message: Group name 'General' already exists
+                timestamp: "2024-01-01T12:00:00"
+                data:
+                  field: name
+                  rejectedValue: General
 
   /api/users/me/groups:
     get:
@@ -346,7 +350,7 @@ paths:
         each with its name and current member count.
       operationId: getMyGroups
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       responses:
         '200':
           description: Groups retrieved successfully
@@ -373,7 +377,7 @@ paths:
         Fails if the user is already a member or if the group is full.
       operationId: joinGroup
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - name: groupId
           in: path
@@ -397,13 +401,13 @@ paths:
                   value:
                     status: 400
                     error: Bad Request
-                    message: Ya eres miembro de este grupo
+                    message: You are already member of this group
                 groupFull:
                   summary: Group has reached max members
                   value:
                     status: 400
                     error: Bad Request
-                    message: El grupo está lleno
+                    message: Group is full
         '401':
           description: Authentication required
           content:
@@ -427,7 +431,7 @@ paths:
         Fails if the user is not a member of the group.
       operationId: leaveGroup
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - name: groupId
           in: path
@@ -461,7 +465,7 @@ paths:
         Retrieve a specific group by its UUID.
       operationId: getGroup
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - name: groupId
           in: path
@@ -492,7 +496,7 @@ paths:
         Partially update a group. Only provided fields will be updated.
       operationId: updateGroup
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - name: groupId
           in: path
@@ -534,7 +538,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ConflictErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: 409
+                error: Conflict
+                message: Group name 'General' already exists
+                timestamp: "2024-01-01T12:00:00"
+                data:
+                  field: name
+                  rejectedValue: General
 
     delete:
       tags:
@@ -544,7 +556,7 @@ paths:
         Delete a group by its UUID.
       operationId: deleteGroup
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - name: groupId
           in: path
@@ -572,6 +584,50 @@ components:
       description: JWT token obtained from login or registration
 
   schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - error
+        - message
+        - timestamp
+      properties:
+        status:
+          type: integer
+          description: HTTP status code
+          example: 400
+        error:
+          type: string
+          description: Error type
+          example: Bad Request
+        message:
+          type: string
+          description: Error message
+          example: Invalid username or password
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+          example: "2024-01-01T12:00:00"
+        data:
+          oneOf:
+            - $ref: '#/components/schemas/ErrorConflictExtraData'
+
+    ErrorConflictExtraData:
+      type: object
+      required:
+        - field
+        - rejected_value
+      properties:
+        field:
+          type: string
+          description: The field that caused the conflict
+          example: username
+        rejected_value:
+          type: string
+          description: The value that was rejected due to conflict
+          example: johndoe
+
     CreateUserRequest:
       type: object
       required:
@@ -647,6 +703,12 @@ components:
 
     AuthResponse:
       type: object
+      required:
+        - token
+        - user_id
+        - username
+        - email
+        - fullname
       properties:
         token:
           type: string
@@ -673,6 +735,11 @@ components:
 
     UserResponse:
       type: object
+      required:
+        - id
+        - fullname
+        - username
+        - email
       properties:
         id:
           type: string
@@ -692,41 +759,17 @@ components:
           format: email
           description: Email address
           example: john@example.com
-        created_at:
-          type: string
-          format: date-time
-          description: Account creation timestamp
-          example: "2024-01-01T00:00:00"
-        updated_at:
-          type: string
-          format: date-time
-          description: Last update timestamp
-          example: "2024-01-01T00:00:00"
-
-    ErrorResponse:
-      type: object
-      properties:
-        status:
-          type: integer
-          description: HTTP status code
-          example: 400
-        error:
-          type: string
-          description: Error type
-          example: Bad Request
-        message:
-          type: string
-          description: Error message
-          example: Invalid username or password
-        timestamp:
-          type: string
-          format: date-time
-          description: Error timestamp
-          example: "2024-01-01T12:00:00"
 
     UserGroupResponse:
       type: object
       description: A group the authenticated user has joined, with current member count
+      required:
+        - group_id
+        - name
+        - member_count
+        - points
+        - rank
+        - role
       properties:
         group_id:
           type: string
@@ -739,28 +782,29 @@ components:
           example: General
         member_count:
           type: integer
-          format: int64
+          format: int16
           description: Current number of members in the group
           example: 12
-        joined_at:
-          type: string
-          format: date-time
-          description: Timestamp when the user joined the group
-          example: '2024-01-15T10:30:00'
         points:
           type: number
+          format: float16
           description: Amount of points scored in the group
           example: 43.7
         rank:
           type: integer
+          format: int16
           description: Rank in the group
           example: 3
+        role:
+          type: string
+          description: Role in the group
+          example: MEMBER
 
     CreateGroupRequest:
       type: object
       required:
         - name
-        - maxMembers
+        - max_members
       properties:
         name:
           type: string
@@ -774,6 +818,7 @@ components:
           example: false
         max_members:
           type: integer
+          format: int16
           description: Maximum number of members allowed
           minimum: 1
           example: 20
@@ -793,12 +838,18 @@ components:
           example: true
         max_members:
           type: integer
+          format: int16
           description: New maximum members limit
           minimum: 1
           example: 30
 
     GroupResponse:
       type: object
+      required:
+        - id
+        - name
+        - private
+        - max_members
       properties:
         id:
           type: string
@@ -815,46 +866,6 @@ components:
           example: false
         max_members:
           type: integer
+          format: int16
           description: Maximum number of members allowed
           example: 50
-        created_at:
-          type: string
-          format: date-time
-          description: Group creation timestamp
-          example: "2024-01-01T00:00:00"
-        updated_at:
-          type: string
-          format: date-time
-          description: Last update timestamp
-          example: "2024-01-01T00:00:00"
-
-    ConflictErrorResponse:
-      type: object
-      description: Error response for 409 Conflict, includes field information for UI validation
-      properties:
-        status:
-          type: integer
-          description: HTTP status code
-          example: 409
-        error:
-          type: string
-          description: Error type
-          example: Conflict
-        message:
-          type: string
-          description: Human-readable error message
-          example: Username 'johndoe' already exists
-        field:
-          type: string
-          description: The field that caused the conflict
-          enum: [username, email, name]
-          example: username
-        rejected_value:
-          type: string
-          description: The value that was rejected due to conflict
-          example: johndoe
-        timestamp:
-          type: string
-          format: date-time
-          description: Error timestamp
-          example: "2024-01-01T12:00:00"

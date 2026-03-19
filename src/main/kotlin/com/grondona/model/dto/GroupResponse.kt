@@ -11,8 +11,6 @@ data class GroupResponse(
     @get:JsonProperty("private")
     val isPrivate: Boolean,
     val maxMembers: Int,
-    val createdAt: LocalDateTime,
-    val updatedAt: LocalDateTime
 ) {
     companion object {
         fun from(group: Group): GroupResponse = GroupResponse(
@@ -20,8 +18,6 @@ data class GroupResponse(
             name = group.name,
             isPrivate = group.isPrivate,
             maxMembers = group.maxMembers,
-            createdAt = group.createdAt,
-            updatedAt = group.updatedAt
         )
     }
 }

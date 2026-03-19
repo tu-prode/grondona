@@ -131,8 +131,8 @@ class UserControllerTest {
                     .content(objectMapper.writeValueAsString(request))
             )
                 .andExpect(status().isConflict)
-                .andExpect(jsonPath("$.field").value("username"))
-                .andExpect(jsonPath("$.rejectedValue").value("existinguser"))
+                .andExpect(jsonPath("$.data.field").value("username"))
+                .andExpect(jsonPath("$.data.rejectedValue").value("existinguser"))
         }
     }
 
@@ -174,8 +174,6 @@ class UserControllerTest {
                 fullname = "Updated Name",
                 username = "testuser",
                 email = "test@example.com",
-                createdAt = LocalDateTime.now(),
-                updatedAt = LocalDateTime.now()
             )
             every { userService.updateUser(testUserId, any()) } returns response
 
@@ -217,8 +215,6 @@ class UserControllerTest {
                 fullname = "Test User",
                 username = "testuser",
                 email = "test@example.com",
-                createdAt = LocalDateTime.now(),
-                updatedAt = LocalDateTime.now()
             )
             every { userService.getUserById(testUserId) } returns response
 
@@ -253,8 +249,7 @@ class UserControllerTest {
                 UserGroupResponse(
                     groupId = groupId,
                     name = "My Group",
-                    memberCount = 5L,
-                    joinedAt = LocalDateTime.now()
+                    memberCount = 5,
                 )
             )
             every { groupMembershipService.getMyGroups(testUserId) } returns groups

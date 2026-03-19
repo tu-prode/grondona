@@ -105,8 +105,8 @@ class GroupControllerIntegrationTest {
                     .content(objectMapper.writeValueAsString(request))
             )
                 .andExpect(status().isConflict)
-                .andExpect(jsonPath("$.field").value("name"))
-                .andExpect(jsonPath("$.rejected_value").value("Integration Group"))
+                .andExpect(jsonPath("$.data.field").value("name"))
+                .andExpect(jsonPath("$.data.rejected_value").value("Integration Group"))
         }
 
         @Test
@@ -269,7 +269,7 @@ class GroupControllerIntegrationTest {
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.message").value("Grupo no encontrado"))
+                .andExpect(jsonPath("$.message").value("Group not found"))
         }
 
         @Test

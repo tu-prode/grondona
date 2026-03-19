@@ -1,21 +1,22 @@
 package com.grondona.model.dto
 
+import com.grondona.model.GroupRole
 import java.time.LocalDateTime
 import java.util.UUID
 
 data class UserGroupResponse(
     val groupId: UUID,
     val name: String,
-    val memberCount: Long,
-    val joinedAt: LocalDateTime,
-    val points: Float = 0F,
-    val rank: Int? = null
+    val memberCount: Int,
+    val points: Float = 0f,
+    val rank: Int? = null,
+    val role: GroupRole = GroupRole.MEMBER,
 ) {
     constructor(
         groupId: UUID,
         name: String,
-        memberCount: Long,
-        joinedAt: LocalDateTime,
+        memberCount: Int,
         points: Float,
-    ) : this(groupId, name, memberCount, joinedAt, points, null)
+        role: GroupRole = GroupRole.MEMBER,
+    ) : this(groupId, name, memberCount, points, null, role)
 }

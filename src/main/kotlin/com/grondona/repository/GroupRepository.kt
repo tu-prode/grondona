@@ -8,7 +8,7 @@ import java.util.UUID
 
 @Repository
 interface GroupRepository : JpaRepository<Group, UUID>, JpaSpecificationExecutor<Group> {
-    fun findByNameContainingIgnoreCase(name: String): List<Group>
 
     fun existsByName(name: String): Boolean
+
 }

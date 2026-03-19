@@ -104,7 +104,7 @@ class UserServiceTest {
             val exception = assertThrows<ConflictException> {
                 userService.createUser(request)
             }
-            assertEquals("Nombre de usuario ya registrado", exception.message)
+            assertEquals("Username already exists", exception.message)
             assertEquals("username", exception.field)
             assertEquals("existinguser", exception.rejectedValue)
         }
@@ -125,7 +125,7 @@ class UserServiceTest {
             val exception = assertThrows<ConflictException> {
                 userService.createUser(request)
             }
-            assertEquals("Email ya registrado", exception.message)
+            assertEquals("Email already exists", exception.message)
             assertEquals("email", exception.field)
             assertEquals("existing@example.com", exception.rejectedValue)
         }
@@ -161,7 +161,7 @@ class UserServiceTest {
             val exception = assertThrows<BadRequestException> {
                 userService.login(request)
             }
-            assertEquals("No hay usuario con ese username o email", exception.message)
+            assertEquals("User not found", exception.message)
         }
 
         @Test
@@ -174,7 +174,7 @@ class UserServiceTest {
             val exception = assertThrows<BadRequestException> {
                 userService.login(request)
             }
-            assertEquals("Nombre de usuario o contraseña incorrectos", exception.message)
+            assertEquals("User or password incorrect", exception.message)
         }
     }
 
@@ -236,7 +236,7 @@ class UserServiceTest {
             val exception = assertThrows<NotFoundException> {
                 userService.updateUser(testUserId, request)
             }
-            assertEquals("Usuario no encontrado", exception.message)
+            assertEquals("User not found", exception.message)
         }
 
         @Test
@@ -296,7 +296,7 @@ class UserServiceTest {
             val exception = assertThrows<ForbiddenException> {
                 userService.deleteUser(testUserId, otherUserId)
             }
-            assertEquals("Sólo puedes eliminar tu propia cuenta", exception.message)
+            assertEquals("You can only delete your own account", exception.message)
         }
 
         @Test
@@ -308,7 +308,7 @@ class UserServiceTest {
             val exception = assertThrows<NotFoundException> {
                 userService.deleteUser(testUserId, testUserId)
             }
-            assertEquals("Usuario no encontrado", exception.message)
+            assertEquals("User not found", exception.message)
         }
     }
 
@@ -338,7 +338,7 @@ class UserServiceTest {
             val exception = assertThrows<NotFoundException> {
                 userService.getUserById(testUserId)
             }
-            assertEquals("Usuario no encontrado", exception.message)
+            assertEquals("User not found", exception.message)
         }
     }
 }

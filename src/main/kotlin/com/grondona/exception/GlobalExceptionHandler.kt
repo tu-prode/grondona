@@ -13,17 +13,13 @@ data class ErrorResponse(
     val status: Int,
     val error: String,
     val message: String,
-    val path: String? = null
+    val path: String? = null,
+    val data: Any? = null
 )
 
-data class ConflictErrorResponse(
-    val timestamp: LocalDateTime = LocalDateTime.now(),
-    val status: Int,
-    val error: String,
-    val message: String,
+data class ErrorConflictExtraData(
     val field: String,
     val rejectedValue: String,
-    val path: String? = null
 )
 
 @RestControllerAdvice
@@ -56,14 +52,16 @@ class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ConflictException::class)
-    fun handleConflictException(ex: ConflictException): ResponseEntity<ConflictErrorResponse> {
+    fun handleConflictException(ex: ConflictException): ResponseEntity<ErrorResponse> {
         logger.warn("Conflict: {} (field={}, value={})", ex.message, ex.field, ex.rejectedValue)
-        val errorResponse = ConflictErrorResponse(
+        val errorResponse = ErrorResponse(
             status = HttpStatus.CONFLICT.value(),
             error = HttpStatus.CONFLICT.reasonPhrase,
             message = ex.message ?: "Conflict",
-            field = ex.field,
-            rejectedValue = ex.rejectedValue
+            data = ErrorConflictExtraData(
+                field = ex.field,
+                rejectedValue = ex.rejectedValue
+            ),
         )
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse)
     }
@@ -117,4 +115,5 @@ class GlobalExceptionHandler {
 
     fun Throwable.filteredStackTrace(basePackage: String = "com.grondona"): String =
         this.stackTrace.filter { it.className.startsWith(basePackage) }.joinToString("\n") { "\tat $it" }
+
 }

@@ -80,7 +80,7 @@ class GroupServiceTest {
             val exception = assertThrows<ConflictException> {
                 groupService.createGroup(request)
             }
-            assertEquals("Nombre de grupo ya registrado", exception.message)
+            assertEquals("Group name already exists", exception.message)
             assertEquals("name", exception.field)
             assertEquals("Existing Group", exception.rejectedValue)
             verify(exactly = 0) { groupRepository.save(any()) }
@@ -162,7 +162,7 @@ class GroupServiceTest {
             val exception = assertThrows<NotFoundException> {
                 groupService.updateGroup(testGroupId, request)
             }
-            assertEquals("Grupo no encontrado", exception.message)
+            assertEquals("Group not found", exception.message)
         }
     }
 
@@ -186,7 +186,7 @@ class GroupServiceTest {
             val exception = assertThrows<NotFoundException> {
                 groupService.deleteGroup(testGroupId)
             }
-            assertEquals("Grupo no encontrado", exception.message)
+            assertEquals("Group not found", exception.message)
         }
     }
 
@@ -212,7 +212,7 @@ class GroupServiceTest {
             val exception = assertThrows<NotFoundException> {
                 groupService.getGroupById(testGroupId)
             }
-            assertEquals("Grupo no encontrado", exception.message)
+            assertEquals("Group not found", exception.message)
         }
     }
 }

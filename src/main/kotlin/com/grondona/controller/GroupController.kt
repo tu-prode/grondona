@@ -92,4 +92,5 @@ class GroupController(
         logger.info("DELETE /api/groups/{}/leave - Left successfully, userId={}", groupId, userId)
         return ResponseEntity.noContent().build()
     }
+
 }

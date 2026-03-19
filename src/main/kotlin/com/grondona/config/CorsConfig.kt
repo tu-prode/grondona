@@ -38,4 +38,5 @@ class CorsConfig {
             registerCorsConfiguration("/**", configuration)
         }
     }
+
 }

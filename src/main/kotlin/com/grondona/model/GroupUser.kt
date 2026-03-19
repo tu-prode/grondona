@@ -8,6 +8,10 @@ import org.hibernate.annotations.SQLRestriction
 import java.time.LocalDateTime
 import java.util.UUID
 
+enum class GroupRole {
+    MEMBER, ADMIN, OWNER,
+}
+
 @Entity
 @Table(name = "group_users", uniqueConstraints = [UniqueConstraint(columnNames = ["user_id", "group_id"])])
 @SQLDelete(sql = "UPDATE group_users SET deleted_at = CURRENT_TIMESTAMP WHERE id=?")
@@ -21,6 +25,10 @@ data class GroupUser(
     @JoinColumn(name = "user_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     val user: User,
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    var role: GroupRole = GroupRole.MEMBER,
 
     @Column(nullable = false)
     var points: Float = 0F,

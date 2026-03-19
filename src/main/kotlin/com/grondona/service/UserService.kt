@@ -28,20 +28,12 @@ class UserService(private val userRepository: UserRepository, private val jwtSer
 
         if (userRepository.existsByUsername(request.username)) {
             logger.warn("User creation failed: username '{}' already exists", request.username)
-            throw ConflictException(
-                message = "Nombre de usuario ya registrado",
-                field = "username",
-                rejectedValue = request.username
-            )
+            throw ConflictException(message = "Username already exists", field = "username", rejectedValue = request.username)
         }
 
         if (userRepository.existsByEmail(request.email)) {
             logger.warn("User creation failed: email '{}' already exists", request.email)
-            throw ConflictException(
-                message = "Email ya registrado",
-                field = "email",
-                rejectedValue = request.email
-            )
+            throw ConflictException(message = "Email already exists", field = "email", rejectedValue = request.email)
         }
 
         val user = User(
@@ -54,11 +46,7 @@ class UserService(private val userRepository: UserRepository, private val jwtSer
         val savedUser = userRepository.save(user)
         val token = jwtService.generateToken(savedUser.id!!, savedUser.username)
 
-        logger.info(
-            "User created successfully: id={}, username='{}'",
-            savedUser.id,
-            savedUser.username
-        )
+        logger.info("User created successfully: id={}, username='{}'", savedUser.id, savedUser.username)
         return AuthResponse(
             token = token,
             userId = savedUser.id,
@@ -74,14 +62,14 @@ class UserService(private val userRepository: UserRepository, private val jwtSer
         val user = userRepository.findByUsername(request.user).orElseGet {
             userRepository.findByEmail(request.user).orElseThrow {
                 logger.warn("Login failed: user '{}' not found", request.user)
-                BadRequestException("No hay usuario con ese username o email")
+                BadRequestException("User not found")
             }
         }
 
         val hashedPassword = hashMd5(request.password)
         if (user.passwordHash != hashedPassword) {
             logger.warn("Login failed: invalid password for username '{}'", request.user)
-            throw BadRequestException("Nombre de usuario o contraseña incorrectos")
+            throw BadRequestException("User or password incorrect")
         }
 
         val token = jwtService.generateToken(user.id!!, user.username)
@@ -103,7 +91,7 @@ class UserService(private val userRepository: UserRepository, private val jwtSer
         val user =
             userRepository.findById(authenticatedUserId).orElseThrow {
                 logger.warn("User not found for update: userId={}", authenticatedUserId)
-                NotFoundException("Usuario no encontrado")
+                NotFoundException("User not found")
             }
 
         request.fullname?.let { user.fullname = it }
@@ -111,11 +99,7 @@ class UserService(private val userRepository: UserRepository, private val jwtSer
         request.username?.let { newUsername ->
             if (newUsername != user.username && userRepository.existsByUsername(newUsername)) {
                 logger.warn("User update failed: username '{}' already exists", newUsername)
-                throw ConflictException(
-                    message = "Nombre de usuario '$newUsername' ya registrado",
-                    field = "username",
-                    rejectedValue = newUsername
-                )
+                throw ConflictException(message = "Username already exists", field = "username", rejectedValue = newUsername)
             }
             user.username = newUsername
         }
@@ -123,11 +107,7 @@ class UserService(private val userRepository: UserRepository, private val jwtSer
         request.email?.let { newEmail ->
             if (newEmail != user.email && userRepository.existsByEmail(newEmail)) {
                 logger.warn("User update failed: email '{}' already exists", newEmail)
-                throw ConflictException(
-                    message = "Email '$newEmail' ya registrado",
-                    field = "email",
-                    rejectedValue = newEmail
-                )
+                throw ConflictException(message = "Email already exists", field = "email", rejectedValue = newEmail)
             }
             user.email = newEmail
         }
@@ -143,25 +123,17 @@ class UserService(private val userRepository: UserRepository, private val jwtSer
 
     @Transactional
     fun deleteUser(authenticatedUserId: UUID, targetUserId: UUID) {
-        logger.info(
-            "Deleting user: targetUserId={}, requestedBy={}",
-            targetUserId,
-            authenticatedUserId
-        )
+        logger.info("Deleting user: targetUserId={}, requestedBy={}", targetUserId, authenticatedUserId)
 
         if (authenticatedUserId != targetUserId) {
-            logger.warn(
-                "Delete forbidden: user {} tried to delete user {}",
-                authenticatedUserId,
-                targetUserId
-            )
-            throw ForbiddenException("Sólo puedes eliminar tu propia cuenta")
+            logger.warn("Delete forbidden: user {} tried to delete user {}", authenticatedUserId, targetUserId)
+            throw ForbiddenException("You can only delete your own account")
         }
 
         val user =
             userRepository.findById(targetUserId).orElseThrow {
                 logger.warn("User not found for deletion: userId={}", targetUserId)
-                NotFoundException("Usuario no encontrado")
+                NotFoundException("User not found")
             }
 
         userRepository.delete(user)
@@ -174,7 +146,7 @@ class UserService(private val userRepository: UserRepository, private val jwtSer
         val user =
             userRepository.findById(userId).orElseThrow {
                 logger.warn("User not found: userId={}", userId)
-                NotFoundException("Usuario no encontrado")
+                NotFoundException("User not found")
             }
 
         logger.info("User fetched successfully: userId={}, username='{}'", user.id, user.username)

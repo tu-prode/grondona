@@ -88,4 +88,5 @@ class UserController(
         logger.info("GET /api/users/me/groups - Returning {} groups for userId={}", response.size, userId)
         return ResponseEntity.ok(response)
     }
+
 }

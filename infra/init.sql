@@ -28,6 +28,11 @@ COMMENT ON COLUMN users.created_at IS 'Timestamp when the user was created';
 COMMENT ON COLUMN users.updated_at IS 'Timestamp when the user was last updated';
 COMMENT ON COLUMN users.deleted_at IS 'Timestamp when the user was deleted';
 
+-- Seed default users
+INSERT INTO users (id, fullname, username, email, password_hash) VALUES
+    ('c97ec073-c40c-4094-9f9e-b07074188936', 'Cristian Raña', 'cris', 'cristian.rana8@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d')
+ON CONFLICT (id) DO NOTHING;
+
 -- Create groups table
 CREATE TABLE IF NOT EXISTS groups (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -66,6 +71,7 @@ CREATE TABLE IF NOT EXISTS group_users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+    role VARCHAR(20) NOT NULL DEFAULT 'MEMBER',
     points FLOAT NOT NULL DEFAULT 0,
     joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     calculated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -83,10 +89,19 @@ COMMENT ON TABLE group_users IS 'Group membership table';
 COMMENT ON COLUMN group_users.id IS 'Identifier of the reference';
 COMMENT ON COLUMN group_users.user_id IS 'Reference to the user';
 COMMENT ON COLUMN group_users.group_id IS 'Reference to the group';
+COMMENT ON COLUMN group_users.role IS 'Role of the user in the group (can be either MEMBER, ADMIN or OWNER)';
 COMMENT ON COLUMN group_users.points IS 'Amount of points of the given user in the given tournament';
 COMMENT ON COLUMN group_users.joined_at IS 'Timestamp when the user joined the group';
 COMMENT ON COLUMN group_users.calculated_at IS 'Timestamp when the points were calculated for the last time';
 COMMENT ON COLUMN group_users.deleted_at IS 'Timestamp when the user left the group';
+
+-- Seed default members
+INSERT INTO group_users (user_id, group_id, role) VALUES
+    ('c97ec073-c40c-4094-9f9e-b07074188936', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'OWNER'),
+    ('c97ec073-c40c-4094-9f9e-b07074188936', '7c9e6679-7425-40de-944b-e07fc1f90ae7', 'OWNER'),
+    ('c97ec073-c40c-4094-9f9e-b07074188936', 'b5d4c3a2-1e0f-4d9c-8b7a-6f5e4d3c2b1a', 'OWNER'),
+    ('c97ec073-c40c-4094-9f9e-b07074188936', 'e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', 'OWNER')
+ON CONFLICT (id) DO NOTHING;
 
 -- Create tournaments table
 CREATE TABLE IF NOT EXISTS tournaments (
@@ -185,12 +200,12 @@ INSERT INTO teams (id, name, code, icon) VALUES
     ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Túnez', 'TUN', 'https://flagcdn.com/w40/tn.png'),
     ('c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41', 'Uruguay', 'URU', 'https://flagcdn.com/w40/uy.png'),
     ('d9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42', 'Uzbekistán', 'UZB', 'https://flagcdn.com/w40/uz.png'),
-    ('8f251495-81ba-4724-b575-f7ebecf213c4', 'FIFA 1', 'TBD', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Flag_of_FIFA.svg/1920px-Flag_of_FIFA.svg.png'),
-    ('da0e5c75-ba1c-4090-bbba-ad57d0e3b153', 'FIFA 2', 'TBD', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Flag_of_FIFA.svg/1920px-Flag_of_FIFA.svg.png'),
-    ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', 'UEFA 1', 'TBD', 'https://www.no1flag.com/Content/ue/net/upload/2017-04-10/74b35597-c1cd-4e02-9b95-1e8a1ef1bf0d.gif'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'UEFA 2', 'TBD', 'https://www.no1flag.com/Content/ue/net/upload/2017-04-10/74b35597-c1cd-4e02-9b95-1e8a1ef1bf0d.gif'),
-    ('07782a28-4f6d-4037-86b8-ccff4c2de218', 'UEFA 3', 'TBD', 'https://www.no1flag.com/Content/ue/net/upload/2017-04-10/74b35597-c1cd-4e02-9b95-1e8a1ef1bf0d.gif'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'UEFA 4', 'TBD', 'https://www.no1flag.com/Content/ue/net/upload/2017-04-10/74b35597-c1cd-4e02-9b95-1e8a1ef1bf0d.gif')
+    ('8f251495-81ba-4724-b575-f7ebecf213c4', 'FIFA 1', 'FIFA1', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Flag_of_FIFA.svg/1920px-Flag_of_FIFA.svg.png'),
+    ('da0e5c75-ba1c-4090-bbba-ad57d0e3b153', 'FIFA 2', 'FIFA2', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Flag_of_FIFA.svg/1920px-Flag_of_FIFA.svg.png'),
+    ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', 'UEFA 1', 'UEFA1', 'https://www.no1flag.com/Content/ue/net/upload/2017-04-10/74b35597-c1cd-4e02-9b95-1e8a1ef1bf0d.gif'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'UEFA 2', 'UEFA2', 'https://www.no1flag.com/Content/ue/net/upload/2017-04-10/74b35597-c1cd-4e02-9b95-1e8a1ef1bf0d.gif'),
+    ('07782a28-4f6d-4037-86b8-ccff4c2de218', 'UEFA 3', 'UEFA3', 'https://www.no1flag.com/Content/ue/net/upload/2017-04-10/74b35597-c1cd-4e02-9b95-1e8a1ef1bf0d.gif'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'UEFA 4', 'UEFA4', 'https://www.no1flag.com/Content/ue/net/upload/2017-04-10/74b35597-c1cd-4e02-9b95-1e8a1ef1bf0d.gif')
 ON CONFLICT (id) DO NOTHING;
 
 -- Create matches table
@@ -200,6 +215,9 @@ CREATE TABLE IF NOT EXISTS matches (
     tournament_key VARCHAR(10) NOT NULL,
     home_team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
     away_team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    home_quota FLOAT NOT NULL DEFAULT 1,
+    away_quota FLOAT NOT NULL DEFAULT 1,
+    tie_quota FLOAT NOT NULL DEFAULT 1,
     status VARCHAR(20) NOT NULL DEFAULT 'NOT-STARTED',
     started_at TIMESTAMP DEFAULT NULL,
     finished_at TIMESTAMP DEFAULT NULL,
@@ -220,9 +238,13 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_matches_tournament_key ON matches(tourname
 -- Add comments to table and columns
 COMMENT ON TABLE matches IS 'Matches table';
 COMMENT ON COLUMN matches.id IS 'Unique identifier for the match';
+COMMENT ON COLUMN matches.tournament_id IS 'Reference to the tournament';
 COMMENT ON COLUMN matches.tournament_key IS 'Unique identifier for the match within the tournament';
 COMMENT ON COLUMN matches.home_team_id IS 'Home team identifier';
 COMMENT ON COLUMN matches.away_team_id IS 'Away team identifier';
+COMMENT ON COLUMN matches.home_quota IS 'The quota for a home team win';
+COMMENT ON COLUMN matches.away_quota IS 'The quota for an away team win';
+COMMENT ON COLUMN matches.tie_quota IS 'The quota for a tie';
 COMMENT ON COLUMN matches.status IS 'Status of the match (can be either NOT-STARTED, IN-PROGRESS or FINISHED)';
 COMMENT ON COLUMN matches.started_at IS 'Timestamp when the match started';
 COMMENT ON COLUMN matches.finished_at IS 'Timestamp when the match finished';
@@ -273,7 +295,7 @@ INSERT INTO matches (tournament_id, tournament_key, home_team_id, away_team_id, 
     ('28652183-a2d6-4f33-a624-0d24645ce3cd', '34', 'c1a5e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b17', 'b7e3c1a5-2f9d-4a6c-8e1b-3d7a5c2f9e16', '2026-06-20 19:00:00 -05:00'::timestamptz),
     ('28652183-a2d6-4f33-a624-0d24645ce3cd', '35', 'a1e7c3b5-9d2f-4c8a-9e6b-2f3a1c7d5b33', '8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', '2026-06-20 12:00:00 -05:00'::timestamptz),
     ('28652183-a2d6-4f33-a624-0d24645ce3cd', '36', 'b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27', '2026-06-20 22:00:00 -06:00'::timestamptz),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '37', 'c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41', '4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09', '2026-06-21 12:00:00 -18:00'::timestamptz),
+    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '37', 'c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41', '4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09', '2026-06-21 18:00:00 -04:00'::timestamptz),
     ('28652183-a2d6-4f33-a624-0d24645ce3cd', '38', 'f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'b2c9c3e7-7f7e-4a5a-9f2b-3c1d9a4e8b02', '2026-06-21 12:00:00 -04:00'::timestamptz),
     ('28652183-a2d6-4f33-a624-0d24645ce3cd', '39', '8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08', 'f3a1c5e7-2f9d-4a6c-8e1b-3d7a5c2f9e26', '2026-06-21 12:00:00 -07:00'::timestamptz),
     ('28652183-a2d6-4f33-a624-0d24645ce3cd', '40', 'f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', 'd5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18', '2026-06-21 18:00:00 -07:00'::timestamptz),
@@ -310,3 +332,32 @@ INSERT INTO matches (tournament_id, tournament_key, home_team_id, away_team_id, 
     ('28652183-a2d6-4f33-a624-0d24645ce3cd', '71', 'd7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'd7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36', '2026-06-27 19:30:00 -04:00'::timestamptz),
     ('28652183-a2d6-4f33-a624-0d24645ce3cd', '72', '8f251495-81ba-4724-b575-f7ebecf213c4', 'd9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42', '2026-06-27 19:30:00 -04:00'::timestamptz)
 ON CONFLICT (id) DO NOTHING;
+
+-- Create matches table
+CREATE TABLE IF NOT EXISTS predictions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+    match_id UUID NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+    home_goals INT DEFAULT NULL,
+    away_goals INT DEFAULT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP DEFAULT NULL,
+    CONSTRAINT uq_predictions UNIQUE (id)
+);
+
+-- Create indexes for uniqueness and better query performance
+CREATE UNIQUE INDEX IF NOT EXISTS idx_predictions_uniqueness ON predictions(user_id, group_id, match_id) WHERE deleted_at IS NULL;
+
+-- Add comments to table and columns
+COMMENT ON TABLE predictions IS 'Matches predictions table';
+COMMENT ON COLUMN predictions.id IS 'Unique identifier for the match';
+COMMENT ON COLUMN predictions.user_id IS 'Reference to the user';
+COMMENT ON COLUMN predictions.group_id IS 'Reference to the group';
+COMMENT ON COLUMN predictions.match_id IS 'Reference to the match';
+COMMENT ON COLUMN predictions.home_goals IS 'The home goals predicted';
+COMMENT ON COLUMN predictions.away_goals IS 'The away goals predicted';
+COMMENT ON COLUMN predictions.created_at IS 'Timestamp when the prediction was created';
+COMMENT ON COLUMN predictions.updated_at IS 'Timestamp when the prediction was updated';
+COMMENT ON COLUMN predictions.deleted_at IS 'Timestamp when the prediction was deleted';
