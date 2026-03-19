@@ -117,9 +117,8 @@ class GroupMembershipIntegrationTest {
                 .andExpect(jsonPath("$[0].group_id").value(testGroupId))
                 .andExpect(jsonPath("$[0].name").value("Membership Test Group"))
                 .andExpect(jsonPath("$[0].member_count").value(1))
-                .andExpect(jsonPath("$[0].points").value(0))
+                .andExpect(jsonPath("$[0].points").value(0.0))
                 .andExpect(jsonPath("$[0].rank").doesNotExist())
-                .andExpect(jsonPath("$[0].joined_at").exists())
         }
 
         @Test

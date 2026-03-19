@@ -194,30 +194,34 @@ class GroupMembershipServiceTest {
 
         @Test
         fun `getMyGroups should return groups with member count`() {
-            val groupId1 = UUID.randomUUID()
-            val groupId2 = UUID.randomUUID()
-            val groups = listOf(
-                UserGroupResponse(groupId1, "Group A", 3, 12.4f, GroupRole.MEMBER),
-                UserGroupResponse(groupId2, "Group B", 7, 29.1f, GroupRole.ADMIN)
+            val group1 = testGroup.copy(id = UUID.randomUUID(), name = "Group A")
+            val group2 = testGroup.copy(id = UUID.randomUUID(), name = "Group B")
+            val memberships = listOf(
+                testMembership.copy(group = group1, points = 10.5f, role = GroupRole.ADMIN),
+                testMembership.copy(group = group2, points = 5.0f, role = GroupRole.MEMBER)
             )
-            every { groupUserRepository.findUserGroups(testUserId) } returns groups
+            every { groupUserRepository.findByUserIdOrderByJoinedAtDesc(testUserId) } returns memberships
+            every { groupUserRepository.countByGroupId(group1.id!!) } returns 3L
+            every { groupUserRepository.countByGroupId(group2.id!!) } returns 7L
 
             val result = groupMembershipService.getMyGroups(testUserId)
 
             assertEquals(2, result.size)
             assertEquals("Group A", result[0].name)
             assertEquals(3, result[0].memberCount)
-            assertEquals(12.4f, result[0].points)
-            assertEquals(GroupRole.MEMBER, result[0].role)
+            assertEquals(10.5f, result[0].points)
+            assertEquals(GroupRole.ADMIN, result[0].role)
+            assertEquals(group1.id, result[0].groupId)
             assertEquals("Group B", result[1].name)
             assertEquals(7, result[1].memberCount)
-            assertEquals(29.1f, result[1].points)
-            assertEquals(GroupRole.ADMIN, result[1].role)
+            assertEquals(5.0f, result[1].points)
+            assertEquals(GroupRole.MEMBER, result[1].role)
+            assertEquals(group2.id, result[1].groupId)
         }
 
         @Test
         fun `getMyGroups should return empty list when user is not in any group`() {
-            every { groupUserRepository.findUserGroups(testUserId) } returns emptyList()
+            every { groupUserRepository.findByUserIdOrderByJoinedAtDesc(testUserId) } returns emptyList()
 
             val result = groupMembershipService.getMyGroups(testUserId)
 

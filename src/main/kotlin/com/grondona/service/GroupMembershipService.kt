@@ -75,8 +75,17 @@ class GroupMembershipService(
     @Transactional(readOnly = true)
     fun getMyGroups(userId: UUID): List<UserGroupResponse> {
         logger.info("Fetching groups for user {}", userId)
-        val groups = groupUserRepository.findUserGroups(userId)
-        logger.info("User {} belongs to {} groups", userId, groups.size)
-        return groups
+        val memberships = groupUserRepository.findByUserIdOrderByJoinedAtDesc(userId)
+        val result = memberships.map { m ->
+            UserGroupResponse(
+                groupId = m.group.id!!,
+                name = m.group.name,
+                memberCount = groupUserRepository.countByGroupId(m.group.id!!).toInt(),
+                points = m.points,
+                role = m.role
+            )
+        }
+        logger.info("User {} belongs to {} groups", userId, result.size)
+        return result
     }
 }
