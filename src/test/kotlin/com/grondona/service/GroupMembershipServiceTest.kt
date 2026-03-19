@@ -197,12 +197,11 @@ class GroupMembershipServiceTest {
             val group1 = testGroup.copy(id = UUID.randomUUID(), name = "Group A")
             val group2 = testGroup.copy(id = UUID.randomUUID(), name = "Group B")
             val memberships = listOf(
-                testMembership.copy(group = group1, points = 10.5f, role = GroupRole.ADMIN),
-                testMembership.copy(group = group2, points = 5.0f, role = GroupRole.MEMBER)
+                UserGroupResponse(group1.id!!, group1.name, 3L, 10.5f, GroupRole.ADMIN),
+                UserGroupResponse(group2.id!!, group2.name, 7L, 5.0f, GroupRole.MEMBER)
             )
-            every { groupUserRepository.findByUserIdOrderByJoinedAtDesc(testUserId) } returns memberships
-            every { groupUserRepository.countByGroupId(group1.id!!) } returns 3L
-            every { groupUserRepository.countByGroupId(group2.id!!) } returns 7L
+
+            every { groupUserRepository.findUserGroups(testUserId) } returns memberships
 
             val result = groupMembershipService.getMyGroups(testUserId)
 
@@ -221,7 +220,7 @@ class GroupMembershipServiceTest {
 
         @Test
         fun `getMyGroups should return empty list when user is not in any group`() {
-            every { groupUserRepository.findByUserIdOrderByJoinedAtDesc(testUserId) } returns emptyList()
+            every { groupUserRepository.findUserGroups(testUserId) } returns emptyList()
 
             val result = groupMembershipService.getMyGroups(testUserId)
 

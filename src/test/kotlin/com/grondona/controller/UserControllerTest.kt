@@ -249,7 +249,7 @@ class UserControllerTest {
                 UserGroupResponse(
                     groupId = groupId,
                     name = "My Group",
-                    memberCount = 5,
+                    memberCount = 5L,
                 )
             )
             every { groupMembershipService.getMyGroups(testUserId) } returns groups
