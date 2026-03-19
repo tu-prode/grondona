@@ -114,10 +114,12 @@ class GroupMembershipIntegrationTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].groupId").value(testGroupId))
+                .andExpect(jsonPath("$[0].group_id").value(testGroupId))
                 .andExpect(jsonPath("$[0].name").value("Membership Test Group"))
-                .andExpect(jsonPath("$[0].memberCount").value(1))
-                .andExpect(jsonPath("$[0].joinedAt").exists())
+                .andExpect(jsonPath("$[0].member_count").value(1))
+                .andExpect(jsonPath("$[0].points").value(0))
+                .andExpect(jsonPath("$[0].rank").doesNotExist())
+                .andExpect(jsonPath("$[0].joined_at").exists())
         }
 
         @Test
@@ -146,7 +148,7 @@ class GroupMembershipIntegrationTest {
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$[0].memberCount").value(2))
+                .andExpect(jsonPath("$[0].member_count").value(2))
         }
 
         @Test

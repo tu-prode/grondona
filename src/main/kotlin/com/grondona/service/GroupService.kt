@@ -101,20 +101,6 @@ class GroupService(private val groupRepository: GroupRepository) {
         return GroupResponse.from(group)
     }
 
-    fun getAllGroups(): List<GroupResponse> {
-        logger.info("Fetching all groups")
-        val groups = groupRepository.findAll()
-        logger.info("Fetched {} groups", groups.size)
-        return groups.map { GroupResponse.from(it) }
-    }
-
-    fun searchGroups(search: String): List<GroupResponse> {
-        logger.info("Searching groups with query='{}'", search)
-        val groups = groupRepository.findByNameContainingIgnoreCase(search)
-        logger.info("Found {} groups matching '{}'", groups.size, search)
-        return groups.map { GroupResponse.from(it) }
-    }
-
     fun findGroups(search: String?, joined: Boolean?): List<GroupResponse> {
         return groupRepository.findAll { root, query, builder ->
             val predicates = mutableListOf<Predicate>()

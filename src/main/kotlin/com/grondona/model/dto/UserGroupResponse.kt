@@ -15,6 +15,7 @@ data class UserGroupResponse(
         groupId: UUID,
         name: String,
         memberCount: Long,
-        joinedAt: LocalDateTime
-    ) : this(groupId, name, memberCount, joinedAt, 0F, null)
+        joinedAt: LocalDateTime,
+        points: Float,
+    ) : this(groupId, name, memberCount, joinedAt, points, null)
 }

@@ -1,11 +1,15 @@
 package com.grondona.model
 
 import jakarta.persistence.*
+import org.hibernate.annotations.SQLDelete
+import org.hibernate.annotations.SQLRestriction
 import java.time.LocalDateTime
 import java.util.UUID
 
 @Entity
 @Table(name = "groups")
+@SQLDelete(sql = "UPDATE groups SET deleted_at = CURRENT_TIMESTAMP WHERE id=?")
+@SQLRestriction("deleted_at is null")
 data class Group(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -26,6 +30,9 @@ data class Group(
     @Column(name = "updated_at", nullable = false)
     var updatedAt: LocalDateTime = LocalDateTime.now(),
 
+    @Column(name = "deleted_at")
+    var deletedAt: LocalDateTime? = null,
+
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
-    val groupUsers: List<GroupUser> = emptyList()
+    val groupUsers: MutableList<GroupUser> = emptyList<GroupUser>().toMutableList()
 )

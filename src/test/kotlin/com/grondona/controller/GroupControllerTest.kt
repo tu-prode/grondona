@@ -246,7 +246,7 @@ class GroupControllerTest {
     }
 
     @Nested
-    inner class GetAllGroupsEndpointTests {
+    inner class FindGroupsEndpointTests {
 
         @Test
         fun `GET api groups should return 200 with all groups when no search param`() {
@@ -254,7 +254,7 @@ class GroupControllerTest {
                 testGroupResponse,
                 testGroupResponse.copy(id = UUID.randomUUID(), name = "Second Group")
             )
-            every { groupService.getAllGroups() } returns groups
+            every { groupService.findGroups(null, null) } returns groups
 
             mockMvc.perform(get("/api/groups"))
                 .andExpect(status().isOk)
@@ -264,11 +264,11 @@ class GroupControllerTest {
         }
 
         @Test
-        fun `GET api groups should return filtered groups when search param provided`() {
+        fun `GET api groups should return filtered groups when search and joined params provided`() {
             val groups = listOf(testGroupResponse)
-            every { groupService.searchGroups("test") } returns groups
+            every { groupService.findGroups("test", false) } returns groups
 
-            mockMvc.perform(get("/api/groups").param("search", "test"))
+            mockMvc.perform(get("/api/groups").param("search", "test").param( "joined", "false"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].name").value("Test Group"))
@@ -276,9 +276,9 @@ class GroupControllerTest {
 
         @Test
         fun `GET api groups should return empty list when no groups match search`() {
-            every { groupService.searchGroups("xyz") } returns emptyList()
+            every { groupService.findGroups("xyz", false) } returns emptyList()
 
-            mockMvc.perform(get("/api/groups").param("search", "xyz"))
+            mockMvc.perform(get("/api/groups").param("search", "xyz").param( "joined", "false"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.length()").value(0))
         }

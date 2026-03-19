@@ -70,7 +70,7 @@ class UserControllerIntegrationTest {
             )
                 .andExpect(status().isCreated)
                 .andExpect(jsonPath("$.token").exists())
-                .andExpect(jsonPath("$.userId").exists())
+                .andExpect(jsonPath("$.user_id").exists())
                 .andExpect(jsonPath("$.username").value("integrationuser"))
                 .andExpect(jsonPath("$.email").value("integration@test.com"))
                 .andExpect(jsonPath("$.fullname").value("Integration Test User"))

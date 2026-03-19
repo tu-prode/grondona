@@ -23,7 +23,8 @@ interface GroupUserRepository : JpaRepository<GroupUser, UUID> {
             gu.group.id,
             gu.group.name,
             (SELECT COUNT(m) FROM GroupUser m WHERE m.group.id = gu.group.id),
-            gu.joinedAt
+            gu.joinedAt,
+            gu.points
         )
         FROM GroupUser gu
         WHERE gu.user.id = :userId
