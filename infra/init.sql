@@ -144,7 +144,7 @@ CREATE TABLE IF NOT EXISTS teams (
 );
 
 -- Create indexes for uniqueness and better query performance
-CREATE UNIQUE INDEX IF NOT EXISTS idx_teams_code ON teams(code) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_teams_code ON teams(code) WHERE deleted_at IS NULL;
 
 -- Add comments to table and columns
 COMMENT ON TABLE teams IS 'Teams table';
@@ -211,8 +211,8 @@ ON CONFLICT (id) DO NOTHING;
 -- Create matches table
 CREATE TABLE IF NOT EXISTS matches (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    match_key VARCHAR(10) NOT NULL,
     tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
-    tournament_key VARCHAR(10) NOT NULL,
     home_team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
     away_team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
     home_quota FLOAT NOT NULL DEFAULT 1,
@@ -223,7 +223,6 @@ CREATE TABLE IF NOT EXISTS matches (
     finished_at TIMESTAMP DEFAULT NULL,
     home_goals INT DEFAULT NULL,
     away_goals INT DEFAULT NULL,
-    penalty_kicks BOOLEAN DEFAULT NULL,
     home_penalties INT DEFAULT NULL,
     away_penalties INT DEFAULT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -238,8 +237,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_matches_tournament_key ON matches(tourname
 -- Add comments to table and columns
 COMMENT ON TABLE matches IS 'Matches table';
 COMMENT ON COLUMN matches.id IS 'Unique identifier for the match';
+COMMENT ON COLUMN matches.match_key IS 'Unique identifier for the match within the tournament';
 COMMENT ON COLUMN matches.tournament_id IS 'Reference to the tournament';
-COMMENT ON COLUMN matches.tournament_key IS 'Unique identifier for the match within the tournament';
 COMMENT ON COLUMN matches.home_team_id IS 'Home team identifier';
 COMMENT ON COLUMN matches.away_team_id IS 'Away team identifier';
 COMMENT ON COLUMN matches.home_quota IS 'The quota for a home team win';
@@ -250,7 +249,6 @@ COMMENT ON COLUMN matches.started_at IS 'Timestamp when the match started';
 COMMENT ON COLUMN matches.finished_at IS 'Timestamp when the match finished';
 COMMENT ON COLUMN matches.home_goals IS 'Amount of goals scored by the home team';
 COMMENT ON COLUMN matches.away_goals IS 'Amount of goals scored by the away team';
-COMMENT ON COLUMN matches.penalty_kicks IS 'Flag indicating if the game ended in PK';
 COMMENT ON COLUMN matches.home_penalties IS 'Amount of penalties scored by the home team';
 COMMENT ON COLUMN matches.away_penalties IS 'Amount of penalties scored by the away team';
 COMMENT ON COLUMN matches.created_at IS 'Timestamp when the match was created';
@@ -258,7 +256,7 @@ COMMENT ON COLUMN matches.updated_at IS 'Timestamp when the match was last updat
 COMMENT ON COLUMN matches.deleted_at IS 'Timestamp when the match was deleted';
 
 -- Seed default matches
-INSERT INTO matches (tournament_id, tournament_key, home_team_id, away_team_id, started_at) VALUES
+INSERT INTO matches (tournament_id, match_key, home_team_id, away_team_id, started_at) VALUES
     ('28652183-a2d6-4f33-a624-0d24645ce3cd', '1', 'd3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30', 'f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38', '2026-06-11 13:00:00 -06:00'::timestamptz),
     ('28652183-a2d6-4f33-a624-0d24645ce3cd', '2', 'e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', '219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', '2026-06-11 20:00:00 -06:00'::timestamptz),
     ('28652183-a2d6-4f33-a624-0d24645ce3cd', '3', '5a1c9e3b-7d2f-4a6c-8b9e-2f3d7a1c4b10', 'fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', '2026-06-12 15:00:00 -04:00'::timestamptz),
