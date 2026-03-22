@@ -154,7 +154,7 @@ paths:
             schema:
               $ref: "#/components/schemas/LoginRequest"
             example:
-              username: johndoe
+              user: johndoe
               password: secret123
       responses:
         "200":
@@ -310,7 +310,7 @@ paths:
               $ref: "#/components/schemas/CreateGroupRequest"
             example:
               name: My Group
-              private: false
+              is_private: false
               maxMembers: 20
       responses:
         "201":
@@ -575,6 +575,38 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/tournaments/{tournamentId}/matches:
+    get:
+      tags:
+        - Matches
+      summary: Get the list of matches for a tournament
+      description: |
+        Retrieve the list of matches for a tournament by its UUID.
+      operationId: getTournamentMatches
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Tournament matches retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentMatchesResponse"
+        "404":
+          description: Tournament not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -609,7 +641,7 @@ components:
           format: date-time
           description: Error timestamp
           example: "2024-01-01T12:00:00"
-        data:
+        extra_data:
           oneOf:
             - $ref: '#/components/schemas/ErrorConflictExtraData'
 
@@ -665,7 +697,7 @@ components:
         - user
         - password
       properties:
-        username:
+        user:
           type: string
           description: User for authentication (either username or email)
           example: johndoe
@@ -811,7 +843,7 @@ components:
           description: Unique group name
           maxLength: 100
           example: My Group
-        private:
+        is_private:
           type: boolean
           description: Whether the group is private (defaults to false)
           default: false
@@ -832,7 +864,7 @@ components:
           description: New group name (must be unique)
           maxLength: 100
           example: Updated Group Name
-        private:
+        is_private:
           type: boolean
           description: New privacy setting
           example: true
@@ -860,7 +892,34 @@ components:
           type: string
           description: Group name
           example: General
-        private:
+        is_private:
+          type: boolean
+          description: Whether the group is private
+          example: false
+        max_members:
+          type: integer
+          format: int16
+          description: Maximum number of members allowed
+          example: 50
+
+    TournamentMatchesResponse:
+      type: object
+      required:
+        - id
+        - name
+        - private
+        - max_members
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique group identifier
+          example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+        name:
+          type: string
+          description: Group name
+          example: General
+        is_private:
           type: boolean
           description: Whether the group is private
           example: false
