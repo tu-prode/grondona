@@ -6,6 +6,10 @@ import org.hibernate.annotations.SQLRestriction
 import java.time.LocalDateTime
 import java.util.UUID
 
+enum class UserPermissions {
+    USER, SUPERUSER
+}
+
 @Entity
 @Table(name = "users")
 @SQLDelete(sql = "UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id=?")
@@ -26,6 +30,10 @@ data class User(
 
     @Column(name = "password_hash", nullable = false)
     var passwordHash: String,
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    var permissions: UserPermissions = UserPermissions.USER,
 
     @Column(name = "created_at", nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),

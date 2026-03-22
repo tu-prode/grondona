@@ -5,6 +5,7 @@ import com.grondona.exception.ConflictException
 import com.grondona.exception.ForbiddenException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.User
+import com.grondona.model.UserPermissions
 import com.grondona.model.dto.*
 import com.grondona.repository.UserRepository
 import com.grondona.security.JwtService
@@ -28,7 +29,11 @@ class UserService(private val userRepository: UserRepository, private val jwtSer
 
         if (userRepository.existsByUsername(request.username)) {
             logger.warn("User creation failed: username '{}' already exists", request.username)
-            throw ConflictException(message = "Username already exists", field = "username", rejectedValue = request.username)
+            throw ConflictException(
+                message = "Username already exists",
+                field = "username",
+                rejectedValue = request.username
+            )
         }
 
         if (userRepository.existsByEmail(request.email)) {
@@ -99,7 +104,11 @@ class UserService(private val userRepository: UserRepository, private val jwtSer
         request.username?.let { newUsername ->
             if (newUsername != user.username && userRepository.existsByUsername(newUsername)) {
                 logger.warn("User update failed: username '{}' already exists", newUsername)
-                throw ConflictException(message = "Username already exists", field = "username", rejectedValue = newUsername)
+                throw ConflictException(
+                    message = "Username already exists",
+                    field = "username",
+                    rejectedValue = newUsername
+                )
             }
             user.username = newUsername
         }
@@ -158,4 +167,10 @@ class UserService(private val userRepository: UserRepository, private val jwtSer
         val digest = md.digest(input.toByteArray())
         return digest.joinToString("") { "%02x".format(it) }
     }
+
+    fun hasAdminAccess(userId: UUID): Boolean =
+        userRepository.findById(userId).map { it.permissions == UserPermissions.SUPERUSER }.orElseThrow {
+            logger.warn("User not found: userId={}", userId)
+            NotFoundException("User not found")
+        }
 }

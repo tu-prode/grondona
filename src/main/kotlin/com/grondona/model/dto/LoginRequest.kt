@@ -1,7 +1,6 @@
 package com.grondona.model.dto
 
-import jakarta.validation.constraints.Email
-import jakarta.validation.constraints.NotBlank
+import javax.validation.constraints.NotBlank
 
 data class LoginRequest(
     @field:NotBlank(message = "User is required")

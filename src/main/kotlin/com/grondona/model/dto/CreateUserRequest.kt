@@ -1,4 +1,4 @@
-package com.grondona.model.dto.requests
+package com.grondona.model.dto
 
 import javax.validation.constraints.Email
 import javax.validation.constraints.NotBlank

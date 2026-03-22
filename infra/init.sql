@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(32) NOT NULL,
+    permissions VARCHAR(20) NOT NULL DEFAULT 'USER',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP DEFAULT NULL,
@@ -24,13 +25,14 @@ COMMENT ON COLUMN users.fullname IS 'Full name of the user';
 COMMENT ON COLUMN users.username IS 'Unique username for authentication';
 COMMENT ON COLUMN users.email IS 'Unique email address';
 COMMENT ON COLUMN users.password_hash IS 'MD5 hashed password';
+COMMENT ON COLUMN users.permissions IS 'Access level granted to an user (can be either USER or SUPERUSER)';
 COMMENT ON COLUMN users.created_at IS 'Timestamp when the user was created';
 COMMENT ON COLUMN users.updated_at IS 'Timestamp when the user was last updated';
 COMMENT ON COLUMN users.deleted_at IS 'Timestamp when the user was deleted';
 
 -- Seed default users
-INSERT INTO users (id, fullname, username, email, password_hash) VALUES
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'Cristian Raña', 'cris', 'cristian.rana8@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d')
+INSERT INTO users (id, fullname, username, email, password_hash, permissions) VALUES
+    ('c97ec073-c40c-4094-9f9e-b07074188936', 'Cristian Raña', 'cris', 'cristian.rana8@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'SUPERUSER')
 ON CONFLICT (id) DO NOTHING;
 
 -- Create groups table
@@ -107,7 +109,7 @@ ON CONFLICT (id) DO NOTHING;
 CREATE TABLE IF NOT EXISTS tournaments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(256) NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'NOT-STARTED',
+    status VARCHAR(20) NOT NULL DEFAULT 'NOT_STARTED',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP DEFAULT NULL,
@@ -121,14 +123,14 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_tournaments_name ON tournaments(name) WHER
 COMMENT ON TABLE tournaments IS 'Tournaments table';
 COMMENT ON COLUMN tournaments.id IS 'Unique identifier for the tournament';
 COMMENT ON COLUMN tournaments.name IS 'Name of the tournament';
-COMMENT ON COLUMN tournaments.status IS 'Status of the tournament (can be either NOT-STARTED, IN-PROGRESS or FINISHED)';
+COMMENT ON COLUMN tournaments.status IS 'Status of the tournament (can be either NOT_STARTED, IN_PROGRESS or FINISHED)';
 COMMENT ON COLUMN tournaments.created_at IS 'Timestamp when the tournament was created';
 COMMENT ON COLUMN tournaments.updated_at IS 'Timestamp when the tournament was last updated';
 COMMENT ON COLUMN tournaments.deleted_at IS 'Timestamp when the tournament was deleted';
 
 -- Seed default tournaments
 INSERT INTO tournaments (id, name, status) VALUES
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', 'Copa del Mundo 2026', 'NOT-STARTED')
+    ('28652183-a2d6-4f33-a624-0d24645ce3cd', 'Copa del Mundo 2026', 'NOT_STARTED')
 ON CONFLICT (id) DO NOTHING;
 
 -- Create teams table
@@ -218,7 +220,7 @@ CREATE TABLE IF NOT EXISTS matches (
     home_quota FLOAT NOT NULL DEFAULT 1,
     away_quota FLOAT NOT NULL DEFAULT 1,
     tie_quota FLOAT NOT NULL DEFAULT 1,
-    status VARCHAR(20) NOT NULL DEFAULT 'NOT-STARTED',
+    status VARCHAR(20) NOT NULL DEFAULT 'NOT_STARTED',
     started_at TIMESTAMP DEFAULT NULL,
     finished_at TIMESTAMP DEFAULT NULL,
     home_goals INT DEFAULT NULL,
@@ -244,7 +246,7 @@ COMMENT ON COLUMN matches.away_team_id IS 'Away team identifier';
 COMMENT ON COLUMN matches.home_quota IS 'The quota for a home team win';
 COMMENT ON COLUMN matches.away_quota IS 'The quota for an away team win';
 COMMENT ON COLUMN matches.tie_quota IS 'The quota for a tie';
-COMMENT ON COLUMN matches.status IS 'Status of the match (can be either NOT-STARTED, IN-PROGRESS or FINISHED)';
+COMMENT ON COLUMN matches.status IS 'Status of the match (can be either NOT_STARTED, IN_PROGRESS or FINISHED)';
 COMMENT ON COLUMN matches.started_at IS 'Timestamp when the match started';
 COMMENT ON COLUMN matches.finished_at IS 'Timestamp when the match finished';
 COMMENT ON COLUMN matches.home_goals IS 'Amount of goals scored by the home team';

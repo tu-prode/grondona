@@ -1,7 +1,7 @@
 package com.grondona.model.dto
 
-import jakarta.validation.constraints.Email
-import jakarta.validation.constraints.Size
+import javax.validation.constraints.Email
+import javax.validation.constraints.Size
 
 data class UpdateUserRequest(
     val fullname: String? = null,

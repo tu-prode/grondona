@@ -35,7 +35,7 @@ data class Match(
     val homeTeam: Team,
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "home_team_id", nullable = false)
+    @JoinColumn(name = "away_team_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     val awayTeam: Team,
 
@@ -48,6 +48,7 @@ data class Match(
     @Column(name = "tie_quota", nullable = false)
     var tieQuota: Float = 1F,
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     var status: MatchStatus = MatchStatus.NOT_STARTED,
 

@@ -1,4 +1,4 @@
-package com.grondona.model.dto.requests
+package com.grondona.model.dto
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import javax.validation.constraints.Min

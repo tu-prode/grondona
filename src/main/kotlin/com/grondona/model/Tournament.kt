@@ -24,6 +24,7 @@ data class Tournament(
     @Column(nullable = false, unique = true)
     var name: String,
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     var status: TournamentStatus = TournamentStatus.NOT_STARTED,
 
