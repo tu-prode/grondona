@@ -5,7 +5,7 @@ import com.grondona.model.dto.*
 import com.grondona.security.JwtUserPrincipal
 import com.grondona.service.GroupMembershipService
 import com.grondona.service.UserService
-import jakarta.validation.Valid
+import javax.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -88,4 +88,5 @@ class UserController(
         logger.info("GET /api/users/me/groups - Returning {} groups for userId={}", response.size, userId)
         return ResponseEntity.ok(response)
     }
+
 }

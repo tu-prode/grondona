@@ -29,23 +29,23 @@ class GroupMembershipService(
 
         val group = groupRepository.findById(groupId).orElseThrow {
             logger.warn("Join failed: group {} not found", groupId)
-            NotFoundException("Grupo no encontrado")
+            NotFoundException("Group not found")
         }
 
         val user = userRepository.findById(userId).orElseThrow {
             logger.warn("Join failed: user {} not found", userId)
-            NotFoundException("Usuario no encontrado")
+            NotFoundException("User not found")
         }
 
         if (groupUserRepository.existsByUserIdAndGroupId(userId, groupId)) {
             logger.warn("Join failed: user {} is already a member of group {}", userId, groupId)
-            throw BadRequestException("Ya eres miembro de este grupo")
+            throw BadRequestException("You are already member of this group")
         }
 
         val memberCount = groupUserRepository.countByGroupId(groupId)
         if (memberCount >= group.maxMembers) {
             logger.warn("Join failed: group {} is full ({}/{})", groupId, memberCount, group.maxMembers)
-            throw BadRequestException("El grupo está lleno")
+            throw BadRequestException("Group is full")
         }
 
         val membership = GroupUser(user = user, group = group)
@@ -60,12 +60,12 @@ class GroupMembershipService(
 
         groupRepository.findById(groupId).orElseThrow {
             logger.warn("Leave failed: group {} not found", groupId)
-            NotFoundException("Grupo no encontrado")
+            NotFoundException("Group not found")
         }
 
         val membership = groupUserRepository.findByUserIdAndGroupId(userId, groupId).orElseThrow {
             logger.warn("Leave failed: user {} is not a member of group {}", userId, groupId)
-            NotFoundException("No eres miembro de este grupo")
+            NotFoundException("You are not member of this group")
         }
 
         groupUserRepository.delete(membership)
@@ -75,8 +75,8 @@ class GroupMembershipService(
     @Transactional(readOnly = true)
     fun getMyGroups(userId: UUID): List<UserGroupResponse> {
         logger.info("Fetching groups for user {}", userId)
-        val groups = groupUserRepository.findUserGroupsWithMemberCount(userId)
-        logger.info("User {} belongs to {} groups", userId, groups.size)
-        return groups
+        val memberships = groupUserRepository.findUserGroups(userId)
+        logger.info("User {} belongs to {} groups", userId, memberships.size)
+        return memberships
     }
 }

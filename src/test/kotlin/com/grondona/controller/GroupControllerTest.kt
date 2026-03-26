@@ -45,8 +45,6 @@ class GroupControllerTest {
         name = "Test Group",
         isPrivate = false,
         maxMembers = 20,
-        createdAt = LocalDateTime.now(),
-        updatedAt = LocalDateTime.now()
     )
 
     private inner class TestPrincipalArgumentResolver : HandlerMethodArgumentResolver {
@@ -108,7 +106,7 @@ class GroupControllerTest {
         fun `POST api groups should return 409 when group name already exists`() {
             val request = CreateGroupRequest(name = "Duplicate", isPrivate = false, maxMembers = 10)
             every { groupService.createGroup(any()) } throws ConflictException(
-                message = "Nombre de grupo ya registrado",
+                message = "Group name already exists",
                 field = "name",
                 rejectedValue = "Duplicate"
             )
@@ -119,8 +117,8 @@ class GroupControllerTest {
                     .content(objectMapper.writeValueAsString(request))
             )
                 .andExpect(status().isConflict)
-                .andExpect(jsonPath("$.field").value("name"))
-                .andExpect(jsonPath("$.rejectedValue").value("Duplicate"))
+                .andExpect(jsonPath("$.data.field").value("name"))
+                .andExpect(jsonPath("$.data.rejectedValue").value("Duplicate"))
         }
 
         @Test
@@ -170,7 +168,7 @@ class GroupControllerTest {
         @Test
         fun `PATCH api groups groupId should return 404 when group not found`() {
             val request = UpdateGroupRequest(name = "New Name")
-            every { groupService.updateGroup(testGroupId, any()) } throws NotFoundException("Grupo no encontrado")
+            every { groupService.updateGroup(testGroupId, any()) } throws NotFoundException("Group not found")
 
             mockMvc.perform(
                 patch("/api/groups/{groupId}", testGroupId)
@@ -178,7 +176,7 @@ class GroupControllerTest {
                     .content(objectMapper.writeValueAsString(request))
             )
                 .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.message").value("Grupo no encontrado"))
+                .andExpect(jsonPath("$.message").value("Group not found"))
         }
 
         @Test
@@ -196,7 +194,7 @@ class GroupControllerTest {
                     .content(objectMapper.writeValueAsString(request))
             )
                 .andExpect(status().isConflict)
-                .andExpect(jsonPath("$.field").value("name"))
+                .andExpect(jsonPath("$.data.field").value("name"))
         }
     }
 
@@ -213,7 +211,7 @@ class GroupControllerTest {
 
         @Test
         fun `DELETE api groups groupId should return 404 when group not found`() {
-            every { groupService.deleteGroup(testGroupId) } throws NotFoundException("Grupo no encontrado")
+            every { groupService.deleteGroup(testGroupId) } throws NotFoundException("Group not found")
 
             mockMvc.perform(delete("/api/groups/{groupId}", testGroupId))
                 .andExpect(status().isNotFound)
@@ -237,16 +235,16 @@ class GroupControllerTest {
 
         @Test
         fun `GET api groups groupId should return 404 when group not found`() {
-            every { groupService.getGroupById(testGroupId) } throws NotFoundException("Grupo no encontrado")
+            every { groupService.getGroupById(testGroupId) } throws NotFoundException("Group not found")
 
             mockMvc.perform(get("/api/groups/{groupId}", testGroupId))
                 .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.message").value("Grupo no encontrado"))
+                .andExpect(jsonPath("$.message").value("Group not found"))
         }
     }
 
     @Nested
-    inner class GetAllGroupsEndpointTests {
+    inner class FindGroupsEndpointTests {
 
         @Test
         fun `GET api groups should return 200 with all groups when no search param`() {
@@ -254,7 +252,7 @@ class GroupControllerTest {
                 testGroupResponse,
                 testGroupResponse.copy(id = UUID.randomUUID(), name = "Second Group")
             )
-            every { groupService.getAllGroups() } returns groups
+            every { groupService.findGroups(null, null) } returns groups
 
             mockMvc.perform(get("/api/groups"))
                 .andExpect(status().isOk)
@@ -264,11 +262,11 @@ class GroupControllerTest {
         }
 
         @Test
-        fun `GET api groups should return filtered groups when search param provided`() {
+        fun `GET api groups should return filtered groups when search and joined params provided`() {
             val groups = listOf(testGroupResponse)
-            every { groupService.searchGroups("test") } returns groups
+            every { groupService.findGroups("test", false) } returns groups
 
-            mockMvc.perform(get("/api/groups").param("search", "test"))
+            mockMvc.perform(get("/api/groups").param("search", "test").param( "joined", "false"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].name").value("Test Group"))
@@ -276,9 +274,9 @@ class GroupControllerTest {
 
         @Test
         fun `GET api groups should return empty list when no groups match search`() {
-            every { groupService.searchGroups("xyz") } returns emptyList()
+            every { groupService.findGroups("xyz", false) } returns emptyList()
 
-            mockMvc.perform(get("/api/groups").param("search", "xyz"))
+            mockMvc.perform(get("/api/groups").param("search", "xyz").param( "joined", "false"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.length()").value(0))
         }
@@ -301,11 +299,11 @@ class GroupControllerTest {
         @Test
         fun `POST api groups groupId join should return 404 when group not found`() {
             setAuthenticatedUser(testUserId)
-            every { groupMembershipService.joinGroup(testUserId, testGroupId) } throws NotFoundException("Grupo no encontrado")
+            every { groupMembershipService.joinGroup(testUserId, testGroupId) } throws NotFoundException("Group not found")
 
             mockMvc.perform(post("/api/groups/{groupId}/join", testGroupId))
                 .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.message").value("Grupo no encontrado"))
+                .andExpect(jsonPath("$.message").value("Group not found"))
 
             clearAuthentication()
         }
@@ -313,11 +311,11 @@ class GroupControllerTest {
         @Test
         fun `POST api groups groupId join should return 400 when already a member`() {
             setAuthenticatedUser(testUserId)
-            every { groupMembershipService.joinGroup(testUserId, testGroupId) } throws BadRequestException("Ya eres miembro de este grupo")
+            every { groupMembershipService.joinGroup(testUserId, testGroupId) } throws BadRequestException("You are already member of this group")
 
             mockMvc.perform(post("/api/groups/{groupId}/join", testGroupId))
                 .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.message").value("Ya eres miembro de este grupo"))
+                .andExpect(jsonPath("$.message").value("You are already member of this group"))
 
             clearAuthentication()
         }
@@ -325,11 +323,11 @@ class GroupControllerTest {
         @Test
         fun `POST api groups groupId join should return 400 when group is full`() {
             setAuthenticatedUser(testUserId)
-            every { groupMembershipService.joinGroup(testUserId, testGroupId) } throws BadRequestException("El grupo está lleno")
+            every { groupMembershipService.joinGroup(testUserId, testGroupId) } throws BadRequestException("Group is full")
 
             mockMvc.perform(post("/api/groups/{groupId}/join", testGroupId))
                 .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.message").value("El grupo está lleno"))
+                .andExpect(jsonPath("$.message").value("Group is full"))
 
             clearAuthentication()
         }
@@ -352,7 +350,7 @@ class GroupControllerTest {
         @Test
         fun `DELETE api groups groupId leave should return 404 when group not found`() {
             setAuthenticatedUser(testUserId)
-            every { groupMembershipService.leaveGroup(testUserId, testGroupId) } throws NotFoundException("Grupo no encontrado")
+            every { groupMembershipService.leaveGroup(testUserId, testGroupId) } throws NotFoundException("Group not found")
 
             mockMvc.perform(delete("/api/groups/{groupId}/leave", testGroupId))
                 .andExpect(status().isNotFound)
@@ -363,11 +361,11 @@ class GroupControllerTest {
         @Test
         fun `DELETE api groups groupId leave should return 404 when not a member`() {
             setAuthenticatedUser(testUserId)
-            every { groupMembershipService.leaveGroup(testUserId, testGroupId) } throws NotFoundException("No eres miembro de este grupo")
+            every { groupMembershipService.leaveGroup(testUserId, testGroupId) } throws NotFoundException("You are not member of this group")
 
             mockMvc.perform(delete("/api/groups/{groupId}/leave", testGroupId))
                 .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.message").value("No eres miembro de este grupo"))
+                .andExpect(jsonPath("$.message").value("You are not member of this group"))
 
             clearAuthentication()
         }

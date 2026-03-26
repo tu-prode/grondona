@@ -1,22 +1,11 @@
 openapi: 3.0.3
 info:
   title: Grondona API
-  description: |
-    A Kotlin HTTP server with user management, built with Spring Boot.
-
-    ## Authentication
-
-    Most endpoints require JWT Bearer token authentication. To obtain a token:
-    1. Create a user via `POST /api/users` or
-    2. Login via `POST /api/users/login`
-
-    Include the token in subsequent requests:
-    ```
-    Authorization: Bearer <your-jwt-token>
-    ```
+  description: A Kotlin HTTP server for the PRODE Norteamérica 2026, built with Spring Boot.
   version: 1.0.0
   contact:
     name: Grondona API Support
+    email: cristian.rana8@gmail.com
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -30,6 +19,10 @@ tags:
     description: User management operations
   - name: Groups
     description: Group management operations
+  - name: Membership
+    description: Group membership operations
+  - name: Predictions
+    description: Match predictions operations
 
 paths:
   /api/users:
@@ -75,14 +68,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ConflictErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 status: 409
                 error: Conflict
                 message: Username 'johndoe' already exists
-                field: username
-                rejectedValue: johndoe
                 timestamp: "2024-01-01T12:00:00"
+                data:
+                  field: username
+                  rejectedValue: johndoe
+
 
     patch:
       tags:
@@ -93,7 +88,7 @@ paths:
         Only provided fields will be updated.
       operationId: updateUser
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -133,14 +128,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ConflictErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 status: 409
                 error: Conflict
                 message: Email 'john@example.com' already exists
-                field: email
-                rejectedValue: john@example.com
                 timestamp: "2024-01-01T12:00:00"
+                data:
+                  field: email
+                  rejectedValue: john@example.com
 
   /api/users/login:
     post:
@@ -158,7 +154,7 @@ paths:
             schema:
               $ref: "#/components/schemas/LoginRequest"
             example:
-              username: johndoe
+              user: johndoe
               password: secret123
       responses:
         "200":
@@ -188,7 +184,7 @@ paths:
         Retrieve the profile of the currently authenticated user.
       operationId: getCurrentUser
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       responses:
         "200":
           description: User profile retrieved successfully
@@ -225,7 +221,7 @@ paths:
         Delete a user account. Users can only delete their own account.
       operationId: deleteUser
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - name: userId
           in: path
@@ -271,7 +267,7 @@ paths:
         Retrieve all groups. Optionally filter by name substring.
       operationId: getAllGroups
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - name: search
           in: query
@@ -305,7 +301,7 @@ paths:
         Create a new group with the given name, privacy setting, and member limit.
       operationId: createGroup
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -314,7 +310,7 @@ paths:
               $ref: "#/components/schemas/CreateGroupRequest"
             example:
               name: My Group
-              private: false
+              is_private: false
               maxMembers: 20
       responses:
         "201":
@@ -334,7 +330,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ConflictErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: 409
+                error: Conflict
+                message: Group name 'General' already exists
+                timestamp: "2024-01-01T12:00:00"
+                data:
+                  field: name
+                  rejectedValue: General
 
   /api/users/me/groups:
     get:
@@ -346,7 +350,7 @@ paths:
         each with its name and current member count.
       operationId: getMyGroups
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       responses:
         '200':
           description: Groups retrieved successfully
@@ -373,7 +377,7 @@ paths:
         Fails if the user is already a member or if the group is full.
       operationId: joinGroup
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - name: groupId
           in: path
@@ -397,13 +401,13 @@ paths:
                   value:
                     status: 400
                     error: Bad Request
-                    message: Ya eres miembro de este grupo
+                    message: You are already member of this group
                 groupFull:
                   summary: Group has reached max members
                   value:
                     status: 400
                     error: Bad Request
-                    message: El grupo está lleno
+                    message: Group is full
         '401':
           description: Authentication required
           content:
@@ -427,7 +431,7 @@ paths:
         Fails if the user is not a member of the group.
       operationId: leaveGroup
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - name: groupId
           in: path
@@ -461,7 +465,7 @@ paths:
         Retrieve a specific group by its UUID.
       operationId: getGroup
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - name: groupId
           in: path
@@ -492,7 +496,7 @@ paths:
         Partially update a group. Only provided fields will be updated.
       operationId: updateGroup
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - name: groupId
           in: path
@@ -534,7 +538,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ConflictErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: 409
+                error: Conflict
+                message: Group name 'General' already exists
+                timestamp: "2024-01-01T12:00:00"
+                data:
+                  field: name
+                  rejectedValue: General
 
     delete:
       tags:
@@ -544,7 +556,7 @@ paths:
         Delete a group by its UUID.
       operationId: deleteGroup
       security:
-        - bearerAuth: []
+        - bearerAuth: [ ]
       parameters:
         - name: groupId
           in: path
@@ -563,6 +575,203 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/tournaments:
+    post:
+      tags:
+        - Tournaments
+      summary: Create a new tournament
+      description: |
+        Create a new tournament by its name
+      operationId: createTournament
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTournamentRequest"
+            example:
+              name: World Cup 2026
+      responses:
+        "201":
+          description: Tournament created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentResponse"
+        "400":
+          description: Invalid request body or validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Tournament name already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: 409
+                error: Conflict
+                message: Tournament name 'World Cup' already exists
+                timestamp: "2024-01-01T12:00:00"
+                data:
+                  field: name
+                  rejectedValue: World Cup
+
+  /api/tournaments/{tournamentId}:
+    get:
+      tags:
+        - Tournaments
+      summary: Get a tournament by ID
+      description: |
+        Retrieve a specific tournament by its UUID.
+      operationId: getTournament
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Tournament retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentResponse"
+        "404":
+          description: Tournament not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      tags:
+        - Tournaments
+      summary: Update a tournament
+      description: |
+        Partially update a tournament. Only provided fields will be updated.
+      operationId: updateTournament
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament to update
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTournamentRequest"
+            example:
+              name: Updated Tournament
+              status: FINISHED
+      responses:
+        "200":
+          description: Tournament updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentResponse"
+        "400":
+          description: Invalid request body or validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Tournament not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Tournament name already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: 409
+                error: Conflict
+                message: Tournament name 'World Cup' already exists
+                timestamp: "2024-01-01T12:00:00"
+                data:
+                  field: name
+                  rejectedValue: World Cup
+
+    delete:
+      tags:
+        - Tournaments
+      summary: Delete a tournament
+      description: |
+        Delete a tournament by its UUID.
+      operationId: deleteTournament
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament to delete
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Tournament deleted successfully
+        "404":
+          description: Tournament not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/tournaments/{tournamentId}/matches:
+    get:
+      tags:
+        - Matches
+      summary: Get the list of matches for a tournament
+      description: |
+        Retrieve the list of matches for a tournament by its UUID.
+      operationId: getTournamentMatches
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Tournament matches retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentMatchesResponse"
+        "404":
+          description: Tournament not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -572,6 +781,50 @@ components:
       description: JWT token obtained from login or registration
 
   schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - error
+        - message
+        - timestamp
+      properties:
+        status:
+          type: integer
+          description: HTTP status code
+          example: 400
+        error:
+          type: string
+          description: Error type
+          example: Bad Request
+        message:
+          type: string
+          description: Error message
+          example: Invalid username or password
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+          example: "2024-01-01T12:00:00"
+        data:
+          oneOf:
+            - $ref: '#/components/schemas/ErrorConflictExtraData'
+
+    ErrorConflictExtraData:
+      type: object
+      required:
+        - field
+        - rejected_value
+      properties:
+        field:
+          type: string
+          description: The field that caused the conflict
+          example: username
+        rejected_value:
+          type: string
+          description: The value that was rejected due to conflict
+          example: johndoe
+
     CreateUserRequest:
       type: object
       required:
@@ -609,7 +862,7 @@ components:
         - user
         - password
       properties:
-        username:
+        user:
           type: string
           description: User for authentication (either username or email)
           example: johndoe
@@ -647,6 +900,12 @@ components:
 
     AuthResponse:
       type: object
+      required:
+        - token
+        - user_id
+        - username
+        - email
+        - fullname
       properties:
         token:
           type: string
@@ -673,6 +932,11 @@ components:
 
     UserResponse:
       type: object
+      required:
+        - id
+        - fullname
+        - username
+        - email
       properties:
         id:
           type: string
@@ -692,41 +956,17 @@ components:
           format: email
           description: Email address
           example: john@example.com
-        created_at:
-          type: string
-          format: date-time
-          description: Account creation timestamp
-          example: "2024-01-01T00:00:00"
-        updated_at:
-          type: string
-          format: date-time
-          description: Last update timestamp
-          example: "2024-01-01T00:00:00"
-
-    ErrorResponse:
-      type: object
-      properties:
-        status:
-          type: integer
-          description: HTTP status code
-          example: 400
-        error:
-          type: string
-          description: Error type
-          example: Bad Request
-        message:
-          type: string
-          description: Error message
-          example: Invalid username or password
-        timestamp:
-          type: string
-          format: date-time
-          description: Error timestamp
-          example: "2024-01-01T12:00:00"
 
     UserGroupResponse:
       type: object
       description: A group the authenticated user has joined, with current member count
+      required:
+        - group_id
+        - name
+        - member_count
+        - points
+        - rank
+        - role
       properties:
         group_id:
           type: string
@@ -739,41 +979,43 @@ components:
           example: General
         member_count:
           type: integer
-          format: int64
+          format: int16
           description: Current number of members in the group
           example: 12
-        joined_at:
-          type: string
-          format: date-time
-          description: Timestamp when the user joined the group
-          example: '2024-01-15T10:30:00'
         points:
           type: number
+          format: float16
           description: Amount of points scored in the group
           example: 43.7
         rank:
           type: integer
+          format: int16
           description: Rank in the group
           example: 3
+        role:
+          type: string
+          description: Role in the group
+          example: MEMBER
 
     CreateGroupRequest:
       type: object
       required:
         - name
-        - maxMembers
+        - max_members
       properties:
         name:
           type: string
           description: Unique group name
           maxLength: 100
           example: My Group
-        private:
+        is_private:
           type: boolean
           description: Whether the group is private (defaults to false)
           default: false
           example: false
         max_members:
           type: integer
+          format: int16
           description: Maximum number of members allowed
           minimum: 1
           example: 20
@@ -787,18 +1029,24 @@ components:
           description: New group name (must be unique)
           maxLength: 100
           example: Updated Group Name
-        private:
+        is_private:
           type: boolean
           description: New privacy setting
           example: true
         max_members:
           type: integer
+          format: int16
           description: New maximum members limit
           minimum: 1
           example: 30
 
     GroupResponse:
       type: object
+      required:
+        - id
+        - name
+        - private
+        - max_members
       properties:
         id:
           type: string
@@ -809,52 +1057,196 @@ components:
           type: string
           description: Group name
           example: General
-        private:
+        is_private:
           type: boolean
           description: Whether the group is private
           example: false
         max_members:
           type: integer
+          format: int16
           description: Maximum number of members allowed
           example: 50
-        created_at:
-          type: string
-          format: date-time
-          description: Group creation timestamp
-          example: "2024-01-01T00:00:00"
-        updated_at:
-          type: string
-          format: date-time
-          description: Last update timestamp
-          example: "2024-01-01T00:00:00"
 
-    ConflictErrorResponse:
+    TournamentStatus:
+      description: The status of a tournament
+      type: string
+      enum:
+        - NOT_STARTED
+        - IN_PROGRESS
+        - FINISHED
+
+    CreateTournamentRequest:
       type: object
-      description: Error response for 409 Conflict, includes field information for UI validation
+      required:
+        - name
       properties:
+        name:
+          type: string
+          description: Unique tournament name
+          maxLength: 100
+          example: The World Cup
         status:
-          type: integer
-          description: HTTP status code
-          example: 409
-        error:
+          $ref: '#/components/schemas/TournamentStatus'
+
+    UpdateTournamentRequest:
+      type: object
+      description: All fields are optional. Only provided fields will be updated.
+      properties:
+        name:
           type: string
-          description: Error type
-          example: Conflict
-        message:
+          description: New tournament name (must be unique)
+          maxLength: 100
+          example: Updated Tournament Name
+        status:
+          $ref: '#/components/schemas/TournamentStatus'
+
+    TournamentResponse:
+      type: object
+      required:
+        - id
+        - name
+        - status
+      properties:
+        id:
           type: string
-          description: Human-readable error message
-          example: Username 'johndoe' already exists
-        field:
+          format: uuid
+          description: Unique tournament identifier
+          example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+        name:
           type: string
-          description: The field that caused the conflict
-          enum: [username, email, name]
-          example: username
-        rejected_value:
+          description: Unique tournament name
+          maxLength: 100
+          example: The World Cup
+        status:
+          $ref: '#/components/schemas/TournamentStatus'
+
+    TeamResponse:
+      type: object
+      required:
+        - id
+        - name
+        - code
+        - status
+        - icon
+      properties:
+        id:
           type: string
-          description: The value that was rejected due to conflict
-          example: johndoe
-        timestamp:
+          format: uuid
+          description: Unique team identifier
+          example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+        name:
+          type: string
+          description: Unique team name
+          maxLength: 100
+          example: Argentina
+        code:
+          type: string
+          description: Unique team code
+          maxLength: 5
+          example: ARG
+        icon:
+          type: string
+          description: URL of the team icon
+          example: https://flagicons.lipis.dev/flags/4x3/xx.svg
+
+    TournamentMatchesResponse:
+      type: object
+      required:
+        - id
+        - name
+        - matches
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique tournament identifier
+          example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+        name:
+          type: string
+          description: Tournament name
+          example: World Cup
+        matches:
+          type: array
+          items:
+            $ref: '#/components/schemas/TournamentMatchResponse'
+
+    MatchStatus:
+      description: The status of a match
+      type: string
+      enum:
+        - NOT_STARTED
+        - IN_PROGRESS
+        - FINISHED
+
+    TournamentMatchResponse:
+      type: object
+      required:
+        - id
+        - match_key
+        - home_team
+        - away_team
+        - home_quota
+        - away_quota
+        - tie_quota
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique match identifier
+          example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+        match_key:
+          type: string
+          description: Unique identifier for the match within the tournament
+          example: "QF2"
+        home_team:
+          $ref: '#/components/schemas/TeamResponse'
+        away_team:
+          $ref: '#/components/schemas/TeamResponse'
+        home_quota:
+          type: number
+          format: float16
+          description: The quota for a home team win
+          example: 2.2
+        away_quota:
+          type: number
+          format: float16
+          description: The quota for an away team win
+          example: 1.8
+        tie_quota:
+          type: number
+          format: float16
+          description: The quota for a tie
+          example: 1.3
+        status:
+          $ref: '#/components/schemas/MatchStatus'
+        started_at:
           type: string
           format: date-time
-          description: Error timestamp
-          example: "2024-01-01T12:00:00"
+          description: The timestamp for the match start
+          example: '2026-06-12 13:30:00 +03:00'
+        finished_at:
+          type: string
+          format: date-time
+          description: The timestamp for the match end
+          example: '2026-06-12 15:30:00 +03:00'
+        home_goals:
+          type: integer
+          format: int8
+          description: The amount of goals scored by the home team
+          example: 1
+        away_goals:
+          type: integer
+          format: int8
+          description: The amount of goals scored by the away team
+          example: 2
+        home_penalties:
+          type: integer
+          format: int8
+          description: The amount of penalties scored by the home team
+          example: 6
+        away_penalties:
+          type: integer
+          format: int8
+          description: The amount of penalties scored by the away team
+          example: 7

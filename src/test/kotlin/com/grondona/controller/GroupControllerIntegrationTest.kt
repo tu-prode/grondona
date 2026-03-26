@@ -86,7 +86,7 @@ class GroupControllerIntegrationTest {
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.name").value("Integration Group"))
                 .andExpect(jsonPath("$.private").value(false))
-                .andExpect(jsonPath("$.maxMembers").value(30))
+                .andExpect(jsonPath("$.max_members").value(30))
                 .andReturn()
 
             val response = objectMapper.readValue(result.response.contentAsString, GroupResponse::class.java)
@@ -105,8 +105,8 @@ class GroupControllerIntegrationTest {
                     .content(objectMapper.writeValueAsString(request))
             )
                 .andExpect(status().isConflict)
-                .andExpect(jsonPath("$.field").value("name"))
-                .andExpect(jsonPath("$.rejectedValue").value("Integration Group"))
+                .andExpect(jsonPath("$.data.field").value("name"))
+                .andExpect(jsonPath("$.data.rejected_value").value("Integration Group"))
         }
 
         @Test
@@ -134,7 +134,7 @@ class GroupControllerIntegrationTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.name").value("Updated Integration Group"))
-                .andExpect(jsonPath("$.maxMembers").value(50))
+                .andExpect(jsonPath("$.max_members").value(50))
         }
 
         @Test
@@ -269,7 +269,7 @@ class GroupControllerIntegrationTest {
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.message").value("Grupo no encontrado"))
+                .andExpect(jsonPath("$.message").value("Group not found"))
         }
 
         @Test

@@ -27,11 +27,7 @@ class GroupService(private val groupRepository: GroupRepository) {
 
         if (groupRepository.existsByName(request.name)) {
             logger.warn("Group creation failed: name '{}' already exists", request.name)
-            throw ConflictException(
-                message = "Nombre de grupo ya registrado",
-                field = "name",
-                rejectedValue = request.name
-            )
+            throw ConflictException(message = "Group name already exists", field = "name", rejectedValue = request.name)
         }
 
         val group = Group(
@@ -51,17 +47,13 @@ class GroupService(private val groupRepository: GroupRepository) {
 
         val group = groupRepository.findById(groupId).orElseThrow {
             logger.warn("Group not found: id={}", groupId)
-            NotFoundException("Grupo no encontrado")
+            NotFoundException("Group not found")
         }
 
         request.name?.let { newName ->
             if (newName != group.name && groupRepository.existsByName(newName)) {
                 logger.warn("Group update failed: name '{}' already exists", newName)
-                throw ConflictException(
-                    message = "Nombre de grupo '$newName' ya registrado",
-                    field = "name",
-                    rejectedValue = newName
-                )
+                throw ConflictException(message = "Group name already exists", field = "name", rejectedValue = newName)
             }
             group.name = newName
         }
@@ -82,7 +74,7 @@ class GroupService(private val groupRepository: GroupRepository) {
 
         val group = groupRepository.findById(groupId).orElseThrow {
             logger.warn("Group not found for deletion: id={}", groupId)
-            NotFoundException("Grupo no encontrado")
+            NotFoundException("Group not found")
         }
 
         groupRepository.delete(group)
@@ -94,25 +86,11 @@ class GroupService(private val groupRepository: GroupRepository) {
 
         val group = groupRepository.findById(groupId).orElseThrow {
             logger.warn("Group not found: id={}", groupId)
-            NotFoundException("Grupo no encontrado")
+            NotFoundException("Group not found")
         }
 
         logger.info("Group fetched successfully: id={}, name='{}'", group.id, group.name)
         return GroupResponse.from(group)
-    }
-
-    fun getAllGroups(): List<GroupResponse> {
-        logger.info("Fetching all groups")
-        val groups = groupRepository.findAll()
-        logger.info("Fetched {} groups", groups.size)
-        return groups.map { GroupResponse.from(it) }
-    }
-
-    fun searchGroups(search: String): List<GroupResponse> {
-        logger.info("Searching groups with query='{}'", search)
-        val groups = groupRepository.findByNameContainingIgnoreCase(search)
-        logger.info("Found {} groups matching '{}'", groups.size, search)
-        return groups.map { GroupResponse.from(it) }
     }
 
     fun findGroups(search: String?, joined: Boolean?): List<GroupResponse> {

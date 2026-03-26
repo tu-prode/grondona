@@ -3,6 +3,7 @@ package com.grondona.service
 import com.grondona.exception.BadRequestException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.Group
+import com.grondona.model.GroupRole
 import com.grondona.model.GroupUser
 import com.grondona.model.User
 import com.grondona.model.dto.UserGroupResponse
@@ -91,7 +92,7 @@ class GroupMembershipServiceTest {
             val exception = assertThrows<NotFoundException> {
                 groupMembershipService.joinGroup(testUserId, testGroupId)
             }
-            assertEquals("Grupo no encontrado", exception.message)
+            assertEquals("Group not found", exception.message)
             verify(exactly = 0) { groupUserRepository.save(any()) }
         }
 
@@ -103,7 +104,7 @@ class GroupMembershipServiceTest {
             val exception = assertThrows<NotFoundException> {
                 groupMembershipService.joinGroup(testUserId, testGroupId)
             }
-            assertEquals("Usuario no encontrado", exception.message)
+            assertEquals("User not found", exception.message)
             verify(exactly = 0) { groupUserRepository.save(any()) }
         }
 
@@ -116,7 +117,7 @@ class GroupMembershipServiceTest {
             val exception = assertThrows<BadRequestException> {
                 groupMembershipService.joinGroup(testUserId, testGroupId)
             }
-            assertEquals("Ya eres miembro de este grupo", exception.message)
+            assertEquals("You are already member of this group", exception.message)
             verify(exactly = 0) { groupUserRepository.save(any()) }
         }
 
@@ -131,7 +132,7 @@ class GroupMembershipServiceTest {
             val exception = assertThrows<BadRequestException> {
                 groupMembershipService.joinGroup(testUserId, testGroupId)
             }
-            assertEquals("El grupo está lleno", exception.message)
+            assertEquals("Group is full", exception.message)
             verify(exactly = 0) { groupUserRepository.save(any()) }
         }
 
@@ -171,7 +172,7 @@ class GroupMembershipServiceTest {
             val exception = assertThrows<NotFoundException> {
                 groupMembershipService.leaveGroup(testUserId, testGroupId)
             }
-            assertEquals("Grupo no encontrado", exception.message)
+            assertEquals("Group not found", exception.message)
             verify(exactly = 0) { groupUserRepository.delete(any()) }
         }
 
@@ -183,7 +184,7 @@ class GroupMembershipServiceTest {
             val exception = assertThrows<NotFoundException> {
                 groupMembershipService.leaveGroup(testUserId, testGroupId)
             }
-            assertEquals("No eres miembro de este grupo", exception.message)
+            assertEquals("You are not member of this group", exception.message)
             verify(exactly = 0) { groupUserRepository.delete(any()) }
         }
     }
@@ -193,26 +194,33 @@ class GroupMembershipServiceTest {
 
         @Test
         fun `getMyGroups should return groups with member count`() {
-            val groupId1 = UUID.randomUUID()
-            val groupId2 = UUID.randomUUID()
-            val groups = listOf(
-                UserGroupResponse(groupId1, "Group A", 3L, LocalDateTime.now()),
-                UserGroupResponse(groupId2, "Group B", 7L, LocalDateTime.now())
+            val group1 = testGroup.copy(id = UUID.randomUUID(), name = "Group A")
+            val group2 = testGroup.copy(id = UUID.randomUUID(), name = "Group B")
+            val memberships = listOf(
+                UserGroupResponse(group1.id!!, group1.name, 3L, 10.5f, GroupRole.ADMIN),
+                UserGroupResponse(group2.id!!, group2.name, 7L, 5.0f, GroupRole.MEMBER)
             )
-            every { groupUserRepository.findUserGroupsWithMemberCount(testUserId) } returns groups
+
+            every { groupUserRepository.findUserGroups(testUserId) } returns memberships
 
             val result = groupMembershipService.getMyGroups(testUserId)
 
             assertEquals(2, result.size)
             assertEquals("Group A", result[0].name)
-            assertEquals(3L, result[0].memberCount)
+            assertEquals(3, result[0].memberCount)
+            assertEquals(10.5f, result[0].points)
+            assertEquals(GroupRole.ADMIN, result[0].role)
+            assertEquals(group1.id, result[0].groupId)
             assertEquals("Group B", result[1].name)
-            assertEquals(7L, result[1].memberCount)
+            assertEquals(7, result[1].memberCount)
+            assertEquals(5.0f, result[1].points)
+            assertEquals(GroupRole.MEMBER, result[1].role)
+            assertEquals(group2.id, result[1].groupId)
         }
 
         @Test
         fun `getMyGroups should return empty list when user is not in any group`() {
-            every { groupUserRepository.findUserGroupsWithMemberCount(testUserId) } returns emptyList()
+            every { groupUserRepository.findUserGroups(testUserId) } returns emptyList()
 
             val result = groupMembershipService.getMyGroups(testUserId)
 

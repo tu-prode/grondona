@@ -80,7 +80,7 @@ class GroupServiceTest {
             val exception = assertThrows<ConflictException> {
                 groupService.createGroup(request)
             }
-            assertEquals("Nombre de grupo ya registrado", exception.message)
+            assertEquals("Group name already exists", exception.message)
             assertEquals("name", exception.field)
             assertEquals("Existing Group", exception.rejectedValue)
             verify(exactly = 0) { groupRepository.save(any()) }
@@ -162,7 +162,7 @@ class GroupServiceTest {
             val exception = assertThrows<NotFoundException> {
                 groupService.updateGroup(testGroupId, request)
             }
-            assertEquals("Grupo no encontrado", exception.message)
+            assertEquals("Group not found", exception.message)
         }
     }
 
@@ -186,7 +186,7 @@ class GroupServiceTest {
             val exception = assertThrows<NotFoundException> {
                 groupService.deleteGroup(testGroupId)
             }
-            assertEquals("Grupo no encontrado", exception.message)
+            assertEquals("Group not found", exception.message)
         }
     }
 
@@ -212,69 +212,7 @@ class GroupServiceTest {
             val exception = assertThrows<NotFoundException> {
                 groupService.getGroupById(testGroupId)
             }
-            assertEquals("Grupo no encontrado", exception.message)
-        }
-    }
-
-    @Nested
-    inner class GetAllGroupsTests {
-
-        @Test
-        fun `getAllGroups should return all groups`() {
-            val groups = listOf(
-                testGroup,
-                testGroup.copy(id = UUID.randomUUID(), name = "Second Group")
-            )
-            every { groupRepository.findAll() } returns groups
-
-            val result = groupService.getAllGroups()
-
-            assertEquals(2, result.size)
-            assertEquals("Test Group", result[0].name)
-            assertEquals("Second Group", result[1].name)
-        }
-
-        @Test
-        fun `getAllGroups should return empty list when no groups exist`() {
-            every { groupRepository.findAll() } returns emptyList()
-
-            val result = groupService.getAllGroups()
-
-            assertTrue(result.isEmpty())
-        }
-    }
-
-    @Nested
-    inner class SearchGroupsTests {
-
-        @Test
-        fun `searchGroups should return matching groups`() {
-            val groups = listOf(testGroup)
-            every { groupRepository.findByNameContainingIgnoreCase("test") } returns groups
-
-            val result = groupService.searchGroups("test")
-
-            assertEquals(1, result.size)
-            assertEquals("Test Group", result[0].name)
-        }
-
-        @Test
-        fun `searchGroups should be case insensitive`() {
-            val groups = listOf(testGroup)
-            every { groupRepository.findByNameContainingIgnoreCase("TEST") } returns groups
-
-            val result = groupService.searchGroups("TEST")
-
-            assertEquals(1, result.size)
-        }
-
-        @Test
-        fun `searchGroups should return empty list when no matches`() {
-            every { groupRepository.findByNameContainingIgnoreCase("xyz") } returns emptyList()
-
-            val result = groupService.searchGroups("xyz")
-
-            assertTrue(result.isEmpty())
+            assertEquals("Group not found", exception.message)
         }
     }
 }

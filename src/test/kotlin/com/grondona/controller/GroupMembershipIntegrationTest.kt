@@ -114,10 +114,11 @@ class GroupMembershipIntegrationTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].groupId").value(testGroupId))
+                .andExpect(jsonPath("$[0].group_id").value(testGroupId))
                 .andExpect(jsonPath("$[0].name").value("Membership Test Group"))
-                .andExpect(jsonPath("$[0].memberCount").value(1))
-                .andExpect(jsonPath("$[0].joinedAt").exists())
+                .andExpect(jsonPath("$[0].member_count").value(1))
+                .andExpect(jsonPath("$[0].points").value(0.0))
+                .andExpect(jsonPath("$[0].rank").doesNotExist())
         }
 
         @Test
@@ -128,7 +129,7 @@ class GroupMembershipIntegrationTest {
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.message").value("Ya eres miembro de este grupo"))
+                .andExpect(jsonPath("$.message").value("You are already member of this group"))
         }
 
         @Test
@@ -146,7 +147,7 @@ class GroupMembershipIntegrationTest {
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$[0].memberCount").value(2))
+                .andExpect(jsonPath("$[0].member_count").value(2))
         }
 
         @Test
@@ -178,7 +179,7 @@ class GroupMembershipIntegrationTest {
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.message").value("No eres miembro de este grupo"))
+                .andExpect(jsonPath("$.message").value("You are not member of this group"))
         }
     }
 
@@ -194,7 +195,7 @@ class GroupMembershipIntegrationTest {
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.message").value("Grupo no encontrado"))
+                .andExpect(jsonPath("$.message").value("Group not found"))
         }
 
         @Test
@@ -206,7 +207,7 @@ class GroupMembershipIntegrationTest {
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.message").value("Grupo no encontrado"))
+                .andExpect(jsonPath("$.message").value("Group not found"))
         }
 
         @Test
@@ -234,7 +235,7 @@ class GroupMembershipIntegrationTest {
                     .header("Authorization", "Bearer $secondUserToken")
             )
                 .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.message").value("El grupo está lleno"))
+                .andExpect(jsonPath("$.message").value("Group is full"))
         }
     }
 

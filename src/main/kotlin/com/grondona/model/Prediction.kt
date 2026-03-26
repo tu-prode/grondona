@@ -4,19 +4,17 @@ import jakarta.persistence.*
 import org.hibernate.annotations.OnDelete
 import org.hibernate.annotations.OnDeleteAction
 import org.hibernate.annotations.SQLDelete
+import org.hibernate.annotations.SQLInsert
 import org.hibernate.annotations.SQLRestriction
+import org.hibernate.annotations.SQLUpdate
 import java.time.LocalDateTime
 import java.util.UUID
 
-enum class GroupRole {
-    MEMBER, ADMIN, OWNER,
-}
-
 @Entity
-@Table(name = "group_users")
-@SQLDelete(sql = "UPDATE group_users SET deleted_at = CURRENT_TIMESTAMP WHERE id=?")
+@Table(name = "predictions")
+@SQLDelete(sql = "UPDATE predictions SET deleted_at = CURRENT_TIMESTAMP WHERE id=?")
 @SQLRestriction("deleted_at is null")
-data class GroupUser(
+data class Prediction(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     val id: UUID? = null,
@@ -26,24 +24,28 @@ data class GroupUser(
     @OnDelete(action = OnDeleteAction.CASCADE)
     val user: User,
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    var role: GroupRole = GroupRole.MEMBER,
-
-    @Column(nullable = false)
-    var points: Float = 0F,
-
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "group_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     val group: Group,
 
-    @Column(name = "joined_at", nullable = false)
-    val joinedAt: LocalDateTime = LocalDateTime.now(),
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "match_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    val match: Match,
 
-    @Column(name = "calculated_at", nullable = false)
-    val calculatedAt: LocalDateTime = LocalDateTime.now(),
+    @Column(name = "home_goals")
+    var homeGoals: Int? = null,
+
+    @Column(name = "away_goals")
+    var awayGoals: Int? = null,
+
+    @Column(name = "created_at", nullable = false)
+    val createdAt: LocalDateTime = LocalDateTime.now(),
+
+    @Column(name = "updated_at", nullable = false)
+    var updatedAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "deleted_at")
-    val deletedAt: LocalDateTime? = null
+    var deletedAt: LocalDateTime? = null
 )

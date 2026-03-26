@@ -5,7 +5,7 @@ import com.grondona.model.dto.*
 import com.grondona.security.JwtUserPrincipal
 import com.grondona.service.GroupMembershipService
 import com.grondona.service.GroupService
-import jakarta.validation.Valid
+import javax.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -92,4 +92,5 @@ class GroupController(
         logger.info("DELETE /api/groups/{}/leave - Left successfully, userId={}", groupId, userId)
         return ResponseEntity.noContent().build()
     }
+
 }

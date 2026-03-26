@@ -9,8 +9,6 @@ data class UserResponse(
     val fullname: String,
     val username: String,
     val email: String,
-    val createdAt: LocalDateTime,
-    val updatedAt: LocalDateTime
 ) {
     companion object {
         fun from(user: User): UserResponse = UserResponse(
@@ -18,8 +16,6 @@ data class UserResponse(
             fullname = user.fullname,
             username = user.username,
             email = user.email,
-            createdAt = user.createdAt,
-            updatedAt = user.updatedAt
         )
     }
 }

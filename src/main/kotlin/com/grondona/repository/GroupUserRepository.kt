@@ -18,16 +18,19 @@ interface GroupUserRepository : JpaRepository<GroupUser, UUID> {
 
     fun countByGroupId(groupId: UUID): Long
 
-    @Query("""
+    @Query(
+        """
         SELECT new com.grondona.model.dto.UserGroupResponse(
             gu.group.id,
             gu.group.name,
-            (SELECT COUNT(m) FROM GroupUser m WHERE m.group.id = gu.group.id),
-            gu.joinedAt
+            (SELECT COUNT(m) FROM GroupUser m WHERE m.group.id = gu.group.id AND m.deletedAt IS NULL),
+            gu.points,
+            gu.role
         )
         FROM GroupUser gu
         WHERE gu.user.id = :userId
         ORDER BY gu.joinedAt DESC
-    """)
-    fun findUserGroupsWithMemberCount(@Param("userId") userId: UUID): List<UserGroupResponse>
+    """
+    )
+    fun findUserGroups(@Param("userId") userId: UUID): List<UserGroupResponse>
 }
