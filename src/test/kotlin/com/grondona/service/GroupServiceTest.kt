@@ -3,8 +3,8 @@ package com.grondona.service
 import com.grondona.exception.ConflictException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.Group
-import com.grondona.model.dto.CreateGroupRequest
-import com.grondona.model.dto.UpdateGroupRequest
+import com.grondona.model.dto.request.CreateGroupRequest
+import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.repository.GroupRepository
 import io.mockk.*
 import io.mockk.impl.annotations.InjectMockKs

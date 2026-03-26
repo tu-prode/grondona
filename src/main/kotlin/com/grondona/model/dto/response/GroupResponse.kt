@@ -1,8 +1,7 @@
-package com.grondona.model.dto
+package com.grondona.model.dto.response
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.grondona.model.Group
-import java.time.LocalDateTime
 import java.util.UUID
 
 data class GroupResponse(

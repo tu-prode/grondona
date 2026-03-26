@@ -52,6 +52,9 @@ data class Match(
     @Column(nullable = false)
     var status: MatchStatus = MatchStatus.NOT_STARTED,
 
+    @Column(name = "substatus")
+    var substatus: String? = null,
+
     @Column(name = "started_at")
     var startedAt: LocalDateTime? = null,
 

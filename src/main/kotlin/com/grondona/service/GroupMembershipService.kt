@@ -3,7 +3,7 @@ package com.grondona.service
 import com.grondona.exception.BadRequestException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.GroupUser
-import com.grondona.model.dto.UserGroupResponse
+import com.grondona.model.dto.response.UserGroupResponse
 import com.grondona.repository.GroupRepository
 import com.grondona.repository.GroupUserRepository
 import com.grondona.repository.UserRepository

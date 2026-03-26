@@ -1,8 +1,6 @@
-package com.grondona.model.dto
+package com.grondona.model.dto.response
 
 import com.grondona.model.Team
-import com.grondona.model.Tournament
-import com.grondona.model.TournamentStatus
 import java.util.UUID
 
 data class TeamResponse(

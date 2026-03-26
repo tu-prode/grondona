@@ -4,7 +4,9 @@ import com.grondona.exception.ConflictException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.Group
 import com.grondona.model.GroupUser
-import com.grondona.model.dto.*
+import com.grondona.model.dto.request.CreateGroupRequest
+import com.grondona.model.dto.request.UpdateGroupRequest
+import com.grondona.model.dto.response.GroupResponse
 import com.grondona.repository.GroupRepository
 import jakarta.persistence.criteria.JoinType
 import jakarta.persistence.criteria.Predicate

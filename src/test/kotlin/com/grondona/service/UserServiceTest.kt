@@ -5,9 +5,9 @@ import com.grondona.exception.ConflictException
 import com.grondona.exception.ForbiddenException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.User
-import com.grondona.model.dto.CreateUserRequest
-import com.grondona.model.dto.LoginRequest
-import com.grondona.model.dto.UpdateUserRequest
+import com.grondona.model.dto.request.CreateUserRequest
+import com.grondona.model.dto.request.LoginRequest
+import com.grondona.model.dto.request.UpdateUserRequest
 import com.grondona.repository.UserRepository
 import com.grondona.security.JwtService
 import io.mockk.*

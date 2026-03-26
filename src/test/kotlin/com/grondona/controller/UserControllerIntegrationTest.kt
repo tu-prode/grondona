@@ -1,13 +1,12 @@
 package com.grondona.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.grondona.model.dto.AuthResponse
-import com.grondona.model.dto.CreateUserRequest
-import com.grondona.model.dto.LoginRequest
-import com.grondona.model.dto.UpdateUserRequest
+import com.grondona.model.dto.response.AuthResponse
+import com.grondona.model.dto.request.CreateUserRequest
+import com.grondona.model.dto.request.LoginRequest
+import com.grondona.model.dto.request.UpdateUserRequest
 import com.grondona.repository.UserRepository
 import org.junit.jupiter.api.*
-import org.junit.jupiter.api.Assertions.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest

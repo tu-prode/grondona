@@ -5,7 +5,9 @@ import com.grondona.exception.BadRequestException
 import com.grondona.exception.ConflictException
 import com.grondona.exception.GlobalExceptionHandler
 import com.grondona.exception.NotFoundException
-import com.grondona.model.dto.*
+import com.grondona.model.dto.request.CreateGroupRequest
+import com.grondona.model.dto.request.UpdateGroupRequest
+import com.grondona.model.dto.response.GroupResponse
 import com.grondona.security.JwtUserPrincipal
 import com.grondona.service.GroupMembershipService
 import com.grondona.service.GroupService
@@ -28,7 +30,6 @@ import org.springframework.web.bind.support.WebDataBinderFactory
 import org.springframework.web.context.request.NativeWebRequest
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.method.support.ModelAndViewContainer
-import java.time.LocalDateTime
 import java.util.*
 
 class GroupControllerTest {

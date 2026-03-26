@@ -2,9 +2,11 @@ package com.grondona.controller
 
 import com.grondona.exception.ForbiddenException
 import com.grondona.exception.UnauthorizedException
-import com.grondona.model.dto.*
+import com.grondona.model.dto.request.CreateTournamentRequest
+import com.grondona.model.dto.request.UpdateTournamentRequest
+import com.grondona.model.dto.response.TournamentMatchesResponse
+import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.security.JwtUserPrincipal
-import com.grondona.service.GroupMembershipService
 import com.grondona.service.TournamentService
 import com.grondona.service.UserService
 import javax.validation.Valid

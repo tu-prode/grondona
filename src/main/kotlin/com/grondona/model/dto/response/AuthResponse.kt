@@ -1,4 +1,4 @@
-package com.grondona.model.dto
+package com.grondona.model.dto.response
 
 import java.util.UUID
 

@@ -1,10 +1,14 @@
 package com.grondona.controller
 
 import com.grondona.exception.UnauthorizedException
-import com.grondona.model.dto.*
+import com.grondona.model.dto.request.CreateGroupRequest
+import com.grondona.model.dto.request.UpdateGroupRequest
+import com.grondona.model.dto.request.SubmitBulkPredictionsRequest
+import com.grondona.model.dto.response.GroupResponse
 import com.grondona.security.JwtUserPrincipal
 import com.grondona.service.GroupMembershipService
 import com.grondona.service.GroupService
+import com.grondona.service.PredictionsService
 import javax.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -17,7 +21,8 @@ import java.util.UUID
 @RequestMapping("/api/groups")
 class GroupController(
     private val groupService: GroupService,
-    private val groupMembershipService: GroupMembershipService
+    private val groupMembershipService: GroupMembershipService,
+    private val predictionsService: PredictionsService
 ) {
 
     companion object {
@@ -90,6 +95,19 @@ class GroupController(
         logger.info("DELETE /api/groups/{}/leave - userId={}", groupId, userId)
         groupMembershipService.leaveGroup(userId, groupId)
         logger.info("DELETE /api/groups/{}/leave - Left successfully, userId={}", groupId, userId)
+        return ResponseEntity.noContent().build()
+    }
+
+    @PostMapping("/{groupId}/tournaments/{tournamentId}/predictions")
+    fun submitPredictions(
+        @AuthenticationPrincipal principal: JwtUserPrincipal?,
+        @PathVariable groupId: UUID, @PathVariable tournamentId: UUID,
+        @Valid @RequestBody request: SubmitBulkPredictionsRequest
+    ): ResponseEntity<Void> {
+        val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
+        logger.info("POST /api/groups/{}/tournaments/{}/predictions - userId={}", groupId, tournamentId, userId)
+        groupMembershipService.leaveGroup(userId, groupId)
+        logger.info("POST /api/groups/{}/tournaments/{}/predictions - userId={} - Predictions stored successfully: {}", groupId, tournamentId, userId)
         return ResponseEntity.noContent().build()
     }
 

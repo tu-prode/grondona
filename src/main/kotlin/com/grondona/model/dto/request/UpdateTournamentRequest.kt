@@ -1,4 +1,4 @@
-package com.grondona.model.dto
+package com.grondona.model.dto.request
 
 import com.grondona.model.TournamentStatus
 

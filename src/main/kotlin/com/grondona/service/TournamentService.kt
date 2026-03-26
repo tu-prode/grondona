@@ -4,7 +4,10 @@ import com.grondona.exception.ConflictException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.Tournament
 import com.grondona.model.TournamentStatus
-import com.grondona.model.dto.*
+import com.grondona.model.dto.request.CreateTournamentRequest
+import com.grondona.model.dto.request.UpdateTournamentRequest
+import com.grondona.model.dto.response.TournamentMatchesResponse
+import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.repository.MatchRepository
 import com.grondona.repository.TournamentRepository
 import org.slf4j.LoggerFactory

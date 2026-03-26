@@ -1,7 +1,6 @@
-package com.grondona.model.dto
+package com.grondona.model.dto.response
 
 import com.grondona.model.User
-import java.time.LocalDateTime
 import java.util.UUID
 
 data class UserResponse(

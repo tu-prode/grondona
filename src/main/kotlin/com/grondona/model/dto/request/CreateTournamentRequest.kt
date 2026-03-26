@@ -1,9 +1,7 @@
-package com.grondona.model.dto
+package com.grondona.model.dto.request
 
 import com.grondona.model.TournamentStatus
-import javax.validation.constraints.Email
 import javax.validation.constraints.NotBlank
-import javax.validation.constraints.Size
 
 data class CreateTournamentRequest(
     @field:NotBlank(message = "Name is required")

@@ -6,7 +6,7 @@ import com.grondona.model.Group
 import com.grondona.model.GroupRole
 import com.grondona.model.GroupUser
 import com.grondona.model.User
-import com.grondona.model.dto.UserGroupResponse
+import com.grondona.model.dto.response.UserGroupResponse
 import com.grondona.repository.GroupRepository
 import com.grondona.repository.GroupUserRepository
 import com.grondona.repository.UserRepository
