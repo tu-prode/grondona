@@ -9,6 +9,7 @@ import com.grondona.model.dto.*
 import com.grondona.security.JwtUserPrincipal
 import com.grondona.service.GroupMembershipService
 import com.grondona.service.GroupService
+import com.grondona.service.UserService
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -34,17 +35,20 @@ import java.util.*
 class GroupControllerTest {
 
     private lateinit var mockMvc: MockMvc
+    private lateinit var userService: UserService
     private lateinit var groupService: GroupService
     private lateinit var groupMembershipService: GroupMembershipService
     private lateinit var objectMapper: ObjectMapper
 
     private val testUserId = UUID.randomUUID()
+    private val testTournamentId: UUID = UUID.randomUUID()
     private val testGroupId = UUID.randomUUID()
     private val testGroupResponse = GroupResponse(
         id = testGroupId,
         name = "Test Group",
         isPrivate = false,
         maxMembers = 20,
+        tournamentId = testTournamentId,
     )
 
     private inner class TestPrincipalArgumentResolver : HandlerMethodArgumentResolver {
@@ -64,11 +68,12 @@ class GroupControllerTest {
 
     @BeforeEach
     fun setUp() {
+        userService = mockk()
         groupService = mockk()
         groupMembershipService = mockk()
         objectMapper = ObjectMapper().findAndRegisterModules()
         mockMvc = MockMvcBuilders
-            .standaloneSetup(GroupController(groupService, groupMembershipService))
+            .standaloneSetup(GroupController(userService, groupService, groupMembershipService))
             .setControllerAdvice(GlobalExceptionHandler())
             .setCustomArgumentResolvers(TestPrincipalArgumentResolver())
             .build()
@@ -84,14 +89,15 @@ class GroupControllerTest {
 
     @Nested
     inner class CreateGroupEndpointTests {
-
         @Test
         fun `POST api groups should return 201 when group created successfully`() {
-            val request = CreateGroupRequest(name = "New Group", isPrivate = false, maxMembers = 10)
-            every { groupService.createGroup(any()) } returns testGroupResponse.copy(name = "New Group")
+            every { groupService.createGroup(any(), any()) } returns testGroupResponse.copy(name = "New Group")
+            every { groupMembershipService.joinGroup(any(), any(), any()) } just Runs
 
+            setAuthenticatedUser(testUserId)
+            val request = CreateGroupRequest(name = "New Group", isPrivate = false, maxMembers = 10)
             mockMvc.perform(
-                post("/api/groups")
+                post("/api/tournaments/{tournamentId}/groups", testTournamentId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -104,15 +110,16 @@ class GroupControllerTest {
 
         @Test
         fun `POST api groups should return 409 when group name already exists`() {
-            val request = CreateGroupRequest(name = "Duplicate", isPrivate = false, maxMembers = 10)
-            every { groupService.createGroup(any()) } throws ConflictException(
+            every { groupService.createGroup(any(), any()) } throws ConflictException(
                 message = "Group name already exists",
                 field = "name",
                 rejectedValue = "Duplicate"
             )
 
+            setAuthenticatedUser(testUserId)
+            val request = CreateGroupRequest(name = "Duplicate", isPrivate = false, maxMembers = 10)
             mockMvc.perform(
-                post("/api/groups")
+                post("/api/tournaments/{tournamentId}/groups", testTournamentId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -125,8 +132,9 @@ class GroupControllerTest {
         fun `POST api groups should return 400 when name is blank`() {
             val body = mapOf("name" to "", "private" to false, "maxMembers" to 10)
 
+            setAuthenticatedUser(testUserId)
             mockMvc.perform(
-                post("/api/groups")
+                post("/api/tournaments/{ournamentId}/groups", testTournamentId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(body))
             )
@@ -137,8 +145,9 @@ class GroupControllerTest {
         fun `POST api groups should return 400 when maxMembers is less than 1`() {
             val body = mapOf("name" to "Valid Name", "private" to false, "maxMembers" to 0)
 
+            setAuthenticatedUser(testUserId)
             mockMvc.perform(
-                post("/api/groups")
+                post("/api/tournaments/{tournamentId}/groups", testTournamentId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(body))
             )
@@ -148,15 +157,16 @@ class GroupControllerTest {
 
     @Nested
     inner class UpdateGroupEndpointTests {
-
         @Test
         fun `PATCH api groups groupId should return 200 when group updated successfully`() {
-            val request = UpdateGroupRequest(name = "Updated Name", maxMembers = 30)
+            every { groupMembershipService.isAdmin(testUserId, testGroupId) } returns true
             val updated = testGroupResponse.copy(name = "Updated Name", maxMembers = 30)
             every { groupService.updateGroup(testGroupId, any()) } returns updated
 
+            setAuthenticatedUser(testUserId)
+            val request = UpdateGroupRequest(name = "Updated Name", maxMembers = 30)
             mockMvc.perform(
-                patch("/api/groups/{groupId}", testGroupId)
+                patch("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, testGroupId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -167,11 +177,13 @@ class GroupControllerTest {
 
         @Test
         fun `PATCH api groups groupId should return 404 when group not found`() {
-            val request = UpdateGroupRequest(name = "New Name")
+            every { groupMembershipService.isAdmin(testUserId, testGroupId) } returns true
             every { groupService.updateGroup(testGroupId, any()) } throws NotFoundException("Group not found")
 
+            setAuthenticatedUser(testUserId)
+            val request = UpdateGroupRequest(name = "New Name")
             mockMvc.perform(
-                patch("/api/groups/{groupId}", testGroupId)
+                patch("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, testGroupId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -181,15 +193,17 @@ class GroupControllerTest {
 
         @Test
         fun `PATCH api groups groupId should return 409 when new name already exists`() {
-            val request = UpdateGroupRequest(name = "Taken Name")
+            every { groupMembershipService.isAdmin(testUserId, testGroupId) } returns true
             every { groupService.updateGroup(testGroupId, any()) } throws ConflictException(
                 message = "Nombre de grupo 'Taken Name' ya registrado",
                 field = "name",
                 rejectedValue = "Taken Name"
             )
 
+            setAuthenticatedUser(testUserId)
+            val request = UpdateGroupRequest(name = "Taken Name")
             mockMvc.perform(
-                patch("/api/groups/{groupId}", testGroupId)
+                patch("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, testGroupId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -202,18 +216,32 @@ class GroupControllerTest {
     inner class DeleteGroupEndpointTests {
 
         @Test
+        fun `DELETE api groups groupId should return 403 when user is not group admin`() {
+            every { groupService.getGroupById(testGroupId) } returns testGroupResponse
+            every { groupMembershipService.isAdmin(testUserId, testGroupId) } returns false
+
+            setAuthenticatedUser(testUserId)
+            mockMvc.perform(delete("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, testGroupId))
+                .andExpect(status().isForbidden)
+        }
+
+        @Test
         fun `DELETE api groups groupId should return 204 when group deleted successfully`() {
+            every { groupService.getGroupById(testGroupId) } returns testGroupResponse
+            every { groupMembershipService.isAdmin(testUserId, testGroupId) } returns true
             every { groupService.deleteGroup(testGroupId) } just Runs
 
-            mockMvc.perform(delete("/api/groups/{groupId}", testGroupId))
+            setAuthenticatedUser(testUserId)
+            mockMvc.perform(delete("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, testGroupId))
                 .andExpect(status().isNoContent)
         }
 
         @Test
         fun `DELETE api groups groupId should return 404 when group not found`() {
-            every { groupService.deleteGroup(testGroupId) } throws NotFoundException("Group not found")
+            every { groupService.getGroupById(testGroupId) } throws NotFoundException("Group not found")
 
-            mockMvc.perform(delete("/api/groups/{groupId}", testGroupId))
+            setAuthenticatedUser(testUserId)
+            mockMvc.perform(delete("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, testGroupId))
                 .andExpect(status().isNotFound)
         }
     }
@@ -223,9 +251,11 @@ class GroupControllerTest {
 
         @Test
         fun `GET api groups groupId should return 200 with group details`() {
+            every { groupMembershipService.isMember(testUserId, testGroupId) } returns true
             every { groupService.getGroupById(testGroupId) } returns testGroupResponse
 
-            mockMvc.perform(get("/api/groups/{groupId}", testGroupId))
+            setAuthenticatedUser(testUserId)
+            mockMvc.perform(get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, testGroupId))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.id").value(testGroupId.toString()))
                 .andExpect(jsonPath("$.name").value("Test Group"))
@@ -235,9 +265,11 @@ class GroupControllerTest {
 
         @Test
         fun `GET api groups groupId should return 404 when group not found`() {
+            every { groupMembershipService.isMember(testUserId, testGroupId) } returns true
             every { groupService.getGroupById(testGroupId) } throws NotFoundException("Group not found")
 
-            mockMvc.perform(get("/api/groups/{groupId}", testGroupId))
+            setAuthenticatedUser(testUserId)
+            mockMvc.perform(get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, testGroupId))
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.message").value("Group not found"))
         }
@@ -252,9 +284,9 @@ class GroupControllerTest {
                 testGroupResponse,
                 testGroupResponse.copy(id = UUID.randomUUID(), name = "Second Group")
             )
-            every { groupService.findGroups(null, null) } returns groups
+            every { groupService.findGroups(testTournamentId, null, null) } returns groups
 
-            mockMvc.perform(get("/api/groups"))
+            mockMvc.perform(get("/api/tournaments/{tournamentId}/groups", testTournamentId))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].name").value("Test Group"))
@@ -264,9 +296,9 @@ class GroupControllerTest {
         @Test
         fun `GET api groups should return filtered groups when search and joined params provided`() {
             val groups = listOf(testGroupResponse)
-            every { groupService.findGroups("test", false) } returns groups
+            every { groupService.findGroups(testTournamentId, "test", false) } returns groups
 
-            mockMvc.perform(get("/api/groups").param("search", "test").param( "joined", "false"))
+            mockMvc.perform(get("/api/tournaments/{tournamentId}/groups", testTournamentId).param("search", "test").param( "joined", "false"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].name").value("Test Group"))
@@ -274,9 +306,9 @@ class GroupControllerTest {
 
         @Test
         fun `GET api groups should return empty list when no groups match search`() {
-            every { groupService.findGroups("xyz", false) } returns emptyList()
+            every { groupService.findGroups(testTournamentId, "xyz", false) } returns emptyList()
 
-            mockMvc.perform(get("/api/groups").param("search", "xyz").param( "joined", "false"))
+            mockMvc.perform(get("/api/tournaments/{tournamentId}/groups", testTournamentId).param("search", "xyz").param( "joined", "false"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.length()").value(0))
         }
@@ -290,7 +322,7 @@ class GroupControllerTest {
             setAuthenticatedUser(testUserId)
             every { groupMembershipService.joinGroup(testUserId, testGroupId) } just Runs
 
-            mockMvc.perform(post("/api/groups/{groupId}/join", testGroupId))
+            mockMvc.perform(post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, testGroupId))
                 .andExpect(status().isCreated)
 
             clearAuthentication()
@@ -301,7 +333,7 @@ class GroupControllerTest {
             setAuthenticatedUser(testUserId)
             every { groupMembershipService.joinGroup(testUserId, testGroupId) } throws NotFoundException("Group not found")
 
-            mockMvc.perform(post("/api/groups/{groupId}/join", testGroupId))
+            mockMvc.perform(post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, testGroupId))
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.message").value("Group not found"))
 
@@ -313,7 +345,7 @@ class GroupControllerTest {
             setAuthenticatedUser(testUserId)
             every { groupMembershipService.joinGroup(testUserId, testGroupId) } throws BadRequestException("You are already member of this group")
 
-            mockMvc.perform(post("/api/groups/{groupId}/join", testGroupId))
+            mockMvc.perform(post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, testGroupId))
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.message").value("You are already member of this group"))
 
@@ -325,7 +357,7 @@ class GroupControllerTest {
             setAuthenticatedUser(testUserId)
             every { groupMembershipService.joinGroup(testUserId, testGroupId) } throws BadRequestException("Group is full")
 
-            mockMvc.perform(post("/api/groups/{groupId}/join", testGroupId))
+            mockMvc.perform(post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, testGroupId))
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.message").value("Group is full"))
 
@@ -341,7 +373,7 @@ class GroupControllerTest {
             setAuthenticatedUser(testUserId)
             every { groupMembershipService.leaveGroup(testUserId, testGroupId) } just Runs
 
-            mockMvc.perform(delete("/api/groups/{groupId}/leave", testGroupId))
+            mockMvc.perform(delete("/api/tournaments/{tournamentId}/groups/{groupId}/leave", testTournamentId, testGroupId))
                 .andExpect(status().isNoContent)
 
             clearAuthentication()
@@ -352,7 +384,7 @@ class GroupControllerTest {
             setAuthenticatedUser(testUserId)
             every { groupMembershipService.leaveGroup(testUserId, testGroupId) } throws NotFoundException("Group not found")
 
-            mockMvc.perform(delete("/api/groups/{groupId}/leave", testGroupId))
+            mockMvc.perform(delete("/api/tournaments/{tournamentId}/groups/{groupId}/leave", testTournamentId, testGroupId))
                 .andExpect(status().isNotFound)
 
             clearAuthentication()
@@ -363,7 +395,7 @@ class GroupControllerTest {
             setAuthenticatedUser(testUserId)
             every { groupMembershipService.leaveGroup(testUserId, testGroupId) } throws NotFoundException("You are not member of this group")
 
-            mockMvc.perform(delete("/api/groups/{groupId}/leave", testGroupId))
+            mockMvc.perform(delete("/api/tournaments/{tournamentId}/groups/{groupId}/leave", testTournamentId, testGroupId))
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.message").value("You are not member of this group"))
 

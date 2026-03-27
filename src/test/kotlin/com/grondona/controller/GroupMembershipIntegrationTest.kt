@@ -1,6 +1,7 @@
 package com.grondona.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.grondona.model.UserPermissions
 import com.grondona.model.dto.*
 import com.grondona.repository.GroupRepository
 import com.grondona.repository.GroupUserRepository
@@ -33,6 +34,7 @@ class GroupMembershipIntegrationTest {
     private var authToken: String? = null
     private var secondUserToken: String? = null
     private var testGroupId: String? = null
+    private var testTournamentId: String? = null
 
     @BeforeAll
     fun setUp() {
@@ -60,10 +62,35 @@ class GroupMembershipIntegrationTest {
         ).andReturn()
         secondUserToken = objectMapper.readValue(secondUserResult.response.contentAsString, AuthResponse::class.java).token
 
+        // Create admin user
+        val adminResult = mockMvc.perform(
+            post("/api/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(
+                    CreateUserRequest("Admin", "admin", "admin@test.com", "password123")
+                ))
+        ).andReturn()
+        val adminId = objectMapper.readValue(adminResult.response.contentAsString, AuthResponse::class.java).userId
+        val adminUser = userRepository.findById(adminId).get()
+        adminUser.permissions = UserPermissions.SUPERUSER
+        userRepository.save(adminUser)
+        val adminToken = objectMapper.readValue(adminResult.response.contentAsString, AuthResponse::class.java).token
+
+        // Create tournament
+        val tournamentResult = mockMvc.perform(
+            post("/api/tournaments")
+                .header("Authorization", "Bearer $adminToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(
+                    CreateTournamentRequest(name = "Test Tournament")
+                ))
+        ).andReturn()
+        testTournamentId = objectMapper.readValue(tournamentResult.response.contentAsString, TournamentResponse::class.java).id.toString()
+
         // Create test group
         val groupResult = mockMvc.perform(
-            post("/api/groups")
-                .header("Authorization", "Bearer $authToken")
+            post("/api/tournaments/{tournamentId}/groups", testTournamentId)
+                .header("Authorization", "Bearer $adminToken")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(
                     CreateGroupRequest(name = "Membership Test Group", isPrivate = false, maxMembers = 5)
@@ -99,7 +126,7 @@ class GroupMembershipIntegrationTest {
         @Order(2)
         fun `should join group successfully`() {
             mockMvc.perform(
-                post("/api/groups/{groupId}/join", testGroupId)
+                post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, testGroupId)
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isCreated)
@@ -116,7 +143,7 @@ class GroupMembershipIntegrationTest {
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].group_id").value(testGroupId))
                 .andExpect(jsonPath("$[0].name").value("Membership Test Group"))
-                .andExpect(jsonPath("$[0].member_count").value(1))
+                .andExpect(jsonPath("$[0].member_count").value(2))
                 .andExpect(jsonPath("$[0].points").value(0.0))
                 .andExpect(jsonPath("$[0].rank").doesNotExist())
         }
@@ -125,7 +152,7 @@ class GroupMembershipIntegrationTest {
         @Order(4)
         fun `should fail to join the same group twice`() {
             mockMvc.perform(
-                post("/api/groups/{groupId}/join", testGroupId)
+                post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, testGroupId)
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isBadRequest)
@@ -136,7 +163,7 @@ class GroupMembershipIntegrationTest {
         @Order(5)
         fun `second user joins and member count increases`() {
             mockMvc.perform(
-                post("/api/groups/{groupId}/join", testGroupId)
+                post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, testGroupId)
                     .header("Authorization", "Bearer $secondUserToken")
             )
                 .andExpect(status().isCreated)
@@ -147,14 +174,14 @@ class GroupMembershipIntegrationTest {
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$[0].member_count").value(2))
+                .andExpect(jsonPath("$[0].member_count").value(3))
         }
 
         @Test
         @Order(6)
         fun `should leave group successfully`() {
             mockMvc.perform(
-                delete("/api/groups/{groupId}/leave", testGroupId)
+                delete("/api/tournaments/{tournamentId}/groups/{groupId}/leave", testTournamentId, testGroupId)
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isNoContent)
@@ -175,11 +202,38 @@ class GroupMembershipIntegrationTest {
         @Order(8)
         fun `should fail to leave a group not joined`() {
             mockMvc.perform(
-                delete("/api/groups/{groupId}/leave", testGroupId)
+                delete("/api/tournaments/{tournamentId}/groups/{groupId}/leave", testTournamentId, testGroupId)
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.message").value("You are not member of this group"))
+        }
+
+        @Test
+        @Order(9)
+        fun `should automatically join a group after creating it`() {
+            val groupResult = mockMvc.perform(
+                post("/api/tournaments/{tournamentId}/groups", testTournamentId)
+                    .header("Authorization", "Bearer $authToken")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(
+                        CreateGroupRequest(name = "New Group to Join", isPrivate = false, maxMembers = 5)
+                    ))
+            ).andReturn()
+            val newGroupId = objectMapper.readValue(groupResult.response.contentAsString, GroupResponse::class.java).id.toString()
+
+            mockMvc.perform(
+                get("/api/users/me/groups")
+                    .header("Authorization", "Bearer $authToken")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].group_id").value(newGroupId))
+                .andExpect(jsonPath("$[0].name").value("New Group to Join"))
+                .andExpect(jsonPath("$[0].member_count").value(1))
+                .andExpect(jsonPath("$[0].points").value(0.0))
+                .andExpect(jsonPath("$[0].role").value("OWNER"))
+                .andExpect(jsonPath("$[0].rank").doesNotExist())
         }
     }
 
@@ -191,7 +245,7 @@ class GroupMembershipIntegrationTest {
             val nonExistentId = UUID.randomUUID()
 
             mockMvc.perform(
-                post("/api/groups/{groupId}/join", nonExistentId)
+                post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, nonExistentId)
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isNotFound)
@@ -203,7 +257,7 @@ class GroupMembershipIntegrationTest {
             val nonExistentId = UUID.randomUUID()
 
             mockMvc.perform(
-                delete("/api/groups/{groupId}/leave", nonExistentId)
+                delete("/api/tournaments/{tournamentId}/groups/{groupId}/leave", testTournamentId, nonExistentId)
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isNotFound)
@@ -212,9 +266,9 @@ class GroupMembershipIntegrationTest {
 
         @Test
         fun `should return 400 when joining a full group`() {
-            // Create a group with max 1 member
+            // First user creates a group and joins it
             val tinyGroupResult = mockMvc.perform(
-                post("/api/groups")
+                post("/api/tournaments/{tournamentId}/groups", testTournamentId)
                     .header("Authorization", "Bearer $authToken")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(
@@ -223,15 +277,9 @@ class GroupMembershipIntegrationTest {
             ).andReturn()
             val tinyGroupId = objectMapper.readValue(tinyGroupResult.response.contentAsString, GroupResponse::class.java).id
 
-            // First user joins (fills it)
-            mockMvc.perform(
-                post("/api/groups/{groupId}/join", tinyGroupId)
-                    .header("Authorization", "Bearer $authToken")
-            ).andExpect(status().isCreated)
-
             // Second user tries to join → full
             mockMvc.perform(
-                post("/api/groups/{groupId}/join", tinyGroupId)
+                post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, tinyGroupId)
                     .header("Authorization", "Bearer $secondUserToken")
             )
                 .andExpect(status().isBadRequest)
@@ -244,14 +292,14 @@ class GroupMembershipIntegrationTest {
 
         @Test
         fun `should reject join without authentication`() {
-            mockMvc.perform(post("/api/groups/{groupId}/join", testGroupId))
-                .andExpect(status().isForbidden)
+            mockMvc.perform(post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, testGroupId))
+                .andExpect(status().isUnauthorized)
         }
 
         @Test
         fun `should reject leave without authentication`() {
-            mockMvc.perform(delete("/api/groups/{groupId}/leave", testGroupId))
-                .andExpect(status().isForbidden)
+            mockMvc.perform(delete("/api/tournaments/{tournamentId}/groups/{groupId}/leave", testTournamentId, testGroupId))
+                .andExpect(status().isUnauthorized)
         }
 
         @Test

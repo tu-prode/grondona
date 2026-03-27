@@ -5,6 +5,8 @@ import com.grondona.exception.NotFoundException
 import com.grondona.model.Group
 import com.grondona.model.GroupRole
 import com.grondona.model.GroupUser
+import com.grondona.model.Tournament
+import com.grondona.model.TournamentStatus
 import com.grondona.model.User
 import com.grondona.model.dto.UserGroupResponse
 import com.grondona.repository.GroupRepository
@@ -37,6 +39,7 @@ class GroupMembershipServiceTest {
 
     private val testUserId = UUID.randomUUID()
     private val testGroupId = UUID.randomUUID()
+    private val testTournamentId = UUID.randomUUID()
 
     private val testUser = User(
         id = testUserId,
@@ -54,7 +57,14 @@ class GroupMembershipServiceTest {
         isPrivate = false,
         maxMembers = 10,
         createdAt = LocalDateTime.now(),
-        updatedAt = LocalDateTime.now()
+        updatedAt = LocalDateTime.now(),
+        tournament = Tournament(
+            id = testTournamentId,
+            name = "Test Tournament",
+            status = TournamentStatus.NOT_STARTED,
+            createdAt = LocalDateTime.now(),
+            updatedAt = LocalDateTime.now()
+        )
     )
 
     private val testMembership = GroupUser(
