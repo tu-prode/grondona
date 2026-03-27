@@ -2,9 +2,9 @@ package com.grondona.controller
 
 import com.grondona.exception.UnauthorizedException
 import com.grondona.model.dto.request.CreateUserRequest
-import com.grondona.model.dto.request.LoginRequest
+import com.grondona.model.dto.request.LoginUserRequest
 import com.grondona.model.dto.request.UpdateUserRequest
-import com.grondona.model.dto.response.AuthResponse
+import com.grondona.model.dto.response.AuthenticatedUserResponse
 import com.grondona.model.dto.response.UserGroupResponse
 import com.grondona.model.dto.response.UserResponse
 import com.grondona.security.JwtUserPrincipal
@@ -30,7 +30,7 @@ class UserController(
     }
 
     @PostMapping
-    fun createUser(@Valid @RequestBody request: CreateUserRequest): ResponseEntity<AuthResponse> {
+    fun createUser(@Valid @RequestBody request: CreateUserRequest): ResponseEntity<AuthenticatedUserResponse> {
         logger.info("POST /api/users - Creating user: username='{}', email='{}'", request.username, request.email)
         val response = userService.createUser(request)
         logger.info("POST /api/users - User created: id={}, username='{}'", response.userId, response.username)
@@ -38,7 +38,7 @@ class UserController(
     }
 
     @PostMapping("/login")
-    fun login(@Valid @RequestBody request: LoginRequest): ResponseEntity<AuthResponse> {
+    fun login(@Valid @RequestBody request: LoginUserRequest): ResponseEntity<AuthenticatedUserResponse> {
         logger.info("POST /api/users/login - Login attempt: user='{}'", request.user)
         val response = userService.login(request)
         logger.info("POST /api/users/login - Login successful: userId={}", response.userId)

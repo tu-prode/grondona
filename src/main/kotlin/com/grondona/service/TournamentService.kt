@@ -38,6 +38,7 @@ class TournamentService(
         val tournament = Tournament(
             name = request.name,
             status = request.status ?: TournamentStatus.NOT_STARTED,
+            createdAt = LocalDateTime.now(),
         )
 
         val savedTournament = tournamentRepository.save(tournament)

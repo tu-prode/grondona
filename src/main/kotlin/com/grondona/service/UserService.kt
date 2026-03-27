@@ -7,9 +7,9 @@ import com.grondona.exception.NotFoundException
 import com.grondona.model.User
 import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.CreateUserRequest
-import com.grondona.model.dto.request.LoginRequest
+import com.grondona.model.dto.request.LoginUserRequest
 import com.grondona.model.dto.request.UpdateUserRequest
-import com.grondona.model.dto.response.AuthResponse
+import com.grondona.model.dto.response.AuthenticatedUserResponse
 import com.grondona.model.dto.response.UserResponse
 import com.grondona.repository.UserRepository
 import com.grondona.security.JwtService
@@ -31,7 +31,7 @@ class UserService(
     }
 
     @Transactional
-    fun createUser(request: CreateUserRequest): AuthResponse {
+    fun createUser(request: CreateUserRequest): AuthenticatedUserResponse {
         logger.info("Creating user: username='{}', email='{}'", request.username, request.email)
 
         if (userRepository.existsByUsername(request.username)) {
@@ -52,14 +52,15 @@ class UserService(
             fullname = request.fullname,
             username = request.username,
             email = request.email,
-            passwordHash = hashMd5(request.password)
+            passwordHash = hashMd5(request.password),
+            createdAt = LocalDateTime.now(),
         )
 
         val savedUser = userRepository.save(user)
         val token = jwtService.generateToken(savedUser.id!!, savedUser.username)
 
         logger.info("User created successfully: id={}, username='{}'", savedUser.id, savedUser.username)
-        return AuthResponse(
+        return AuthenticatedUserResponse(
             token = token,
             userId = savedUser.id,
             username = savedUser.username,
@@ -68,7 +69,7 @@ class UserService(
         )
     }
 
-    fun login(request: LoginRequest): AuthResponse {
+    fun login(request: LoginUserRequest): AuthenticatedUserResponse {
         logger.info("Login attempt: user='{}'", request.user)
 
         val user = userRepository.findByUsername(request.user).orElseGet {
@@ -87,7 +88,7 @@ class UserService(
         val token = jwtService.generateToken(user.id!!, user.username)
 
         logger.info("Login successful: userId={}, user='{}'", user.id, user.username)
-        return AuthResponse(
+        return AuthenticatedUserResponse(
             token = token,
             userId = user.id,
             username = user.username,

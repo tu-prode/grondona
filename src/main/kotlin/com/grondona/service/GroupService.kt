@@ -46,7 +46,8 @@ class GroupService(
             name = request.name,
             tournament = tournament,
             isPrivate = request.isPrivate,
-            maxMembers = request.maxMembers
+            maxMembers = request.maxMembers,
+            createdAt = LocalDateTime.now(),
         )
 
         val savedGroup = groupRepository.save(group)

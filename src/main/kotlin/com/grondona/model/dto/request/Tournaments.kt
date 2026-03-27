@@ -9,3 +9,9 @@ data class CreateTournamentRequest(
 
     val status: TournamentStatus? = TournamentStatus.NOT_STARTED
 )
+
+data class UpdateTournamentRequest(
+    val name: String?,
+
+    val status: TournamentStatus? = TournamentStatus.NOT_STARTED
+)

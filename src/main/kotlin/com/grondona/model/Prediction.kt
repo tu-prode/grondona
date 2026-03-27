@@ -48,4 +48,6 @@ data class Prediction(
 
     @Column(name = "deleted_at")
     var deletedAt: LocalDateTime? = null
-)
+) {
+    fun score(): Score? = homeGoals?.let { homeGoals -> awayGoals?.let { awayGoals -> Score(homeGoals, awayGoals) } }
+}

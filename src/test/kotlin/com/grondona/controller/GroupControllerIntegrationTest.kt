@@ -5,10 +5,8 @@ import com.grondona.createTestingTournamentRequest
 import com.grondona.createTestingUserRequest
 import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.CreateGroupRequest
-import com.grondona.model.dto.request.CreateTournamentRequest
-import com.grondona.model.dto.request.CreateUserRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
-import com.grondona.model.dto.response.AuthResponse
+import com.grondona.model.dto.response.AuthenticatedUserResponse
 import com.grondona.model.dto.response.GroupResponse
 import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.repository.GroupRepository
@@ -58,11 +56,11 @@ class GroupControllerIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(createTestingUserRequest()))
         ).andReturn()
-        val adminId = objectMapper.readValue(adminResult.response.contentAsString, AuthResponse::class.java).userId
+        val adminId = objectMapper.readValue(adminResult.response.contentAsString, AuthenticatedUserResponse::class.java).userId
         val adminUser = userRepository.findById(adminId).get()
         adminUser.permissions = UserPermissions.SUPERUSER
         userRepository.save(adminUser)
-        val adminToken = objectMapper.readValue(adminResult.response.contentAsString, AuthResponse::class.java).token
+        val adminToken = objectMapper.readValue(adminResult.response.contentAsString, AuthenticatedUserResponse::class.java).token
 
         // Create tournament
         val tournamentResult = mockMvc.perform(
@@ -80,7 +78,7 @@ class GroupControllerIntegrationTest {
                 .content(objectMapper.writeValueAsString(createTestingUserRequest()))
         ).andReturn()
 
-        val authResponse = objectMapper.readValue(result.response.contentAsString, AuthResponse::class.java)
+        val authResponse = objectMapper.readValue(result.response.contentAsString, AuthenticatedUserResponse::class.java)
         authToken = authResponse.token
     }
 

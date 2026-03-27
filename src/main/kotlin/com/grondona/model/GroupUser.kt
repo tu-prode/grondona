@@ -33,6 +33,9 @@ data class GroupUser(
     @Column(nullable = false)
     var points: Float = 0F,
 
+    @Column(nullable = true)
+    var rank: Int? = null,
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "group_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)

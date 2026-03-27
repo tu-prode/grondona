@@ -45,16 +45,16 @@ data class MatchResponse(
 }
 
 data class TournamentMatchesResponse(
-    val id: UUID,
-    val name: String,
+    val tournamentId: UUID,
+    val tournamentName: String,
     val pastMatches: List<MatchResponse>,
     val liveMatches: List<MatchResponse>,
     val nextMatches: List<MatchResponse>,
 ) {
     companion object {
         fun from(tournament: Tournament, matches: List<Match>): TournamentMatchesResponse = TournamentMatchesResponse(
-            id = tournament.id!!,
-            name = tournament.name,
+            tournamentId = tournament.id!!,
+            tournamentName = tournament.name,
             pastMatches = matches.filter { it.status == MatchStatus.FINISHED }.map(MatchResponse::from),
             liveMatches = matches.filter { it.status == MatchStatus.IN_PROGRESS }.map(MatchResponse::from),
             nextMatches = matches.filter { it.status == MatchStatus.NOT_STARTED }.map(MatchResponse::from),

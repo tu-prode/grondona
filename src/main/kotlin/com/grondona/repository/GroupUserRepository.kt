@@ -18,8 +18,7 @@ interface GroupUserRepository : JpaRepository<GroupUser, UUID> {
 
     fun countByGroupId(groupId: UUID): Long
 
-    @Query(
-        """
+    @Query("""
         SELECT new com.grondona.model.dto.response.UserGroupResponse(
             gu.group.id,
             gu.group.name,
@@ -30,7 +29,6 @@ interface GroupUserRepository : JpaRepository<GroupUser, UUID> {
         FROM GroupUser gu
         WHERE gu.user.id = :userId
         ORDER BY gu.joinedAt DESC
-    """
-    )
+    """)
     fun findUserGroups(@Param("userId") userId: UUID): List<UserGroupResponse>
 }

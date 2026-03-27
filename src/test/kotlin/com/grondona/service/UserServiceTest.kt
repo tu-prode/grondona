@@ -6,7 +6,7 @@ import com.grondona.exception.ForbiddenException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.User
 import com.grondona.model.dto.request.CreateUserRequest
-import com.grondona.model.dto.request.LoginRequest
+import com.grondona.model.dto.request.LoginUserRequest
 import com.grondona.model.dto.request.UpdateUserRequest
 import com.grondona.repository.UserRepository
 import com.grondona.security.JwtService
@@ -137,7 +137,7 @@ class UserServiceTest {
         @Test
         fun `login should return AuthResponse when credentials are valid`() {
             // Given
-            val request = LoginRequest(user = "testuser", password = "test")
+            val request = LoginUserRequest(user = "testuser", password = "test")
             every { userRepository.findByUsername(request.user) } returns Optional.of(testUser)
             every { jwtService.generateToken(testUserId, testUser.username) } returns testToken
 
@@ -153,7 +153,7 @@ class UserServiceTest {
         @Test
         fun `login should throw BadRequestException when user not found`() {
             // Given
-            val request = LoginRequest(user = "nonexistent", password = "password")
+            val request = LoginUserRequest(user = "nonexistent", password = "password")
             every { userRepository.findByUsername(request.user) } returns Optional.empty()
             every { userRepository.findByEmail(request.user) } returns Optional.empty()
 
@@ -167,7 +167,7 @@ class UserServiceTest {
         @Test
         fun `login should throw BadRequestException when password is incorrect`() {
             // Given
-            val request = LoginRequest(user = "testuser", password = "wrongpassword")
+            val request = LoginUserRequest(user = "testuser", password = "wrongpassword")
             every { userRepository.findByUsername(request.user) } returns Optional.of(testUser)
 
             // When/Then

@@ -1,9 +1,9 @@
 package com.grondona.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.grondona.model.dto.response.AuthResponse
+import com.grondona.model.dto.response.AuthenticatedUserResponse
 import com.grondona.model.dto.request.CreateUserRequest
-import com.grondona.model.dto.request.LoginRequest
+import com.grondona.model.dto.request.LoginUserRequest
 import com.grondona.model.dto.request.UpdateUserRequest
 import com.grondona.repository.UserRepository
 import org.junit.Ignore
@@ -79,7 +79,7 @@ class UserControllerIntegrationTest {
             // Store token and userId for subsequent tests
             val response = objectMapper.readValue(
                 result.response.contentAsString,
-                AuthResponse::class.java
+                AuthenticatedUserResponse::class.java
             )
             authToken = response.token
             userId = response.userId.toString()
@@ -129,7 +129,7 @@ class UserControllerIntegrationTest {
         @Order(4)
         fun `should login successfully with valid credentials`() {
             // Given
-            val request = LoginRequest(
+            val request = LoginUserRequest(
                 user = "integrationuser",
                 password = "password123"
             )
@@ -148,7 +148,7 @@ class UserControllerIntegrationTest {
             // Update token for subsequent tests
             val response = objectMapper.readValue(
                 result.response.contentAsString,
-                AuthResponse::class.java
+                AuthenticatedUserResponse::class.java
             )
             authToken = response.token
         }
@@ -157,7 +157,7 @@ class UserControllerIntegrationTest {
         @Order(5)
         fun `should fail login with invalid password`() {
             // Given
-            val request = LoginRequest(
+            val request = LoginUserRequest(
                 user = "integrationuser",
                 password = "wrongpassword"
             )
@@ -246,7 +246,7 @@ class UserControllerIntegrationTest {
 
             val anotherUserResponse = objectMapper.readValue(
                 result.response.contentAsString,
-                AuthResponse::class.java
+                AuthenticatedUserResponse::class.java
             )
 
             // When/Then - Try to delete another user with our token

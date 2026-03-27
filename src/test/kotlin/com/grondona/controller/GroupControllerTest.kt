@@ -71,13 +71,11 @@ class GroupControllerTest {
 
     @BeforeEach
     fun setUp() {
-        userService = mockk()
         groupService = mockk()
         groupMembershipService = mockk()
-        predictionsService = mockk()
         objectMapper = ObjectMapper().findAndRegisterModules()
         mockMvc = MockMvcBuilders
-            .standaloneSetup(GroupController(userService, groupService, groupMembershipService, predictionsService))
+            .standaloneSetup(GroupController(groupService, groupMembershipService))
             .setControllerAdvice(GlobalExceptionHandler())
             .setCustomArgumentResolvers(TestPrincipalArgumentResolver())
             .build()
