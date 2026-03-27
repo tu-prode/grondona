@@ -3,12 +3,12 @@ package com.grondona.controller
 import com.grondona.exception.ForbiddenException
 import com.grondona.exception.UnauthorizedException
 import com.grondona.model.GroupRole
-import com.grondona.model.User
-import com.grondona.model.dto.*
+import com.grondona.model.dto.request.CreateGroupRequest
+import com.grondona.model.dto.request.UpdateGroupRequest
+import com.grondona.model.dto.response.GroupResponse
 import com.grondona.security.JwtUserPrincipal
 import com.grondona.service.GroupMembershipService
 import com.grondona.service.GroupService
-import com.grondona.service.UserService
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -20,9 +20,8 @@ import java.util.UUID
 @RestController
 @RequestMapping("/api/tournaments/{tournamentId}/groups")
 class GroupController(
-    private val userService: UserService,
     private val groupService: GroupService,
-    private val groupMembershipService: GroupMembershipService
+    private val groupMembershipService: GroupMembershipService,
 ) {
 
     companion object {
@@ -142,5 +141,4 @@ class GroupController(
         logger.info("DELETE /api/tournaments/{}/groups/{}/leave - Left successfully, userId={}", tournamentId, groupId, userId)
         return ResponseEntity.noContent().build()
     }
-
 }

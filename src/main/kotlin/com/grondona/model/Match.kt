@@ -8,6 +8,11 @@ import org.hibernate.annotations.SQLRestriction
 import java.time.LocalDateTime
 import java.util.UUID
 
+data class Score(
+    val homeGoals: Int,
+    val awayGoals: Int,
+)
+
 enum class MatchStatus {
     NOT_STARTED, IN_PROGRESS, FINISHED,
 }
@@ -51,6 +56,9 @@ data class Match(
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     var status: MatchStatus = MatchStatus.NOT_STARTED,
+
+    @Column(name = "substatus")
+    var substatus: String? = null,
 
     @Column(name = "started_at")
     var startedAt: LocalDateTime? = null,

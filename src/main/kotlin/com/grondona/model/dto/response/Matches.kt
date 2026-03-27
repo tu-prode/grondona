@@ -1,16 +1,12 @@
-package com.grondona.model.dto
+package com.grondona.model.dto.response
 
 import com.grondona.model.Match
 import com.grondona.model.MatchStatus
-import com.grondona.model.Team
 import com.grondona.model.Tournament
-import com.grondona.model.TournamentStatus
-import com.grondona.model.User
-import org.springframework.beans.factory.Aware
 import java.time.LocalDateTime
 import java.util.UUID
 
-data class TournamentMatchResponse(
+data class MatchResponse(
     val id: UUID,
     val matchKey: String,
     val homeTeam: TeamResponse,
@@ -19,6 +15,7 @@ data class TournamentMatchResponse(
     val awayQuota: Float,
     val tieQuota: Float,
     val status: MatchStatus,
+    val substatus: String?,
     val startedAt: LocalDateTime?,
     val finishedAt: LocalDateTime?,
     val homeGoals: Int?,
@@ -27,7 +24,7 @@ data class TournamentMatchResponse(
     val awayPenalties: Int?,
 ) {
     companion object {
-        fun from(match: Match): TournamentMatchResponse = TournamentMatchResponse(
+        fun from(match: Match): MatchResponse = MatchResponse(
             id = match.id!!,
             matchKey = match.matchKey,
             homeTeam = TeamResponse.from(match.homeTeam),
@@ -36,6 +33,7 @@ data class TournamentMatchResponse(
             awayQuota = match.awayQuota,
             tieQuota = match.tieQuota,
             status = match.status,
+            substatus = match.substatus,
             startedAt = match.startedAt,
             finishedAt = match.finishedAt,
             homeGoals = match.homeGoals,
@@ -47,15 +45,19 @@ data class TournamentMatchResponse(
 }
 
 data class TournamentMatchesResponse(
-    val id: UUID,
-    val name: String,
-    val matches: List<TournamentMatchResponse>,
+    val tournamentId: UUID,
+    val tournamentName: String,
+    val pastMatches: List<MatchResponse>,
+    val liveMatches: List<MatchResponse>,
+    val nextMatches: List<MatchResponse>,
 ) {
     companion object {
         fun from(tournament: Tournament, matches: List<Match>): TournamentMatchesResponse = TournamentMatchesResponse(
-            id = tournament.id!!,
-            name = tournament.name,
-            matches = matches.map(TournamentMatchResponse::from)
+            tournamentId = tournament.id!!,
+            tournamentName = tournament.name,
+            pastMatches = matches.filter { it.status == MatchStatus.FINISHED }.map(MatchResponse::from),
+            liveMatches = matches.filter { it.status == MatchStatus.IN_PROGRESS }.map(MatchResponse::from),
+            nextMatches = matches.filter { it.status == MatchStatus.NOT_STARTED }.map(MatchResponse::from),
         )
     }
 }

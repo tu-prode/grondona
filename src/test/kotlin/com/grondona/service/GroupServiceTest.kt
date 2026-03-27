@@ -5,8 +5,8 @@ import com.grondona.exception.NotFoundException
 import com.grondona.model.Group
 import com.grondona.model.Tournament
 import com.grondona.model.TournamentStatus
-import com.grondona.model.dto.CreateGroupRequest
-import com.grondona.model.dto.UpdateGroupRequest
+import com.grondona.model.dto.request.CreateGroupRequest
+import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.repository.GroupRepository
 import com.grondona.repository.TournamentRepository
 import io.mockk.*
@@ -17,7 +17,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.springframework.http.converter.xml.SourceHttpMessageConverter
 import java.time.LocalDateTime
 import java.util.*
 

@@ -825,7 +825,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserPredictionsResponse"
+                $ref: "#/components/schemas/GroupPredictionsResponse"
         "404":
           description: Group or Tournament not found
           content:
@@ -838,7 +838,7 @@ paths:
       summary: Post the list of predictions for a certain group and tournament.
       description: |
         Publish the list of user predictions for a certain group and tournament.
-      operationId: postMyGroupPredictions
+      operationId: postMyBulkPredictions
       security:
         - bearerAuth: [ ]
       parameters:
@@ -862,18 +862,25 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/SubmitBulkPredictionsRequest"
-            example:
-              fullname: John Doe
-              username: johndoe
-              email: john@example.com
-              password: secret123
       responses:
         "201":
           description: Predictions created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserPredictionsResponse"
+                $ref: "#/components/schemas/SubmittedBulkPredictionsResponse"
+        "400":
+          description: Some parameters are wrong, or the match is already blocked because of the time.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: The user doesn't belong to the group and cannot perform this action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Group or Tournament not found
           content:
@@ -882,6 +889,68 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 
   /api/tournaments/{tournamentId}/groups/{groupId}/match/{matchId}/predictions:
+    post:
+      tags:
+        - Predictions
+      summary: Post a single predictions for a certain group and tournament.
+      description: |
+        Publish a user predictions for a certain group and tournament.
+      operationId: postMySinglePrediction
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: UUID of the group
+          schema:
+            type: string
+            format: uuid
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
+        - name: matchId
+          in: path
+          required: true
+          description: UUID of the match
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitPredictionRequest"
+      responses:
+        "201":
+          description: Predictions created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmittedPredictionResponse"
+        "400":
+          description: Some parameters are wrong, or the match is already blocked because of the time.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: The user doesn't belong to the group and cannot perform this action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Group, Tournament or Match not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     get:
       tags:
         - Predictions
@@ -912,7 +981,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GroupMatchPredictionsResponse"
+                $ref: "#/components/schemas/GroupPredictionsResponse"
+        "400":
+          description: Some parameters are wrong, or the match isn't blocked because of the time.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: The user doesn't belong to the group and cannot perform this action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Group or Tournament not found
           content:
@@ -1321,7 +1402,7 @@ components:
         - IN_PROGRESS
         - FINISHED
 
-    TournamentMatchResponse:
+    MatchResponse:
       description: A match of a tournament
       type: object
       required:
@@ -1401,64 +1482,72 @@ components:
       description: All the matches of the tournament
       type: object
       required:
-        - id
-        - name
-        - matches
+        - tournament_id
+        - tournament_name
+        - past_matches
+        - live_matches
+        - next_matches
       properties:
-        id:
+        tournament_id:
           type: string
           format: uuid
           description: Unique tournament identifier
           example: f47ac10b-58cc-4372-a567-0e02b2c3d479
-        name:
+        tournament_name:
           type: string
           description: Tournament name
           example: Copa del Mundo 2026
         past_matches:
           type: array
           items:
-            $ref: '#/components/schemas/TournamentMatchResponse'
+            $ref: '#/components/schemas/MatchResponse'
         live_matches:
           type: array
           items:
-            $ref: '#/components/schemas/TournamentMatchResponse'
+            $ref: '#/components/schemas/MatchResponse'
         next_matches:
           type: array
           items:
-            $ref: '#/components/schemas/TournamentMatchResponse'
+            $ref: '#/components/schemas/MatchResponse'
+
+    ScorePredictionResponse:
+      description: A match prediction score
+      type: object
+      required:
+        - home_goals
+        - away_goals
+      properties:
+        home_goals_predicted:
+          type: integer
+          format: int8
+          description: The amount of goals scored by the home team
+          example: 1
+        away_goals_predicted:
+          type: integer
+          format: int8
+          description: The amount of goals scored by the home team
+          example: 1
 
     MatchPredictionResponse:
       description: A match prediction
       type: object
       required:
-        - id
+        - user
         - match
-        - home_team
-        - away_team
       properties:
         id:
           type: string
           format: uuid
           description: Unique prediction identifier
           example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+        user:
+          $ref: '#/components/schemas/UserResponse'
         match:
-          $ref: '#/components/schemas/TournamentMatchResponse'
-        home_team:
-          $ref: '#/components/schemas/TeamResponse'
-        away_team:
-          $ref: '#/components/schemas/TeamResponse'
-        home_goals:
-          type: integer
-          format: int8
-          description: The amount of goals scored by the home team
-          example: 1
-        away_goals:
-          type: integer
-          format: int8
-          description: The amount of goals scored by the home team
-          example: 1
+          $ref: '#/components/schemas/MatchResponse'
+        predicted_score:
+          $ref: '#/components/schemas/ScorePredictionResponse'
 
-    UserPredictionsResponse:
+    GroupPredictionsResponse:
       description: List of predictions for a group and tournament
       type: object
       required:
@@ -1504,6 +1593,15 @@ components:
           description: The amount of goals scored by the home team
           example: 1
 
+    SubmittedPredictionResponse:
+      description: Submitted predictions for a group and tournament
+      type: object
+      required:
+        - id
+        - predicted_score
+      allOf:
+        - $ref: '#/components/schemas/MatchPredictionResponse'
+
     SubmitBulkPredictionsRequest:
       description: List of predictions to save for a group and tournament
       type: object
@@ -1515,44 +1613,13 @@ components:
           items:
             $ref: '#/components/schemas/SubmitPredictionRequest'
 
-    GroupMatchPredictionResponse:
-      description: A match prediction with its user data
-      type: object
-      allOf:
-        - $ref: '#/components/schemas/MatchPredictionResponse'
-        - type: object
-          required:
-            - user
-          properties:
-            user:
-              $ref: "#/components/schemas/UserResponse"
-
-    GroupMatchPredictionsResponse:
-      description: List of past and live predictions for a match within a group and tournament
+    SubmittedBulkPredictionsResponse:
+      description: List of submitted predictions for a group and tournament
       type: object
       required:
-        - group_id
-        - group_name
-        - tournament_id
-        - tournament_name
         - predictions
       properties:
-        group_id:
-          type: string
-          format: uuid
-          description: Unique group identifier
-          example: f47ac10b-58cc-4372-a567-0e02b2c3d479
-        group_name:
-          type: string
-          description: Group name
-          example: General
-        tournament__id:
-          type: string
-          format: uuid
-          description: Unique tournament identifier
-          example: f47ac10b-58cc-4372-a567-0e02b2c3d479
         predictions:
           type: array
           items:
-            $ref: '#/components/schemas/GroupMatchPredictionResponse'
-
+            $ref: '#/components/schemas/SubmittedPredictionResponse'

@@ -5,10 +5,13 @@ import com.grondona.exception.BadRequestException
 import com.grondona.exception.ConflictException
 import com.grondona.exception.GlobalExceptionHandler
 import com.grondona.exception.NotFoundException
-import com.grondona.model.dto.*
+import com.grondona.model.dto.request.CreateGroupRequest
+import com.grondona.model.dto.request.UpdateGroupRequest
+import com.grondona.model.dto.response.GroupResponse
 import com.grondona.security.JwtUserPrincipal
 import com.grondona.service.GroupMembershipService
 import com.grondona.service.GroupService
+import com.grondona.service.PredictionsService
 import com.grondona.service.UserService
 import io.mockk.every
 import io.mockk.just
@@ -29,7 +32,6 @@ import org.springframework.web.bind.support.WebDataBinderFactory
 import org.springframework.web.context.request.NativeWebRequest
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.method.support.ModelAndViewContainer
-import java.time.LocalDateTime
 import java.util.*
 
 class GroupControllerTest {
@@ -38,6 +40,7 @@ class GroupControllerTest {
     private lateinit var userService: UserService
     private lateinit var groupService: GroupService
     private lateinit var groupMembershipService: GroupMembershipService
+    private lateinit var predictionsService: PredictionsService
     private lateinit var objectMapper: ObjectMapper
 
     private val testUserId = UUID.randomUUID()
@@ -68,12 +71,11 @@ class GroupControllerTest {
 
     @BeforeEach
     fun setUp() {
-        userService = mockk()
         groupService = mockk()
         groupMembershipService = mockk()
         objectMapper = ObjectMapper().findAndRegisterModules()
         mockMvc = MockMvcBuilders
-            .standaloneSetup(GroupController(userService, groupService, groupMembershipService))
+            .standaloneSetup(GroupController(groupService, groupMembershipService))
             .setControllerAdvice(GlobalExceptionHandler())
             .setCustomArgumentResolvers(TestPrincipalArgumentResolver())
             .build()

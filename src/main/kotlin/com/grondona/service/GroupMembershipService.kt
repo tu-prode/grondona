@@ -4,13 +4,14 @@ import com.grondona.exception.BadRequestException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.GroupRole
 import com.grondona.model.GroupUser
-import com.grondona.model.dto.UserGroupResponse
+import com.grondona.model.dto.response.UserGroupResponse
 import com.grondona.repository.GroupRepository
 import com.grondona.repository.GroupUserRepository
 import com.grondona.repository.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 import java.util.UUID
 
 @Service
@@ -49,7 +50,7 @@ class GroupMembershipService(
             throw BadRequestException("Group is full")
         }
 
-        val membership = GroupUser(user = user, group = group, role = role)
+        val membership = GroupUser(user = user, group = group, role = role, joinedAt = LocalDateTime.now())
         groupUserRepository.save(membership)
 
         logger.info("User {} joined group '{}' successfully ({}/{} members)", userId, group.name, memberCount + 1, group.maxMembers)

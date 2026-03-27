@@ -1,13 +1,17 @@
-package com.grondona.model.dto
+package com.grondona.model.dto.request
 
 import com.grondona.model.TournamentStatus
-import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
-import jakarta.validation.constraints.Size
 
 data class CreateTournamentRequest(
     @field:NotBlank(message = "Name is required")
     val name: String,
+
+    val status: TournamentStatus? = TournamentStatus.NOT_STARTED
+)
+
+data class UpdateTournamentRequest(
+    val name: String?,
 
     val status: TournamentStatus? = TournamentStatus.NOT_STARTED
 )

@@ -4,7 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.grondona.exception.ConflictException
 import com.grondona.exception.GlobalExceptionHandler
 import com.grondona.exception.NotFoundException
-import com.grondona.model.dto.*
+import com.grondona.model.dto.request.CreateUserRequest
+import com.grondona.model.dto.request.LoginUserRequest
+import com.grondona.model.dto.request.UpdateUserRequest
+import com.grondona.model.dto.response.AuthenticatedUserResponse
+import com.grondona.model.dto.response.UserGroupResponse
+import com.grondona.model.dto.response.UserResponse
 import com.grondona.security.JwtUserPrincipal
 import com.grondona.service.GroupMembershipService
 import com.grondona.service.UserService
@@ -27,7 +32,6 @@ import org.springframework.web.bind.support.WebDataBinderFactory
 import org.springframework.web.context.request.NativeWebRequest
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.method.support.ModelAndViewContainer
-import java.time.LocalDateTime
 import java.util.*
 
 class UserControllerTest {
@@ -91,7 +95,7 @@ class UserControllerTest {
                 email = "test@example.com",
                 password = "password123"
             )
-            val response = AuthResponse(
+            val response = AuthenticatedUserResponse(
                 token = testToken,
                 userId = testUserId,
                 username = request.username,
@@ -141,8 +145,8 @@ class UserControllerTest {
 
         @Test
         fun `POST api users login should return 200 with token on successful login`() {
-            val request = LoginRequest(user = "testuser", password = "password123")
-            val response = AuthResponse(
+            val request = LoginUserRequest(user = "testuser", password = "password123")
+            val response = AuthenticatedUserResponse(
                 token = testToken,
                 userId = testUserId,
                 username = request.user,

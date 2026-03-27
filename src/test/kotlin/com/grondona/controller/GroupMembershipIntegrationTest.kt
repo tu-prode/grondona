@@ -1,13 +1,17 @@
 package com.grondona.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.grondona.createTestingTournamentRequest
+import com.grondona.createTestingUserRequest
 import com.grondona.model.UserPermissions
-import com.grondona.model.dto.*
+import com.grondona.model.dto.request.CreateGroupRequest
+import com.grondona.model.dto.response.AuthenticatedUserResponse
+import com.grondona.model.dto.response.GroupResponse
+import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.repository.GroupRepository
 import com.grondona.repository.GroupUserRepository
 import com.grondona.repository.UserRepository
 import org.junit.jupiter.api.*
-import org.junit.jupiter.api.Assertions.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
@@ -46,44 +50,36 @@ class GroupMembershipIntegrationTest {
         val userResult = mockMvc.perform(
             post("/api/users")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(
-                    CreateUserRequest("Member User", "memberuser", "member@test.com", "password123")
-                ))
+                .content(objectMapper.writeValueAsString(createTestingUserRequest()))
         ).andReturn()
-        authToken = objectMapper.readValue(userResult.response.contentAsString, AuthResponse::class.java).token
+        authToken = objectMapper.readValue(userResult.response.contentAsString, AuthenticatedUserResponse::class.java).token
 
         // Create second test user
         val secondUserResult = mockMvc.perform(
             post("/api/users")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(
-                    CreateUserRequest("Second User", "seconduser", "second@test.com", "password123")
-                ))
+                .content(objectMapper.writeValueAsString(createTestingUserRequest()))
         ).andReturn()
-        secondUserToken = objectMapper.readValue(secondUserResult.response.contentAsString, AuthResponse::class.java).token
+        secondUserToken = objectMapper.readValue(secondUserResult.response.contentAsString, AuthenticatedUserResponse::class.java).token
 
         // Create admin user
         val adminResult = mockMvc.perform(
             post("/api/users")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(
-                    CreateUserRequest("Admin", "admin", "admin@test.com", "password123")
-                ))
+                .content(objectMapper.writeValueAsString(createTestingUserRequest()))
         ).andReturn()
-        val adminId = objectMapper.readValue(adminResult.response.contentAsString, AuthResponse::class.java).userId
+        val adminId = objectMapper.readValue(adminResult.response.contentAsString, AuthenticatedUserResponse::class.java).userId
         val adminUser = userRepository.findById(adminId).get()
         adminUser.permissions = UserPermissions.SUPERUSER
         userRepository.save(adminUser)
-        val adminToken = objectMapper.readValue(adminResult.response.contentAsString, AuthResponse::class.java).token
+        val adminToken = objectMapper.readValue(adminResult.response.contentAsString, AuthenticatedUserResponse::class.java).token
 
         // Create tournament
         val tournamentResult = mockMvc.perform(
             post("/api/tournaments")
                 .header("Authorization", "Bearer $adminToken")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(
-                    CreateTournamentRequest(name = "Test Tournament")
-                ))
+                .content(objectMapper.writeValueAsString(createTestingTournamentRequest()))
         ).andReturn()
         testTournamentId = objectMapper.readValue(tournamentResult.response.contentAsString, TournamentResponse::class.java).id.toString()
 

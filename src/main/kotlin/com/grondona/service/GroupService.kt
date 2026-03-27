@@ -5,7 +5,9 @@ import com.grondona.exception.NotFoundException
 import com.grondona.model.Group
 import com.grondona.model.GroupUser
 import com.grondona.model.Tournament
-import com.grondona.model.dto.*
+import com.grondona.model.dto.request.CreateGroupRequest
+import com.grondona.model.dto.request.UpdateGroupRequest
+import com.grondona.model.dto.response.GroupResponse
 import com.grondona.repository.GroupRepository
 import com.grondona.repository.TournamentRepository
 import jakarta.persistence.criteria.JoinType
@@ -44,7 +46,8 @@ class GroupService(
             name = request.name,
             tournament = tournament,
             isPrivate = request.isPrivate,
-            maxMembers = request.maxMembers
+            maxMembers = request.maxMembers,
+            createdAt = LocalDateTime.now(),
         )
 
         val savedGroup = groupRepository.save(group)
