@@ -7,6 +7,7 @@ import java.util.UUID
 
 data class GroupResponse(
     val id: UUID,
+    val tournamentId: UUID,
     val name: String,
     @get:JsonProperty("private")
     val isPrivate: Boolean,
@@ -15,6 +16,7 @@ data class GroupResponse(
     companion object {
         fun from(group: Group): GroupResponse = GroupResponse(
             id = group.id!!,
+            tournamentId = group.tournament.id!!,
             name = group.name,
             isPrivate = group.isPrivate,
             maxMembers = group.maxMembers,
