@@ -868,7 +868,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GroupPredictionsResponse"
+                $ref: "#/components/schemas/SubmittedBulkPredictionsResponse"
         "400":
           description: Some parameters are wrong, or the match is already blocked because of the time.
           content:
@@ -932,7 +932,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PredictionResponse"
+                $ref: "#/components/schemas/SubmittedPredictionResponse"
         "400":
           description: Some parameters are wrong, or the match is already blocked because of the time.
           content:
@@ -1510,7 +1510,7 @@ components:
           items:
             $ref: '#/components/schemas/MatchResponse'
 
-    PredictionScoreResponse:
+    ScorePredictionResponse:
       description: A match prediction score
       type: object
       required:
@@ -1528,15 +1528,12 @@ components:
           description: The amount of goals scored by the home team
           example: 1
 
-    PredictionResponse:
+    MatchPredictionResponse:
       description: A match prediction
       type: object
       required:
-        - id
         - user
         - match
-        - home_team
-        - away_team
       properties:
         id:
           type: string
@@ -1548,7 +1545,7 @@ components:
         match:
           $ref: '#/components/schemas/MatchResponse'
         predicted_score:
-          $ref: '#/components/schemas/PredictionScoreResponse'
+          $ref: '#/components/schemas/ScorePredictionResponse'
 
     GroupPredictionsResponse:
       description: List of predictions for a group and tournament
@@ -1570,7 +1567,7 @@ components:
         predictions:
           type: array
           items:
-            $ref: '#/components/schemas/PredictionResponse'
+            $ref: '#/components/schemas/MatchPredictionResponse'
 
     SubmitPredictionRequest:
       description: List of user predictions to save for a group and tournament
@@ -1596,6 +1593,15 @@ components:
           description: The amount of goals scored by the home team
           example: 1
 
+    SubmittedPredictionResponse:
+      description: Submitted predictions for a group and tournament
+      type: object
+      required:
+        - id
+        - predicted_score
+      allOf:
+        - $ref: '#/components/schemas/MatchPredictionResponse'
+
     SubmitBulkPredictionsRequest:
       description: List of predictions to save for a group and tournament
       type: object
@@ -1606,3 +1612,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SubmitPredictionRequest'
+
+    SubmittedBulkPredictionsResponse:
+      description: List of submitted predictions for a group and tournament
+      type: object
+      required:
+        - predictions
+      properties:
+        predictions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubmittedPredictionResponse'

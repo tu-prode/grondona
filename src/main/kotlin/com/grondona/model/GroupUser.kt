@@ -26,6 +26,11 @@ data class GroupUser(
     @OnDelete(action = OnDeleteAction.CASCADE)
     val user: User,
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "group_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    val group: Group,
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     var role: GroupRole = GroupRole.MEMBER,
@@ -35,11 +40,6 @@ data class GroupUser(
 
     @Column(nullable = true)
     var rank: Int? = null,
-
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "group_id", nullable = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    val group: Group,
 
     @Column(name = "joined_at", nullable = false)
     val joinedAt: LocalDateTime = LocalDateTime.now(),

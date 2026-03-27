@@ -4,9 +4,7 @@ import jakarta.persistence.*
 import org.hibernate.annotations.OnDelete
 import org.hibernate.annotations.OnDeleteAction
 import org.hibernate.annotations.SQLDelete
-import org.hibernate.annotations.SQLInsert
 import org.hibernate.annotations.SQLRestriction
-import org.hibernate.annotations.SQLUpdate
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -34,11 +32,11 @@ data class Prediction(
     @OnDelete(action = OnDeleteAction.CASCADE)
     val match: Match,
 
-    @Column(name = "home_goals")
-    var homeGoals: Int? = null,
+    @Column(name = "home_goals", nullable = false)
+    var homeGoals: Int,
 
-    @Column(name = "away_goals")
-    var awayGoals: Int? = null,
+    @Column(name = "away_goals", nullable = false)
+    var awayGoals: Int,
 
     @Column(name = "created_at", nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
@@ -48,6 +46,11 @@ data class Prediction(
 
     @Column(name = "deleted_at")
     var deletedAt: LocalDateTime? = null
-) {
-    fun score(): Score? = homeGoals?.let { homeGoals -> awayGoals?.let { awayGoals -> Score(homeGoals, awayGoals) } }
-}
+)
+
+data class PredictionView(
+    val id: UUID?,
+    val user: User,
+    val match: Match,
+    val prediction: Prediction?,
+)

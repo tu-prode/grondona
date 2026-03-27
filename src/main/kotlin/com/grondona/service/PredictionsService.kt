@@ -64,7 +64,7 @@ class PredictionsService(
             throw BadRequestException(message = "Cannot submit predictions for this match")
         }
 
-        predictionRepository.save(prediction)
+        predictionRepository.upsert(prediction)
         return PredictionResponse.from(prediction)
     }
 
@@ -86,27 +86,33 @@ class PredictionsService(
                 group = group,
                 homeGoals = prediction.homeGoals,
                 awayGoals = prediction.awayGoals,
-                createdAt = LocalDateTime.now(),
-                updatedAt = LocalDateTime.now(),
                 match = matchRepository.findById(prediction.matchId)
                     .orElseThrow { NotFoundException("Match not found") },
             )
-        }.filter { canSubmit(it.match) }
+        }.filter { if (canSubmit(it.match)) true else {
+            logger.warn("User={} trying to submit predictions for match={}, but it's locked", userId, it.match.id); false
+        } }
+
 
         predictionRepository.saveAll(predictions)
-        return GroupPredictionsResponse.from(group, predictions)
+        return GroupPredictionsResponse.fromPrediction(group, predictions)
     }
 
-    fun getUserPredictions(userId: UUID, groupId: UUID): GroupPredictionsResponse {
+    fun getGroupUserPredictions(userId: UUID, groupId: UUID): GroupPredictionsResponse {
         logger.info("Fetching predictions for user={} at group={}", userId, groupId)
 
+        val user = userRepository.findById(userId).orElseThrow { NotFoundException("User not found") }
         val group = groupRepository.findById(groupId).orElseThrow { NotFoundException("Group not found") }
-        val predictions = predictionRepository.findAllByUserIdAndGroupIdOrderByMatchStartedAt(userId, groupId)
+        if (!groupUserRepository.existsByUserIdAndGroupId(userId, groupId)) {
+            logger.warn("User={} trying fetch predictions from the group={}, but doesn't belong to", userId, groupId)
+            throw ForbiddenException("User doesn't belong to the group")
+        }
 
-        return GroupPredictionsResponse.from(group, predictions)
+        val predictions = predictionRepository.findGroupPredictionsForUser(groupId, userId)
+        return GroupPredictionsResponse.fromPredictionView(group, predictions)
     }
 
-    fun getMatchPredictions(userId: UUID, groupId: UUID, matchId: UUID): GroupPredictionsResponse {
+    fun getGroupMatchPredictions(userId: UUID, groupId: UUID, matchId: UUID): GroupPredictionsResponse {
         logger.info("Fetching predictions for match={} at group={}, by user={}", matchId, groupId, userId)
 
         val group = groupRepository.findById(groupId).orElseThrow { NotFoundException("Group not found") }
@@ -122,6 +128,6 @@ class PredictionsService(
         }
 
         val predictions = predictionRepository.findGroupPredictionsForMatch(groupId, matchId)
-        return GroupPredictionsResponse.from(group, predictions)
+        return GroupPredictionsResponse.fromPredictionView(group, predictions)
     }
 }
