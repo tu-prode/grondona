@@ -3,9 +3,12 @@ package com.grondona.service
 import com.grondona.exception.ConflictException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.Group
+import com.grondona.model.Tournament
+import com.grondona.model.TournamentStatus
 import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.repository.GroupRepository
+import com.grondona.repository.TournamentRepository
 import io.mockk.*
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
@@ -22,12 +25,25 @@ class GroupServiceTest {
     @MockK
     private lateinit var groupRepository: GroupRepository
 
+    @MockK
+    private lateinit var tournamentRepository: TournamentRepository
+
     @InjectMockKs
     private lateinit var groupService: GroupService
+
+    private val testTournamentId = UUID.randomUUID()
+    private val testTournament: Tournament = Tournament(
+        id = testTournamentId,
+        name = "Test Tournament",
+        status = TournamentStatus.NOT_STARTED,
+        createdAt = LocalDateTime.now(),
+        updatedAt = LocalDateTime.now()
+    )
 
     private val testGroupId = UUID.randomUUID()
     private val testGroup = Group(
         id = testGroupId,
+        tournament = testTournament,
         name = "Test Group",
         isPrivate = false,
         maxMembers = 20,
@@ -48,10 +64,11 @@ class GroupServiceTest {
             val request = CreateGroupRequest(name = "New Group", isPrivate = false, maxMembers = 15)
             val savedGroup = testGroup.copy(name = "New Group", maxMembers = 15)
 
+            every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
             every { groupRepository.existsByName(request.name) } returns false
             every { groupRepository.save(any()) } returns savedGroup
 
-            val result = groupService.createGroup(request)
+            val result = groupService.createGroup(testTournamentId, request)
 
             assertEquals("New Group", result.name)
             assertEquals(false, result.isPrivate)
@@ -64,10 +81,11 @@ class GroupServiceTest {
             val request = CreateGroupRequest(name = "Private Group", isPrivate = true, maxMembers = 5)
             val savedGroup = testGroup.copy(name = "Private Group", isPrivate = true, maxMembers = 5)
 
+            every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
             every { groupRepository.existsByName(request.name) } returns false
             every { groupRepository.save(any()) } returns savedGroup
 
-            val result = groupService.createGroup(request)
+            val result = groupService.createGroup(testTournamentId, request)
 
             assertTrue(result.isPrivate)
         }
@@ -78,7 +96,7 @@ class GroupServiceTest {
             every { groupRepository.existsByName(request.name) } returns true
 
             val exception = assertThrows<ConflictException> {
-                groupService.createGroup(request)
+                groupService.createGroup(testTournamentId, request)
             }
             assertEquals("Group name already exists", exception.message)
             assertEquals("name", exception.field)

@@ -1,6 +1,8 @@
 package com.grondona.model
 
 import jakarta.persistence.*
+import org.hibernate.annotations.OnDelete
+import org.hibernate.annotations.OnDeleteAction
 import org.hibernate.annotations.SQLDelete
 import org.hibernate.annotations.SQLRestriction
 import java.time.LocalDateTime
@@ -14,6 +16,11 @@ data class Group(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     val id: UUID? = null,
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "tournament_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    val tournament: Tournament,
 
     @Column(nullable = false, unique = true, length = 100)
     var name: String,

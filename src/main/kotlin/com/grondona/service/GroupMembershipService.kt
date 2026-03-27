@@ -2,6 +2,7 @@ package com.grondona.service
 
 import com.grondona.exception.BadRequestException
 import com.grondona.exception.NotFoundException
+import com.grondona.model.GroupRole
 import com.grondona.model.GroupUser
 import com.grondona.model.dto.response.UserGroupResponse
 import com.grondona.repository.GroupRepository
@@ -24,7 +25,7 @@ class GroupMembershipService(
     }
 
     @Transactional
-    fun joinGroup(userId: UUID, groupId: UUID) {
+    fun joinGroup(userId: UUID, groupId: UUID, role: GroupRole = GroupRole.MEMBER) {
         logger.info("User {} attempting to join group {}", userId, groupId)
 
         val group = groupRepository.findById(groupId).orElseThrow {
@@ -48,7 +49,7 @@ class GroupMembershipService(
             throw BadRequestException("Group is full")
         }
 
-        val membership = GroupUser(user = user, group = group)
+        val membership = GroupUser(user = user, group = group, role = role)
         groupUserRepository.save(membership)
 
         logger.info("User {} joined group '{}' successfully ({}/{} members)", userId, group.name, memberCount + 1, group.maxMembers)
@@ -78,5 +79,16 @@ class GroupMembershipService(
         val memberships = groupUserRepository.findUserGroups(userId)
         logger.info("User {} belongs to {} groups", userId, memberships.size)
         return memberships
+    }
+
+    fun isAdmin(userId: UUID, groupId: UUID): Boolean {
+        logger.info("Checking if user={} is admin of group={}", userId, groupId)
+        return groupUserRepository.findByUserIdAndGroupId(userId, groupId)
+            .map { it.role == GroupRole.ADMIN || it.role == GroupRole.OWNER }.orElse(false)
+    }
+
+    fun isMember(userId: UUID, groupId: UUID): Boolean {
+        logger.info("Checking if user={} is admin of group={}", userId, groupId)
+        return groupUserRepository.findByUserIdAndGroupId(userId, groupId).isPresent
     }
 }

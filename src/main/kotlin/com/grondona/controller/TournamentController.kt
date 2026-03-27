@@ -9,7 +9,7 @@ import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.security.JwtUserPrincipal
 import com.grondona.service.TournamentService
 import com.grondona.service.UserService
-import javax.validation.Valid
+import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity

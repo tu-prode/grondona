@@ -35,24 +35,54 @@ INSERT INTO users (id, fullname, username, email, password_hash, permissions) VA
     ('c97ec073-c40c-4094-9f9e-b07074188936', 'Cristian Raña', 'cris', 'cristian.rana8@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'SUPERUSER')
 ON CONFLICT (id) DO NOTHING;
 
--- Create groups table
-CREATE TABLE IF NOT EXISTS groups (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(100) NOT NULL UNIQUE,
-    is_private BOOLEAN NOT NULL DEFAULT FALSE,
-    max_members INTEGER NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP DEFAULT NULL,
-    CONSTRAINT uq_groups UNIQUE (id)
+-- Create tournaments table
+CREATE TABLE IF NOT EXISTS tournaments (
+	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	name VARCHAR(256) NOT NULL,
+	status VARCHAR(20) NOT NULL DEFAULT 'NOT_STARTED',
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	deleted_at TIMESTAMP DEFAULT NULL,
+	CONSTRAINT uq_tournaments UNIQUE (id)
 );
 
 -- Create indexes for uniqueness and better query performance
-CREATE UNIQUE INDEX IF NOT EXISTS idx_groups_name ON groups(name) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tournaments_name ON tournaments(name) WHERE deleted_at IS NULL;
+
+-- Add comments to table and columns
+COMMENT ON TABLE tournaments IS 'Tournaments table';
+COMMENT ON COLUMN tournaments.id IS 'Unique identifier for the tournament';
+COMMENT ON COLUMN tournaments.name IS 'Name of the tournament';
+COMMENT ON COLUMN tournaments.status IS 'Status of the tournament (can be either NOT_STARTED, IN_PROGRESS or FINISHED)';
+COMMENT ON COLUMN tournaments.created_at IS 'Timestamp when the tournament was created';
+COMMENT ON COLUMN tournaments.updated_at IS 'Timestamp when the tournament was last updated';
+COMMENT ON COLUMN tournaments.deleted_at IS 'Timestamp when the tournament was deleted';
+
+-- Seed default tournaments
+INSERT INTO tournaments (id, name, status) VALUES
+    ('28652183-a2d6-4f33-a624-0d24645ce3cd', 'Copa del Mundo 2026', 'NOT_STARTED')
+ON CONFLICT (id) DO NOTHING;
+
+-- Create groups table
+CREATE TABLE IF NOT EXISTS groups (
+	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+	name VARCHAR(100) NOT NULL UNIQUE,
+	is_private BOOLEAN NOT NULL DEFAULT FALSE,
+	max_members INTEGER NOT NULL,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	deleted_at TIMESTAMP DEFAULT NULL,
+	CONSTRAINT uq_groups UNIQUE (id)
+);
+
+-- Create indexes for uniqueness and better query performance
+CREATE UNIQUE INDEX IF NOT EXISTS idx_groups_name ON groups(tournament_id, name) WHERE deleted_at IS NULL;
 
 -- Add comments to table and columns
 COMMENT ON TABLE groups IS 'Prode groups table';
 COMMENT ON COLUMN groups.id IS 'Unique identifier for the group';
+COMMENT ON COLUMN groups.tournament_id IS 'Reference to the tournament';
 COMMENT ON COLUMN groups.name IS 'Unique group name';
 COMMENT ON COLUMN groups.is_private IS 'Whether the group is private';
 COMMENT ON COLUMN groups.max_members IS 'Maximum number of members allowed';
@@ -61,24 +91,24 @@ COMMENT ON COLUMN groups.updated_at IS 'Timestamp when the group was last update
 COMMENT ON COLUMN groups.deleted_at IS 'Timestamp when the group was deleted';
 
 -- Seed default groups
-INSERT INTO groups (id, name, is_private, max_members) VALUES
-    ('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'General', FALSE, 50),
-    ('7c9e6679-7425-40de-944b-e07fc1f90ae7', 'EPO', FALSE, 25),
-    ('b5d4c3a2-1e0f-4d9c-8b7a-6f5e4d3c2b1a', 'Baldosa', FALSE, 27),
-    ('e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', 'Maldolar', FALSE, 12)
+INSERT INTO groups (id, tournament_id, name, is_private, max_members) VALUES
+	('f47ac10b-58cc-4372-a567-0e02b2c3d479', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'General', FALSE, 50),
+	('7c9e6679-7425-40de-944b-e07fc1f90ae7', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'EPO', FALSE, 25),
+	('b5d4c3a2-1e0f-4d9c-8b7a-6f5e4d3c2b1a', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'Baldosa', FALSE, 27),
+	('e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'Maldolar', FALSE, 12)
 ON CONFLICT (id) DO NOTHING;
 
 -- Create group_users table (membership)
 CREATE TABLE IF NOT EXISTS group_users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
-    role VARCHAR(20) NOT NULL DEFAULT 'MEMBER',
-    points FLOAT NOT NULL DEFAULT 0,
-    joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    calculated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP DEFAULT NULL,
-    CONSTRAINT uq_group_users UNIQUE (id)
+	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+	role VARCHAR(20) NOT NULL DEFAULT 'MEMBER',
+	points FLOAT NOT NULL DEFAULT 0,
+	joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	calculated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	deleted_at TIMESTAMP DEFAULT NULL,
+	CONSTRAINT uq_group_users UNIQUE (id)
 );
 
 -- Create indexes for uniqueness and better query performance
@@ -99,50 +129,22 @@ COMMENT ON COLUMN group_users.deleted_at IS 'Timestamp when the user left the gr
 
 -- Seed default members
 INSERT INTO group_users (user_id, group_id, role) VALUES
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'OWNER'),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', '7c9e6679-7425-40de-944b-e07fc1f90ae7', 'OWNER'),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'b5d4c3a2-1e0f-4d9c-8b7a-6f5e4d3c2b1a', 'OWNER'),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', 'OWNER')
-ON CONFLICT (id) DO NOTHING;
-
--- Create tournaments table
-CREATE TABLE IF NOT EXISTS tournaments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(256) NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'NOT_STARTED',
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP DEFAULT NULL,
-    CONSTRAINT uq_tournaments UNIQUE (id)
-);
-
--- Create indexes for uniqueness and better query performance
-CREATE UNIQUE INDEX IF NOT EXISTS idx_tournaments_name ON tournaments(name) WHERE deleted_at IS NULL;
-
--- Add comments to table and columns
-COMMENT ON TABLE tournaments IS 'Tournaments table';
-COMMENT ON COLUMN tournaments.id IS 'Unique identifier for the tournament';
-COMMENT ON COLUMN tournaments.name IS 'Name of the tournament';
-COMMENT ON COLUMN tournaments.status IS 'Status of the tournament (can be either NOT_STARTED, IN_PROGRESS or FINISHED)';
-COMMENT ON COLUMN tournaments.created_at IS 'Timestamp when the tournament was created';
-COMMENT ON COLUMN tournaments.updated_at IS 'Timestamp when the tournament was last updated';
-COMMENT ON COLUMN tournaments.deleted_at IS 'Timestamp when the tournament was deleted';
-
--- Seed default tournaments
-INSERT INTO tournaments (id, name, status) VALUES
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', 'Copa del Mundo 2026', 'NOT_STARTED')
+	('c97ec073-c40c-4094-9f9e-b07074188936', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'OWNER'),
+	('c97ec073-c40c-4094-9f9e-b07074188936', '7c9e6679-7425-40de-944b-e07fc1f90ae7', 'OWNER'),
+	('c97ec073-c40c-4094-9f9e-b07074188936', 'b5d4c3a2-1e0f-4d9c-8b7a-6f5e4d3c2b1a', 'OWNER'),
+	('c97ec073-c40c-4094-9f9e-b07074188936', 'e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', 'OWNER')
 ON CONFLICT (id) DO NOTHING;
 
 -- Create teams table
 CREATE TABLE IF NOT EXISTS teams (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(100) NOT NULL,
-    code VARCHAR(5) NOT NULL,
-    icon TEXT DEFAULT 'https://flagicons.lipis.dev/flags/4x3/xx.svg',
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP DEFAULT NULL,
-    CONSTRAINT uq_teams UNIQUE (id)
+	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	name VARCHAR(100) NOT NULL,
+	code VARCHAR(5) NOT NULL,
+	icon TEXT DEFAULT 'https://flagicons.lipis.dev/flags/4x3/xx.svg',
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	deleted_at TIMESTAMP DEFAULT NULL,
+	CONSTRAINT uq_teams UNIQUE (id)
 );
 
 -- Create indexes for uniqueness and better query performance
@@ -160,78 +162,78 @@ COMMENT ON COLUMN teams.deleted_at IS 'Timestamp when the team was deleted';
 
 -- Seed default tournaments
 INSERT INTO teams (id, name, code, icon) VALUES
-    ('6f1c5f6e-9c9e-4f3b-8d8e-2b5e2a6a1c01', 'Alemania', 'GER', 'https://flagcdn.com/w40/de.png'),
-    ('b2c9c3e7-7f7e-4a5a-9f2b-3c1d9a4e8b02', 'Arabia Saudita', 'KSA', 'https://flagcdn.com/w40/sa.png'),
-    ('1a4d2b6c-5e7f-4c8a-9d1e-6b3f2a7c9d03', 'Argelia', 'ALG', 'https://flagcdn.com/w40/dz.png'),
-    ('9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04', 'Argentina', 'ARG', 'https://flagcdn.com/w40/ar.png'),
-    ('3e7b1c9d-6f2a-4d8c-8b1e-5c9a2f7d3b05', 'Australia', 'AUS', 'https://flagcdn.com/w40/au.png'),
-    ('7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06', 'Austria', 'AUT', 'https://flagcdn.com/w40/at.png'),
-    ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07', 'Brasil', 'BRA', 'https://flagcdn.com/w40/br.png'),
-    ('8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08', 'Bélgica', 'BEL', 'https://flagcdn.com/w40/be.png'),
-    ('4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09', 'Cabo Verde', 'CPV', 'https://flagcdn.com/w40/cv.png'),
-    ('5a1c9e3b-7d2f-4a6c-8b9e-2f3d7a1c4b10', 'Canadá', 'CAN', 'https://flagcdn.com/w40/ca.png'),
-    ('c3e7b1a9-5f2d-4c8a-9e6b-1a2f3d7c5b11', 'Catar', 'QAT', 'https://flagcdn.com/w40/qa.png'),
-    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Colombia', 'COL', 'https://flagcdn.com/w40/co.png'),
-    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Corea del Sur', 'KOR', 'https://flagcdn.com/w40/kr.png'),
-    ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', 'Costa de Marfil', 'CIV', 'https://flagcdn.com/w40/kr.png'),
-    ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Croacia', 'CRO', 'https://flagcdn.com/w40/hr.png'),
-    ('b7e3c1a5-2f9d-4a6c-8e1b-3d7a5c2f9e16', 'Curazao', 'CUW', 'https://flagcdn.com/w40/cw.png'),
-    ('c1a5e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b17', 'Ecuador', 'ECU', 'https://flagcdn.com/w40/ec.png'),
-    ('d5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18', 'Egipto', 'EGY', 'https://flagcdn.com/w40/eg.png'),
-    ('e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19', 'Escocia', 'SCO', 'https://flagcdn.com/w40/gb-sco.png'),
-    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'España', 'ESP', 'https://flagcdn.com/w40/es.png'),
-    ('a9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b21', 'Estados Unidos', 'USA', 'https://flagcdn.com/w40/us.png'),
-    ('b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22', 'Francia', 'FRA', 'https://flagcdn.com/w40/fr.png'),
-    ('c9e3a1b5-5f2d-4c8a-9e6b-1a2f3d7c5b23', 'Ghana', 'GHA', 'https://flagcdn.com/w40/gh.png'),
-    ('d1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24', 'Haití', 'HAI', 'https://flagcdn.com/w40/ht.png'),
-    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Inglaterra', 'ENG', 'https://flagcdn.com/w40/gb-eng.png'),
-    ('f3a1c5e7-2f9d-4a6c-8e1b-3d7a5c2f9e26', 'Irán', 'IRN', 'https://flagcdn.com/w40/ir.png'),
-    ('a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27', 'Japón', 'JPN', 'https://flagcdn.com/w40/jp.png'),
-    ('b5e1c7a3-2f9d-4a6c-8e1b-3d7a5c2f9e28', 'Jordania', 'JOR', 'https://flagcdn.com/w40/jo.png'),
-    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Marruecos', 'MAR', 'https://flagcdn.com/w40/ma.png'),
-    ('d3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30', 'México', 'MEX', 'https://flagcdn.com/w40/mx.png'),
-    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Noruega', 'NOR', 'https://flagcdn.com/w40/no.png'),
-    ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', 'Nueva Zelanda', 'NZL', 'https://flagcdn.com/w40/nz.png'),
-    ('a1e7c3b5-9d2f-4c8a-9e6b-2f3a1c7d5b33', 'Países Bajos', 'NED', 'https://flagcdn.com/w40/nl.png'),
-    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Panamá', 'PAN', 'https://flagcdn.com/w40/pa.png'),
-    ('c5e1a7b3-9d2f-4c8a-9e6b-2f3a1c7d5b35', 'Paraguay', 'PAR', 'https://flagcdn.com/w40/py.png'),
-    ('d7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36', 'Portugal', 'POR', 'https://flagcdn.com/w40/pt.png'),
-    ('e3c1a7b5-9d2f-4c8a-9e6b-2f3a1c7d5b37', 'Senegal', 'SEN', 'https://flagcdn.com/w40/sn.png'),
-    ('f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38', 'Sudáfrica', 'RSA', 'https://flagcdn.com/w40/za.png'),
-    ('a3c1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b39', 'Suiza', 'SUI', 'https://flagcdn.com/w40/ch.png'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Túnez', 'TUN', 'https://flagcdn.com/w40/tn.png'),
-    ('c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41', 'Uruguay', 'URU', 'https://flagcdn.com/w40/uy.png'),
-    ('d9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42', 'Uzbekistán', 'UZB', 'https://flagcdn.com/w40/uz.png'),
-    ('8f251495-81ba-4724-b575-f7ebecf213c4', 'FIFA 1', 'FIFA1', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Flag_of_FIFA.svg/1920px-Flag_of_FIFA.svg.png'),
-    ('da0e5c75-ba1c-4090-bbba-ad57d0e3b153', 'FIFA 2', 'FIFA2', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Flag_of_FIFA.svg/1920px-Flag_of_FIFA.svg.png'),
-    ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', 'UEFA 1', 'UEFA1', 'https://www.no1flag.com/Content/ue/net/upload/2017-04-10/74b35597-c1cd-4e02-9b95-1e8a1ef1bf0d.gif'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'UEFA 2', 'UEFA2', 'https://www.no1flag.com/Content/ue/net/upload/2017-04-10/74b35597-c1cd-4e02-9b95-1e8a1ef1bf0d.gif'),
-    ('07782a28-4f6d-4037-86b8-ccff4c2de218', 'UEFA 3', 'UEFA3', 'https://www.no1flag.com/Content/ue/net/upload/2017-04-10/74b35597-c1cd-4e02-9b95-1e8a1ef1bf0d.gif'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'UEFA 4', 'UEFA4', 'https://www.no1flag.com/Content/ue/net/upload/2017-04-10/74b35597-c1cd-4e02-9b95-1e8a1ef1bf0d.gif')
+	 ('6f1c5f6e-9c9e-4f3b-8d8e-2b5e2a6a1c01', 'Alemania', 'GER', 'https://flagcdn.com/w40/de.png'),
+	 ('b2c9c3e7-7f7e-4a5a-9f2b-3c1d9a4e8b02', 'Arabia Saudita', 'KSA', 'https://flagcdn.com/w40/sa.png'),
+	 ('1a4d2b6c-5e7f-4c8a-9d1e-6b3f2a7c9d03', 'Argelia', 'ALG', 'https://flagcdn.com/w40/dz.png'),
+	 ('9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04', 'Argentina', 'ARG', 'https://flagcdn.com/w40/ar.png'),
+	 ('3e7b1c9d-6f2a-4d8c-8b1e-5c9a2f7d3b05', 'Australia', 'AUS', 'https://flagcdn.com/w40/au.png'),
+	 ('7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06', 'Austria', 'AUT', 'https://flagcdn.com/w40/at.png'),
+	 ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07', 'Brasil', 'BRA', 'https://flagcdn.com/w40/br.png'),
+	 ('8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08', 'Bélgica', 'BEL', 'https://flagcdn.com/w40/be.png'),
+	 ('4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09', 'Cabo Verde', 'CPV', 'https://flagcdn.com/w40/cv.png'),
+	 ('5a1c9e3b-7d2f-4a6c-8b9e-2f3d7a1c4b10', 'Canadá', 'CAN', 'https://flagcdn.com/w40/ca.png'),
+	 ('c3e7b1a9-5f2d-4c8a-9e6b-1a2f3d7c5b11', 'Catar', 'QAT', 'https://flagcdn.com/w40/qa.png'),
+	 ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Colombia', 'COL', 'https://flagcdn.com/w40/co.png'),
+	 ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Corea del Sur', 'KOR', 'https://flagcdn.com/w40/kr.png'),
+	 ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', 'Costa de Marfil', 'CIV', 'https://flagcdn.com/w40/kr.png'),
+	 ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Croacia', 'CRO', 'https://flagcdn.com/w40/hr.png'),
+	 ('b7e3c1a5-2f9d-4a6c-8e1b-3d7a5c2f9e16', 'Curazao', 'CUW', 'https://flagcdn.com/w40/cw.png'),
+	 ('c1a5e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b17', 'Ecuador', 'ECU', 'https://flagcdn.com/w40/ec.png'),
+	 ('d5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18', 'Egipto', 'EGY', 'https://flagcdn.com/w40/eg.png'),
+	 ('e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19', 'Escocia', 'SCO', 'https://flagcdn.com/w40/gb-sco.png'),
+	 ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'España', 'ESP', 'https://flagcdn.com/w40/es.png'),
+	 ('a9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b21', 'Estados Unidos', 'USA', 'https://flagcdn.com/w40/us.png'),
+	 ('b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22', 'Francia', 'FRA', 'https://flagcdn.com/w40/fr.png'),
+	 ('c9e3a1b5-5f2d-4c8a-9e6b-1a2f3d7c5b23', 'Ghana', 'GHA', 'https://flagcdn.com/w40/gh.png'),
+	 ('d1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24', 'Haití', 'HAI', 'https://flagcdn.com/w40/ht.png'),
+	 ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Inglaterra', 'ENG', 'https://flagcdn.com/w40/gb-eng.png'),
+	 ('f3a1c5e7-2f9d-4a6c-8e1b-3d7a5c2f9e26', 'Irán', 'IRN', 'https://flagcdn.com/w40/ir.png'),
+	 ('a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27', 'Japón', 'JPN', 'https://flagcdn.com/w40/jp.png'),
+	 ('b5e1c7a3-2f9d-4a6c-8e1b-3d7a5c2f9e28', 'Jordania', 'JOR', 'https://flagcdn.com/w40/jo.png'),
+	 ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Marruecos', 'MAR', 'https://flagcdn.com/w40/ma.png'),
+	 ('d3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30', 'México', 'MEX', 'https://flagcdn.com/w40/mx.png'),
+	 ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Noruega', 'NOR', 'https://flagcdn.com/w40/no.png'),
+	 ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', 'Nueva Zelanda', 'NZL', 'https://flagcdn.com/w40/nz.png'),
+	 ('a1e7c3b5-9d2f-4c8a-9e6b-2f3a1c7d5b33', 'Países Bajos', 'NED', 'https://flagcdn.com/w40/nl.png'),
+	 ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Panamá', 'PAN', 'https://flagcdn.com/w40/pa.png'),
+	 ('c5e1a7b3-9d2f-4c8a-9e6b-2f3a1c7d5b35', 'Paraguay', 'PAR', 'https://flagcdn.com/w40/py.png'),
+	 ('d7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36', 'Portugal', 'POR', 'https://flagcdn.com/w40/pt.png'),
+	 ('e3c1a7b5-9d2f-4c8a-9e6b-2f3a1c7d5b37', 'Senegal', 'SEN', 'https://flagcdn.com/w40/sn.png'),
+	 ('f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38', 'Sudáfrica', 'RSA', 'https://flagcdn.com/w40/za.png'),
+	 ('a3c1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b39', 'Suiza', 'SUI', 'https://flagcdn.com/w40/ch.png'),
+	 ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Túnez', 'TUN', 'https://flagcdn.com/w40/tn.png'),
+	 ('c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41', 'Uruguay', 'URU', 'https://flagcdn.com/w40/uy.png'),
+	 ('d9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42', 'Uzbekistán', 'UZB', 'https://flagcdn.com/w40/uz.png'),
+	 ('8f251495-81ba-4724-b575-f7ebecf213c4', 'FIFA 1', 'FIFA1', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Flag_of_FIFA.svg/1920px-Flag_of_FIFA.svg.png'),
+	 ('da0e5c75-ba1c-4090-bbba-ad57d0e3b153', 'FIFA 2', 'FIFA2', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Flag_of_FIFA.svg/1920px-Flag_of_FIFA.svg.png'),
+	 ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', 'UEFA 1', 'UEFA1', 'https://www.no1flag.com/Content/ue/net/upload/2017-04-10/74b35597-c1cd-4e02-9b95-1e8a1ef1bf0d.gif'),
+	 ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'UEFA 2', 'UEFA2', 'https://www.no1flag.com/Content/ue/net/upload/2017-04-10/74b35597-c1cd-4e02-9b95-1e8a1ef1bf0d.gif'),
+	 ('07782a28-4f6d-4037-86b8-ccff4c2de218', 'UEFA 3', 'UEFA3', 'https://www.no1flag.com/Content/ue/net/upload/2017-04-10/74b35597-c1cd-4e02-9b95-1e8a1ef1bf0d.gif'),
+	 ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'UEFA 4', 'UEFA4', 'https://www.no1flag.com/Content/ue/net/upload/2017-04-10/74b35597-c1cd-4e02-9b95-1e8a1ef1bf0d.gif')
 ON CONFLICT (id) DO NOTHING;
 
 -- Create matches table
 CREATE TABLE IF NOT EXISTS matches (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    match_key VARCHAR(10) NOT NULL,
-    tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
-    home_team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-    away_team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-    home_quota FLOAT NOT NULL DEFAULT 1,
-    tie_quota FLOAT NOT NULL DEFAULT 1,
-    away_quota FLOAT NOT NULL DEFAULT 1,
+	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	match_key VARCHAR(10) NOT NULL,
+	tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+	home_team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+	away_team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+	home_quota FLOAT NOT NULL DEFAULT 1,
+	tie_quota FLOAT NOT NULL DEFAULT 1,
+	away_quota FLOAT NOT NULL DEFAULT 1,
     status VARCHAR(20) NOT NULL DEFAULT 'NOT_STARTED',
     substatus VARCHAR(20) DEFAULT NULL,
-    started_at TIMESTAMP DEFAULT NULL,
-    finished_at TIMESTAMP DEFAULT NULL,
-    home_goals INT DEFAULT NULL,
-    away_goals INT DEFAULT NULL,
-    home_penalties INT DEFAULT NULL,
-    away_penalties INT DEFAULT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP DEFAULT NULL,
-    CONSTRAINT uq_matches UNIQUE (id)
+	started_at TIMESTAMP DEFAULT NULL,
+	finished_at TIMESTAMP DEFAULT NULL,
+	home_goals INT DEFAULT NULL,
+	away_goals INT DEFAULT NULL,
+	home_penalties INT DEFAULT NULL,
+	away_penalties INT DEFAULT NULL,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	deleted_at TIMESTAMP DEFAULT NULL,
+	CONSTRAINT uq_matches UNIQUE (id)
 );
 
 -- Create indexes for uniqueness and better query performance
@@ -261,78 +263,78 @@ COMMENT ON COLUMN matches.deleted_at IS 'Timestamp when the match was deleted';
 
 -- Seed default matches
 INSERT INTO matches (tournament_id, match_key, home_team_id, away_team_id, started_at, home_quota, tie_quota, away_quota) VALUES
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '1', 'd3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30', 'f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38', '2026-06-11 13:00:00 -06:00'::timestamptz, 1+2*round(cast(log(1.45) as numeric), 2), 1+2*round(cast(log(4.1) as numeric), 2), 1+2*round(cast(log(5.75) as numeric), 2)),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '2', 'e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', '219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', '2026-06-11 20:00:00 -06:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '3', '5a1c9e3b-7d2f-4a6c-8b9e-2f3d7a1c4b10', 'fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', '2026-06-12 15:00:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '4', 'a9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b21', 'c5e1a7b3-9d2f-4c8a-9e6b-2f3a1c7d5b35', '2026-06-12 18:00:00 -07:00'::timestamptz, 1+2*round(cast(log(1.85) as numeric), 2), 1+2*round(cast(log(3.5) as numeric), 2), 1+2*round(cast(log(3.8) as numeric), 2)),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '5', 'd1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24', 'e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19', '2026-06-13 21:00:00 -04:00'::timestamptz, 1+2*round(cast(log(6.25) as numeric), 2), 1+2*round(cast(log(4.75) as numeric), 2), 1+2*round(cast(log(1.38) as numeric), 2)),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '6', '3e7b1c9d-6f2a-4d8c-8b1e-5c9a2f7d3b05', '07782a28-4f6d-4037-86b8-ccff4c2de218', '2026-06-13 21:00:00 -07:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '7', '2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07', 'c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', '2026-06-13 18:00:00 -04:00'::timestamptz, 1+2*round(cast(log(1.50) as numeric), 2), 1+2*round(cast(log(3.9) as numeric), 2), 1+2*round(cast(log(5.5) as numeric), 2)),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '8', 'c3e7b1a9-5f2d-4c8a-9e6b-1a2f3d7c5b11', 'a3c1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b39', '2026-06-13 15:00:00 -07:00'::timestamptz, 1+2*round(cast(log(8) as numeric), 2), 1+2*round(cast(log(5) as numeric), 2), 1+2*round(cast(log(1.3) as numeric), 2)),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '9', '6f1c5f6e-9c9e-4f3b-8d8e-2b5e2a6a1c01', 'b7e3c1a5-2f9d-4a6c-8e1b-3d7a5c2f9e16', '2026-06-14 12:00:00 -05:00'::timestamptz, 1+2*round(cast(log(1.02) as numeric), 2), 1+2*round(cast(log(21) as numeric), 2), 1+2*round(cast(log(51) as numeric), 2)),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '10', 'f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', 'c1a5e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b17', '2026-06-14 19:00:00 -04:00'::timestamptz, 1+2*round(cast(log(3.1) as numeric), 2), 1+2*round(cast(log(3.25) as numeric), 2), 1+2*round(cast(log(2.15) as numeric), 2)),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '11', 'a1e7c3b5-9d2f-4c8a-9e6b-2f3a1c7d5b33', 'a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27', '2026-06-14 15:00:00 -05:00'::timestamptz, 1+2*round(cast(log(1.9) as numeric), 2), 1+2*round(cast(log(3.6) as numeric), 2), 1+2*round(cast(log(3.5) as numeric), 2)),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '12', '8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', '2026-06-14 20:00:00 -06:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '13', 'b2c9c3e7-7f7e-4a5a-9f2b-3c1d9a4e8b02', 'c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41', '2026-06-15 18:00:00 -04:00'::timestamptz, 1+2*round(cast(log(5) as numeric), 2), 1+2*round(cast(log(3.8) as numeric), 2), 1+2*round(cast(log(1.57) as numeric), 2)),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '14', 'f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', '4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09', '2026-06-15 12:00:00 -04:00'::timestamptz, 1+2*round(cast(log(1.05) as numeric), 2), 1+2*round(cast(log(17) as numeric), 2), 1+2*round(cast(log(34) as numeric), 2)),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '15', 'f3a1c5e7-2f9d-4a6c-8e1b-3d7a5c2f9e26', 'f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', '2026-06-15 18:00:00 -07:00'::timestamptz, 1+2*round(cast(log(1.66) as numeric), 2), 1+2*round(cast(log(3.6) as numeric), 2), 1+2*round(cast(log(4.5) as numeric), 2)),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '16', '8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08', 'd5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18', '2026-06-15 12:00:00 -07:00'::timestamptz, 1+2*round(cast(log(1.53) as numeric), 2), 1+2*round(cast(log(4) as numeric), 2), 1+2*round(cast(log(5.5) as numeric), 2)),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '17', 'b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22', 'e3c1a7b5-9d2f-4c8a-9e6b-2f3a1c7d5b37', '2026-06-16 05:00:00 -04:00'::timestamptz, 1+2*round(cast(log(1.42) as numeric), 2), 1+2*round(cast(log(4.5) as numeric), 2), 1+2*round(cast(log(6.25) as numeric), 2)),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '18', 'da0e5c75-ba1c-4090-bbba-ad57d0e3b153', 'e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', '2026-06-16 18:00:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '19', '9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04', '1a4d2b6c-5e7f-4c8a-9d1e-6b3f2a7c9d03', '2026-06-16 20:00:00 -05:00'::timestamptz, 1+2*round(cast(log(1.38) as numeric), 2), 1+2*round(cast(log(4.5) as numeric), 2), 1+2*round(cast(log(7) as numeric), 2)),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '20', '7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06', 'b5e1c7a3-2f9d-4a6c-8e1b-3d7a5c2f9e28', '2026-06-16 21:00:00 -07:00'::timestamptz, 1+2*round(cast(log(1.33) as numeric), 2), 1+2*round(cast(log(4.75) as numeric), 2), 1+2*round(cast(log(8.5) as numeric), 2)),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '21', 'c9e3a1b5-5f2d-4c8a-9e6b-1a2f3d7c5b23', 'b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', '2026-06-17 19:00:00 -04:00'::timestamptz, 1+2*round(cast(log(1.9) as numeric), 2), 1+2*round(cast(log(3.4) as numeric), 2), 1+2*round(cast(log(3.5) as numeric), 2)),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '22', 'e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', '2026-06-17 15:00:00 -05:00'::timestamptz, 1+2*round(cast(log(1.61) as numeric), 2), 1+2*round(cast(log(3.9) as numeric), 2), 1+2*round(cast(log(4.5) as numeric), 2)),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '23', 'd7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36', '8f251495-81ba-4724-b575-f7ebecf213c4', '2026-06-17 12:00:00 -05:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '24', 'd9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42', 'd7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', '2026-06-17 20:00:00 -06:00'::timestamptz, 1+2*round(cast(log(7) as numeric), 2), 1+2*round(cast(log(4.5) as numeric), 2), 1+2*round(cast(log(1.36) as numeric), 2)),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '25', '219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38', '2026-06-18 12:00:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '26', 'a3c1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b39', 'fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', '2026-06-18 12:00:00 -07:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '27', '5a1c9e3b-7d2f-4a6c-8b9e-2f3d7a1c4b10', 'c3e7b1a9-5f2d-4c8a-9e6b-1a2f3d7c5b11', '2026-06-18 15:00:00 -07:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '28', 'd3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30', 'e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', '2026-06-18 19:00:00 -06:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '29', '2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07', 'd1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24', '2026-06-19 21:00:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '30', 'e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19', 'c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', '2026-06-19 18:00:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '31', '07782a28-4f6d-4037-86b8-ccff4c2de218', 'c5e1a7b3-9d2f-4c8a-9e6b-2f3a1c7d5b35', '2026-06-19 21:00:00 -07:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '32', 'a9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b21', '3e7b1c9d-6f2a-4d8c-8b1e-5c9a2f7d3b05', '2026-06-19 12:00:00 -07:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '33', '6f1c5f6e-9c9e-4f3b-8d8e-2b5e2a6a1c01', 'f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', '2026-06-20 16:00:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '34', 'c1a5e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b17', 'b7e3c1a5-2f9d-4a6c-8e1b-3d7a5c2f9e16', '2026-06-20 19:00:00 -05:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '35', 'a1e7c3b5-9d2f-4c8a-9e6b-2f3a1c7d5b33', '8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', '2026-06-20 12:00:00 -05:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '36', 'b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27', '2026-06-20 22:00:00 -06:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '37', 'c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41', '4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09', '2026-06-21 18:00:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '38', 'f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'b2c9c3e7-7f7e-4a5a-9f2b-3c1d9a4e8b02', '2026-06-21 12:00:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '39', '8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08', 'f3a1c5e7-2f9d-4a6c-8e1b-3d7a5c2f9e26', '2026-06-21 12:00:00 -07:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '40', 'f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', 'd5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18', '2026-06-21 18:00:00 -07:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '41', 'e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'e3c1a7b5-9d2f-4c8a-9e6b-2f3a1c7d5b37', '2026-06-22 20:00:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '42', 'b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22', 'da0e5c75-ba1c-4090-bbba-ad57d0e3b153', '2026-06-22 17:00:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '43', '9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04', '7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06', '2026-06-22 12:00:00 -05:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '44', 'b5e1c7a3-2f9d-4a6c-8e1b-3d7a5c2f9e28', '1a4d2b6c-5e7f-4c8a-9d1e-6b3f2a7c9d03', '2026-06-22 21:00:00 -05:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '45', 'e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'c9e3a1b5-5f2d-4c8a-9e6b-1a2f3d7c5b23', '2026-06-23 16:00:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '46', 'b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', '2026-06-23 19:00:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '47', 'd7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36', 'd9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42', '2026-06-23 12:00:00 -05:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '48', 'd7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', '8f251495-81ba-4724-b575-f7ebecf213c4', '2026-06-23 20:00:00 -06:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '49', 'e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19', '2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07', '2026-06-24 18:00:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '50', 'c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'd1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24', '2026-06-24 18:00:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '51', 'a3c1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b39', '5a1c9e3b-7d2f-4a6c-8b9e-2f3d7a1c4b10', '2026-06-24 12:00:00 -07:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '52', 'fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', 'c3e7b1a9-5f2d-4c8a-9e6b-1a2f3d7c5b11', '2026-06-24 12:00:00 -07:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '53', '219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'd3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30', '2026-06-24 19:00:00 -06:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '54', 'f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38', 'e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', '2026-06-24 19:00:00 -06:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '55', 'b7e3c1a5-2f9d-4a6c-8e1b-3d7a5c2f9e16', 'f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', '2026-06-25 16:00:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '56', 'c1a5e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b17', '6f1c5f6e-9c9e-4f3b-8d8e-2b5e2a6a1c01', '2026-06-25 16:00:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '57', 'a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27', '8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', '2026-06-25 18:00:00 -05:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '58', 'b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'a1e7c3b5-9d2f-4c8a-9e6b-2f3a1c7d5b33', '2026-06-25 18:00:00 -05:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '59', '07782a28-4f6d-4037-86b8-ccff4c2de218', 'a9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b21', '2026-06-25 19:00:00 -07:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '60', 'c5e1a7b3-9d2f-4c8a-9e6b-2f3a1c7d5b35', '3e7b1c9d-6f2a-4d8c-8b1e-5c9a2f7d3b05', '2026-06-25 19:00:00 -07:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '61', 'e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22', '2026-06-26 15:00:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '62', 'e3c1a7b5-9d2f-4c8a-9e6b-2f3a1c7d5b37', 'da0e5c75-ba1c-4090-bbba-ad57d0e3b153', '2026-06-26 15:00:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '63', 'd5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18', 'f3a1c5e7-2f9d-4a6c-8e1b-3d7a5c2f9e26', '2026-06-26 20:00:00 -07:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '64', 'f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', '8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08', '2026-06-26 20:00:00 -07:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '65', '4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09', 'b2c9c3e7-7f7e-4a5a-9f2b-3c1d9a4e8b02', '2026-06-26 18:00:00 -06:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '66', 'c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41', 'f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', '2026-06-26 18:00:00 -06:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '67', 'b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', '2026-06-27 17:00:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '68', 'a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'c9e3a1b5-5f2d-4c8a-9e6b-1a2f3d7c5b23', '2026-06-27 17:00:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '69', '1a4d2b6c-5e7f-4c8a-9d1e-6b3f2a7c9d03', '7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06', '2026-06-27 21:00:00 -05:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '70', 'b5e1c7a3-2f9d-4a6c-8e1b-3d7a5c2f9e28', '9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04', '2026-06-27 21:00:00 -05:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '71', 'd7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'd7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36', '2026-06-27 19:30:00 -04:00'::timestamptz, 1, 1, 1),
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', '72', '8f251495-81ba-4724-b575-f7ebecf213c4', 'd9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42', '2026-06-27 19:30:00 -04:00'::timestamptz, 1, 1, 1)
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '1', 'd3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30', 'f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38', '2026-06-11 13:00:00 -06:00'::timestamptz, 1+2*round(cast(log(1.45) as numeric), 2), 1+2*round(cast(log(4.1) as numeric), 2), 1+2*round(cast(log(5.75) as numeric), 2)),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '2', 'e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', '219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', '2026-06-11 20:00:00 -06:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '3', '5a1c9e3b-7d2f-4a6c-8b9e-2f3d7a1c4b10', 'fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', '2026-06-12 15:00:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '4', 'a9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b21', 'c5e1a7b3-9d2f-4c8a-9e6b-2f3a1c7d5b35', '2026-06-12 18:00:00 -07:00'::timestamptz, 1+2*round(cast(log(1.85) as numeric), 2), 1+2*round(cast(log(3.5) as numeric), 2), 1+2*round(cast(log(3.8) as numeric), 2)),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '5', 'd1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24', 'e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19', '2026-06-13 21:00:00 -04:00'::timestamptz, 1+2*round(cast(log(6.25) as numeric), 2), 1+2*round(cast(log(4.75) as numeric), 2), 1+2*round(cast(log(1.38) as numeric), 2)),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '6', '3e7b1c9d-6f2a-4d8c-8b1e-5c9a2f7d3b05', '07782a28-4f6d-4037-86b8-ccff4c2de218', '2026-06-13 21:00:00 -07:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '7', '2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07', 'c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', '2026-06-13 18:00:00 -04:00'::timestamptz, 1+2*round(cast(log(1.50) as numeric), 2), 1+2*round(cast(log(3.9) as numeric), 2), 1+2*round(cast(log(5.5) as numeric), 2)),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '8', 'c3e7b1a9-5f2d-4c8a-9e6b-1a2f3d7c5b11', 'a3c1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b39', '2026-06-13 15:00:00 -07:00'::timestamptz, 1+2*round(cast(log(8) as numeric), 2), 1+2*round(cast(log(5) as numeric), 2), 1+2*round(cast(log(1.3) as numeric), 2)),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '9', '6f1c5f6e-9c9e-4f3b-8d8e-2b5e2a6a1c01', 'b7e3c1a5-2f9d-4a6c-8e1b-3d7a5c2f9e16', '2026-06-14 12:00:00 -05:00'::timestamptz, 1+2*round(cast(log(1.02) as numeric), 2), 1+2*round(cast(log(21) as numeric), 2), 1+2*round(cast(log(51) as numeric), 2)),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '10', 'f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', 'c1a5e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b17', '2026-06-14 19:00:00 -04:00'::timestamptz, 1+2*round(cast(log(3.1) as numeric), 2), 1+2*round(cast(log(3.25) as numeric), 2), 1+2*round(cast(log(2.15) as numeric), 2)),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '11', 'a1e7c3b5-9d2f-4c8a-9e6b-2f3a1c7d5b33', 'a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27', '2026-06-14 15:00:00 -05:00'::timestamptz, 1+2*round(cast(log(1.9) as numeric), 2), 1+2*round(cast(log(3.6) as numeric), 2), 1+2*round(cast(log(3.5) as numeric), 2)),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '12', '8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', '2026-06-14 20:00:00 -06:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '13', 'b2c9c3e7-7f7e-4a5a-9f2b-3c1d9a4e8b02', 'c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41', '2026-06-15 18:00:00 -04:00'::timestamptz, 1+2*round(cast(log(5) as numeric), 2), 1+2*round(cast(log(3.8) as numeric), 2), 1+2*round(cast(log(1.57) as numeric), 2)),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '14', 'f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', '4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09', '2026-06-15 12:00:00 -04:00'::timestamptz, 1+2*round(cast(log(1.05) as numeric), 2), 1+2*round(cast(log(17) as numeric), 2), 1+2*round(cast(log(34) as numeric), 2)),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '15', 'f3a1c5e7-2f9d-4a6c-8e1b-3d7a5c2f9e26', 'f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', '2026-06-15 18:00:00 -07:00'::timestamptz, 1+2*round(cast(log(1.66) as numeric), 2), 1+2*round(cast(log(3.6) as numeric), 2), 1+2*round(cast(log(4.5) as numeric), 2)),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '16', '8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08', 'd5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18', '2026-06-15 12:00:00 -07:00'::timestamptz, 1+2*round(cast(log(1.53) as numeric), 2), 1+2*round(cast(log(4) as numeric), 2), 1+2*round(cast(log(5.5) as numeric), 2)),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '17', 'b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22', 'e3c1a7b5-9d2f-4c8a-9e6b-2f3a1c7d5b37', '2026-06-16 05:00:00 -04:00'::timestamptz, 1+2*round(cast(log(1.42) as numeric), 2), 1+2*round(cast(log(4.5) as numeric), 2), 1+2*round(cast(log(6.25) as numeric), 2)),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '18', 'da0e5c75-ba1c-4090-bbba-ad57d0e3b153', 'e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', '2026-06-16 18:00:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '19', '9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04', '1a4d2b6c-5e7f-4c8a-9d1e-6b3f2a7c9d03', '2026-06-16 20:00:00 -05:00'::timestamptz, 1+2*round(cast(log(1.38) as numeric), 2), 1+2*round(cast(log(4.5) as numeric), 2), 1+2*round(cast(log(7) as numeric), 2)),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '20', '7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06', 'b5e1c7a3-2f9d-4a6c-8e1b-3d7a5c2f9e28', '2026-06-16 21:00:00 -07:00'::timestamptz, 1+2*round(cast(log(1.33) as numeric), 2), 1+2*round(cast(log(4.75) as numeric), 2), 1+2*round(cast(log(8.5) as numeric), 2)),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '21', 'c9e3a1b5-5f2d-4c8a-9e6b-1a2f3d7c5b23', 'b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', '2026-06-17 19:00:00 -04:00'::timestamptz, 1+2*round(cast(log(1.9) as numeric), 2), 1+2*round(cast(log(3.4) as numeric), 2), 1+2*round(cast(log(3.5) as numeric), 2)),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '22', 'e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', '2026-06-17 15:00:00 -05:00'::timestamptz, 1+2*round(cast(log(1.61) as numeric), 2), 1+2*round(cast(log(3.9) as numeric), 2), 1+2*round(cast(log(4.5) as numeric), 2)),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '23', 'd7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36', '8f251495-81ba-4724-b575-f7ebecf213c4', '2026-06-17 12:00:00 -05:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '24', 'd9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42', 'd7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', '2026-06-17 20:00:00 -06:00'::timestamptz, 1+2*round(cast(log(7) as numeric), 2), 1+2*round(cast(log(4.5) as numeric), 2), 1+2*round(cast(log(1.36) as numeric), 2)),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '25', '219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38', '2026-06-18 12:00:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '26', 'a3c1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b39', 'fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', '2026-06-18 12:00:00 -07:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '27', '5a1c9e3b-7d2f-4a6c-8b9e-2f3d7a1c4b10', 'c3e7b1a9-5f2d-4c8a-9e6b-1a2f3d7c5b11', '2026-06-18 15:00:00 -07:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '28', 'd3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30', 'e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', '2026-06-18 19:00:00 -06:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '29', '2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07', 'd1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24', '2026-06-19 21:00:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '30', 'e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19', 'c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', '2026-06-19 18:00:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '31', '07782a28-4f6d-4037-86b8-ccff4c2de218', 'c5e1a7b3-9d2f-4c8a-9e6b-2f3a1c7d5b35', '2026-06-19 21:00:00 -07:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '32', 'a9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b21', '3e7b1c9d-6f2a-4d8c-8b1e-5c9a2f7d3b05', '2026-06-19 12:00:00 -07:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '33', '6f1c5f6e-9c9e-4f3b-8d8e-2b5e2a6a1c01', 'f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', '2026-06-20 16:00:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '34', 'c1a5e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b17', 'b7e3c1a5-2f9d-4a6c-8e1b-3d7a5c2f9e16', '2026-06-20 19:00:00 -05:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '35', 'a1e7c3b5-9d2f-4c8a-9e6b-2f3a1c7d5b33', '8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', '2026-06-20 12:00:00 -05:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '36', 'b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27', '2026-06-20 22:00:00 -06:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '37', 'c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41', '4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09', '2026-06-21 18:00:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '38', 'f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'b2c9c3e7-7f7e-4a5a-9f2b-3c1d9a4e8b02', '2026-06-21 12:00:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '39', '8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08', 'f3a1c5e7-2f9d-4a6c-8e1b-3d7a5c2f9e26', '2026-06-21 12:00:00 -07:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '40', 'f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', 'd5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18', '2026-06-21 18:00:00 -07:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '41', 'e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'e3c1a7b5-9d2f-4c8a-9e6b-2f3a1c7d5b37', '2026-06-22 20:00:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '42', 'b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22', 'da0e5c75-ba1c-4090-bbba-ad57d0e3b153', '2026-06-22 17:00:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '43', '9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04', '7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06', '2026-06-22 12:00:00 -05:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '44', 'b5e1c7a3-2f9d-4a6c-8e1b-3d7a5c2f9e28', '1a4d2b6c-5e7f-4c8a-9d1e-6b3f2a7c9d03', '2026-06-22 21:00:00 -05:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '45', 'e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'c9e3a1b5-5f2d-4c8a-9e6b-1a2f3d7c5b23', '2026-06-23 16:00:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '46', 'b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', '2026-06-23 19:00:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '47', 'd7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36', 'd9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42', '2026-06-23 12:00:00 -05:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '48', 'd7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', '8f251495-81ba-4724-b575-f7ebecf213c4', '2026-06-23 20:00:00 -06:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '49', 'e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19', '2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07', '2026-06-24 18:00:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '50', 'c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'd1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24', '2026-06-24 18:00:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '51', 'a3c1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b39', '5a1c9e3b-7d2f-4a6c-8b9e-2f3d7a1c4b10', '2026-06-24 12:00:00 -07:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '52', 'fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', 'c3e7b1a9-5f2d-4c8a-9e6b-1a2f3d7c5b11', '2026-06-24 12:00:00 -07:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '53', '219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'd3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30', '2026-06-24 19:00:00 -06:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '54', 'f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38', 'e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', '2026-06-24 19:00:00 -06:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '55', 'b7e3c1a5-2f9d-4a6c-8e1b-3d7a5c2f9e16', 'f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', '2026-06-25 16:00:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '56', 'c1a5e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b17', '6f1c5f6e-9c9e-4f3b-8d8e-2b5e2a6a1c01', '2026-06-25 16:00:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '57', 'a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27', '8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', '2026-06-25 18:00:00 -05:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '58', 'b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'a1e7c3b5-9d2f-4c8a-9e6b-2f3a1c7d5b33', '2026-06-25 18:00:00 -05:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '59', '07782a28-4f6d-4037-86b8-ccff4c2de218', 'a9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b21', '2026-06-25 19:00:00 -07:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '60', 'c5e1a7b3-9d2f-4c8a-9e6b-2f3a1c7d5b35', '3e7b1c9d-6f2a-4d8c-8b1e-5c9a2f7d3b05', '2026-06-25 19:00:00 -07:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '61', 'e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22', '2026-06-26 15:00:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '62', 'e3c1a7b5-9d2f-4c8a-9e6b-2f3a1c7d5b37', 'da0e5c75-ba1c-4090-bbba-ad57d0e3b153', '2026-06-26 15:00:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '63', 'd5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18', 'f3a1c5e7-2f9d-4a6c-8e1b-3d7a5c2f9e26', '2026-06-26 20:00:00 -07:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '64', 'f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', '8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08', '2026-06-26 20:00:00 -07:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '65', '4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09', 'b2c9c3e7-7f7e-4a5a-9f2b-3c1d9a4e8b02', '2026-06-26 18:00:00 -06:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '66', 'c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41', 'f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', '2026-06-26 18:00:00 -06:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '67', 'b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', '2026-06-27 17:00:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '68', 'a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'c9e3a1b5-5f2d-4c8a-9e6b-1a2f3d7c5b23', '2026-06-27 17:00:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '69', '1a4d2b6c-5e7f-4c8a-9d1e-6b3f2a7c9d03', '7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06', '2026-06-27 21:00:00 -05:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '70', 'b5e1c7a3-2f9d-4a6c-8e1b-3d7a5c2f9e28', '9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04', '2026-06-27 21:00:00 -05:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '71', 'd7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'd7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36', '2026-06-27 19:30:00 -04:00'::timestamptz, 1, 1, 1),
+	('28652183-a2d6-4f33-a624-0d24645ce3cd', '72', '8f251495-81ba-4724-b575-f7ebecf213c4', 'd9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42', '2026-06-27 19:30:00 -04:00'::timestamptz, 1, 1, 1)
 ON CONFLICT (id) DO NOTHING;
 
 -- Testing matches
@@ -349,16 +351,16 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Create matches table
 CREATE TABLE IF NOT EXISTS predictions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
-    match_id UUID NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
-    home_goals INT DEFAULT NULL,
-    away_goals INT DEFAULT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP DEFAULT NULL,
-    CONSTRAINT uq_predictions UNIQUE (id)
+	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+	match_id UUID NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+	home_goals INT DEFAULT NULL,
+	away_goals INT DEFAULT NULL,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	deleted_at TIMESTAMP DEFAULT NULL,
+	CONSTRAINT uq_predictions UNIQUE (id)
 );
 
 -- Create indexes for uniqueness and better query performance

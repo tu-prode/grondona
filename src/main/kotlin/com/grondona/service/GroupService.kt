@@ -4,10 +4,12 @@ import com.grondona.exception.ConflictException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.Group
 import com.grondona.model.GroupUser
+import com.grondona.model.Tournament
 import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.model.dto.response.GroupResponse
 import com.grondona.repository.GroupRepository
+import com.grondona.repository.TournamentRepository
 import jakarta.persistence.criteria.JoinType
 import jakarta.persistence.criteria.Predicate
 import org.slf4j.LoggerFactory
@@ -17,23 +19,32 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 @Service
-class GroupService(private val groupRepository: GroupRepository) {
+class GroupService(
+    private val groupRepository: GroupRepository,
+    private val tournamentRepository: TournamentRepository,
+) {
 
     companion object {
         private val logger = LoggerFactory.getLogger(GroupService::class.java)
     }
 
     @Transactional
-    fun createGroup(request: CreateGroupRequest): GroupResponse {
-        logger.info("Creating group with name='{}', private={}, maxMembers={}", request.name, request.isPrivate, request.maxMembers)
+    fun createGroup(tournamentId: UUID, request: CreateGroupRequest): GroupResponse {
+        logger.info("Creating group with name='{}', private={}, maxMembers={}, at tournament={}", request.name, request.isPrivate, request.maxMembers, tournamentId)
 
         if (groupRepository.existsByName(request.name)) {
             logger.warn("Group creation failed: name '{}' already exists", request.name)
             throw ConflictException(message = "Group name already exists", field = "name", rejectedValue = request.name)
         }
 
+        val tournament = tournamentRepository.findById(tournamentId).orElseThrow {
+            logger.warn("Group creation failed: tournament '{}' not found", tournamentId)
+            throw NotFoundException(message = "Tournament not found")
+        }
+
         val group = Group(
             name = request.name,
+            tournament = tournament,
             isPrivate = request.isPrivate,
             maxMembers = request.maxMembers
         )
@@ -95,18 +106,21 @@ class GroupService(private val groupRepository: GroupRepository) {
         return GroupResponse.from(group)
     }
 
-    fun findGroups(search: String?, joined: Boolean?): List<GroupResponse> {
+    fun findGroups(tournamentId: UUID, search: String?, joined: Boolean?): List<GroupResponse> {
         return groupRepository.findAll { root, query, builder ->
             val predicates = mutableListOf<Predicate>()
 
             query.distinct(true)
 
-            // 🔎 search filter
+            // tournament filter
+            predicates.add(builder.equal(root.get<Tournament>("tournament").get<UUID>("id"), tournamentId))
+
+            // search filter [optional]
             if (!search.isNullOrBlank()) {
                 predicates.add(builder.like(builder.lower(root.get("name")), "%${search.lowercase()}%"))
             }
 
-            // 👥 joined filter
+            // joined filter [optional]
             if (joined != null) {
                 val join = root.join<Group, GroupUser>("groupUsers", JoinType.LEFT)
 

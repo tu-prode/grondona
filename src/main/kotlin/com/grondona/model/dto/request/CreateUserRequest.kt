@@ -1,8 +1,8 @@
 package com.grondona.model.dto.request
 
-import javax.validation.constraints.Email
-import javax.validation.constraints.NotBlank
-import javax.validation.constraints.Size
+import jakarta.validation.constraints.Email
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
 
 data class CreateUserRequest(
     @field:NotBlank(message = "Full name is required")

@@ -256,17 +256,246 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/groups:
+  /api/users/me/groups:
+    get:
+      tags:
+        - Users
+      summary: Get my groups
+      description: |
+        Retrieve the list of groups the authenticated user has joined,
+        each with its name and current member count.
+      operationId: getMyGroups
+      security:
+        - bearerAuth: [ ]
+      responses:
+        '200':
+          description: Groups retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserGroupResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/tournaments:
+    post:
+      tags:
+        - Tournaments
+      summary: Create a new tournament
+      description: |
+        Create a new tournament by its name
+      operationId: createTournament
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTournamentRequest"
+            example:
+              name: Copa del Mundo 20206
+      responses:
+        "201":
+          description: Tournament created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentResponse"
+        "400":
+          description: Invalid request body or validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Tournament name already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: 409
+                error: Conflict
+                message: Tournament name 'Copa del Mundo 2026' already exists
+                timestamp: "2024-01-01T12:00:00"
+                data:
+                  field: name
+                  rejectedValue: Copa del Mundo 20206
+
+  /api/tournaments/{tournamentId}:
+    get:
+      tags:
+        - Tournaments
+      summary: Get a tournament by ID
+      description: |
+        Retrieve a specific tournament by its UUID.
+      operationId: getTournament
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Tournament retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentResponse"
+        "404":
+          description: Tournament not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      tags:
+        - Tournaments
+      summary: Update a tournament
+      description: |
+        Partially update a tournament. Only provided fields will be updated.
+      operationId: updateTournament
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament to update
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTournamentRequest"
+            example:
+              name: Updated Tournament
+              status: FINISHED
+      responses:
+        "200":
+          description: Tournament updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentResponse"
+        "400":
+          description: Invalid request body or validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Tournament not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Tournament name already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: 409
+                error: Conflict
+                message: Tournament name 'Copa del Mundo 20206' already exists
+                timestamp: "2024-01-01T12:00:00"
+                data:
+                  field: name
+                  rejectedValue: Copa del Mundo 20206
+    delete:
+      tags:
+        - Tournaments
+      summary: Delete a tournament
+      description: |
+        Delete a tournament by its UUID.
+      operationId: deleteTournament
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament to delete
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Tournament deleted successfully
+        "404":
+          description: Tournament not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/tournaments/{tournamentId}/matches:
+    get:
+      tags:
+        - Matches
+      summary: Get the list of matches for a tournament
+      description: |
+        Retrieve the list of matches for a tournament by its UUID.
+      operationId: getTournamentMatches
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Tournament matches retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentMatchesResponse"
+        "404":
+          description: Tournament not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/tournaments/{tournamentId}/groups:
     get:
       tags:
         - Groups
-      summary: Get all groups
+      summary: Get all groups for the given tournament.
       description: |
         Retrieve all groups. Optionally filter by name substring.
       operationId: getAllGroups
       security:
         - bearerAuth: [ ]
       parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
         - name: search
           in: query
           required: false
@@ -293,12 +522,20 @@ paths:
     post:
       tags:
         - Groups
-      summary: Create a new group
+      summary: Create a new group for the given tournament
       description: |
         Create a new group with the given name, privacy setting, and member limit.
       operationId: createGroup
       security:
         - bearerAuth: [ ]
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -337,38 +574,11 @@ paths:
                   field: name
                   rejectedValue: General
 
-  /api/users/me/groups:
-    get:
-      tags:
-        - Users
-      summary: Get my groups
-      description: |
-        Retrieve the list of groups the authenticated user has joined,
-        each with its name and current member count.
-      operationId: getMyGroups
-      security:
-        - bearerAuth: [ ]
-      responses:
-        '200':
-          description: Groups retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/UserGroupResponse'
-        '401':
-          description: Authentication required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /api/groups/{groupId}/join:
+  /api/tournaments/{tournamentId}/groups/{groupId}/join:
     post:
       tags:
         - Groups
-      summary: Join a group
+      summary: Join a tournament group
       description: |
         Authenticated user joins the specified group.
         Fails if the user is already a member or if the group is full.
@@ -376,6 +586,13 @@ paths:
       security:
         - bearerAuth: [ ]
       parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
         - name: groupId
           in: path
           required: true
@@ -418,11 +635,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/groups/{groupId}/leave:
+  /api/tournaments/{tournamentId}/groups/{groupId}/leave:
     delete:
       tags:
         - Groups
-      summary: Leave a group
+      summary: Leave a tournament group
       description: |
         Authenticated user leaves the specified group.
         Fails if the user is not a member of the group.
@@ -430,6 +647,13 @@ paths:
       security:
         - bearerAuth: [ ]
       parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
         - name: groupId
           in: path
           required: true
@@ -453,7 +677,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/groups/{groupId}:
+  /api/tournaments/{tournamentId}/groups/{groupId}:
     get:
       tags:
         - Groups
@@ -570,202 +794,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/tournaments:
-    post:
-      tags:
-        - Tournaments
-      summary: Create a new tournament
-      description: |
-        Create a new tournament by its name
-      operationId: createTournament
-      security:
-        - bearerAuth: [ ]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateTournamentRequest"
-            example:
-              name: World Cup 2026
-      responses:
-        "201":
-          description: Tournament created successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TournamentResponse"
-        "400":
-          description: Invalid request body or validation error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "409":
-          description: Tournament name already exists
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              example:
-                status: 409
-                error: Conflict
-                message: Tournament name 'World Cup' already exists
-                timestamp: "2024-01-01T12:00:00"
-                data:
-                  field: name
-                  rejectedValue: World Cup
-
-  /api/tournaments/{tournamentId}:
-    get:
-      tags:
-        - Tournaments
-      summary: Get a tournament by ID
-      description: |
-        Retrieve a specific tournament by its UUID.
-      operationId: getTournament
-      security:
-        - bearerAuth: [ ]
-      parameters:
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: Tournament retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TournamentResponse"
-        "404":
-          description: Tournament not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-    patch:
-      tags:
-        - Tournaments
-      summary: Update a tournament
-      description: |
-        Partially update a tournament. Only provided fields will be updated.
-      operationId: updateTournament
-      security:
-        - bearerAuth: [ ]
-      parameters:
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament to update
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateTournamentRequest"
-            example:
-              name: Updated Tournament
-              status: FINISHED
-      responses:
-        "200":
-          description: Tournament updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TournamentResponse"
-        "400":
-          description: Invalid request body or validation error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "404":
-          description: Tournament not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "409":
-          description: Tournament name already exists
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              example:
-                status: 409
-                error: Conflict
-                message: Tournament name 'World Cup' already exists
-                timestamp: "2024-01-01T12:00:00"
-                data:
-                  field: name
-                  rejectedValue: World Cup
-    delete:
-      tags:
-        - Tournaments
-      summary: Delete a tournament
-      description: |
-        Delete a tournament by its UUID.
-      operationId: deleteTournament
-      security:
-        - bearerAuth: [ ]
-      parameters:
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament to delete
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "204":
-          description: Tournament deleted successfully
-        "404":
-          description: Tournament not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-  /api/tournaments/{tournamentId}/matches:
-    get:
-      tags:
-        - Matches
-      summary: Get the list of matches for a tournament
-      description: |
-        Retrieve the list of matches for a tournament by its UUID.
-      operationId: getTournamentMatches
-      security:
-        - bearerAuth: [ ]
-      parameters:
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: Tournament matches retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TournamentMatchesResponse"
-        "404":
-          description: Tournament not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-  /api/groups/{groupId}/tournaments/{tournamentId}/predictions:
+  /api/tournaments/{tournamentId}/groups/{groupId}/predictions:
     get:
       tags:
         - Predictions
@@ -806,7 +835,7 @@ paths:
     post:
       tags:
         - Predictions
-      summary: Posty the list of predictions for a certain group and tournament.
+      summary: Post the list of predictions for a certain group and tournament.
       description: |
         Publish the list of user predictions for a certain group and tournament.
       operationId: postMyGroupPredictions
@@ -852,7 +881,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/groups/{groupId}/tournaments/{tournamentId}/match/{matchId}/predictions:
+  /api/tournaments/{tournamentId}/groups/{groupId}/match/{matchId}/predictions:
     get:
       tags:
         - Predictions
@@ -1081,7 +1110,8 @@ components:
       description: A group the authenticated user has joined, with current member count
       required:
         - group_id
-        - name
+        - group_name
+        - tournament_id
         - member_count
         - points
         - rank
@@ -1092,10 +1122,19 @@ components:
           format: uuid
           description: Unique group identifier
           example: f47ac10b-58cc-4372-a567-0e02b2c3d479
-        name:
+        group_name:
           type: string
           description: Group name
           example: General
+        tournament_id:
+          type: string
+          format: uuid
+          description: Unique tournament identifier
+          example: c0773be5-a5aa-4b88-9a3d-3143fae8d48f
+        tournament_name:
+          type: string
+          description: Group name
+          example: Copa del Mundo 2026
         member_count:
           type: integer
           format: int16
@@ -1163,6 +1202,7 @@ components:
       type: object
       required:
         - id
+        - tournament_id
         - name
         - private
         - max_members
@@ -1172,6 +1212,11 @@ components:
           format: uuid
           description: Unique group identifier
           example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+        tournament_id:
+          type: string
+          format: uuid
+          description: Unique tournament identifier
+          example: fa4e6142-20eb-43ac-a772-7cb58f409720
         name:
           type: string
           description: Group name
@@ -1203,7 +1248,7 @@ components:
           type: string
           description: Unique tournament name
           maxLength: 100
-          example: The World Cup
+          example: Copa del Mundo 2026
         status:
           $ref: '#/components/schemas/TournamentStatus'
 
@@ -1235,7 +1280,7 @@ components:
           type: string
           description: Unique tournament name
           maxLength: 100
-          example: The World Cup
+          example: Copa del Mundo 20206
         status:
           $ref: '#/components/schemas/TournamentStatus'
 
@@ -1368,7 +1413,7 @@ components:
         name:
           type: string
           description: Tournament name
-          example: World Cup
+          example: Copa del Mundo 2026
         past_matches:
           type: array
           items:

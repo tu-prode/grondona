@@ -1,6 +1,7 @@
 package com.grondona.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.CreateUserRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
@@ -40,11 +41,37 @@ class GroupControllerIntegrationTest {
 
     private var authToken: String? = null
     private var createdGroupId: String? = null
+    private var testTournamentId: String? = null
 
     @BeforeAll
     fun setUp() {
         groupRepository.deleteAll()
         userRepository.deleteAll()
+
+        // Create an admin user to create the first tournament
+        val adminResult = mockMvc.perform(
+            post("/api/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(
+                    CreateUserRequest("Admin", "admin", "admin@test.com", "password123")
+                ))
+        ).andReturn()
+        val adminId = objectMapper.readValue(adminResult.response.contentAsString, AuthResponse::class.java).userId
+        val adminUser = userRepository.findById(adminId).get()
+        adminUser.permissions = UserPermissions.SUPERUSER
+        userRepository.save(adminUser)
+        val adminToken = objectMapper.readValue(adminResult.response.contentAsString, AuthResponse::class.java).token
+
+        // Create tournament
+        val tournamentResult = mockMvc.perform(
+            post("/api/tournaments")
+                .header("Authorization", "Bearer $adminToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(
+                    CreateTournamentRequest(name = "Test Tournament")
+                ))
+        ).andReturn()
+        testTournamentId = objectMapper.readValue(tournamentResult.response.contentAsString, TournamentResponse::class.java).id.toString()
 
         // Create a user and get auth token for all group tests
         val createUserRequest = CreateUserRequest(
@@ -80,7 +107,7 @@ class GroupControllerIntegrationTest {
             val request = CreateGroupRequest(name = "Integration Group", isPrivate = false, maxMembers = 30)
 
             val result = mockMvc.perform(
-                post("/api/groups")
+                post("/api/tournaments/{tournamentId}/groups", testTournamentId)
                     .header("Authorization", "Bearer $authToken")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
@@ -102,7 +129,7 @@ class GroupControllerIntegrationTest {
             val request = CreateGroupRequest(name = "Integration Group", isPrivate = false, maxMembers = 10)
 
             mockMvc.perform(
-                post("/api/groups")
+                post("/api/tournaments/{tournamentId}/groups", testTournamentId)
                     .header("Authorization", "Bearer $authToken")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
@@ -116,7 +143,7 @@ class GroupControllerIntegrationTest {
         @Order(3)
         fun `should fetch the created group by id`() {
             mockMvc.perform(
-                get("/api/groups/{groupId}", createdGroupId)
+                get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, createdGroupId)
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isOk)
@@ -130,7 +157,7 @@ class GroupControllerIntegrationTest {
             val request = UpdateGroupRequest(name = "Updated Integration Group", maxMembers = 50)
 
             mockMvc.perform(
-                patch("/api/groups/{groupId}", createdGroupId)
+                patch("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, createdGroupId)
                     .header("Authorization", "Bearer $authToken")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
@@ -146,7 +173,7 @@ class GroupControllerIntegrationTest {
             val request = UpdateGroupRequest(isPrivate = true)
 
             mockMvc.perform(
-                patch("/api/groups/{groupId}", createdGroupId)
+                patch("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, createdGroupId)
                     .header("Authorization", "Bearer $authToken")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
@@ -159,7 +186,7 @@ class GroupControllerIntegrationTest {
         @Order(6)
         fun `should fetch all groups`() {
             mockMvc.perform(
-                get("/api/groups")
+                get("/api/tournaments/{tournamentId}/groups", testTournamentId)
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isOk)
@@ -172,7 +199,7 @@ class GroupControllerIntegrationTest {
             val request = CreateGroupRequest(name = "Another Group", isPrivate = false, maxMembers = 15)
 
             mockMvc.perform(
-                post("/api/groups")
+                post("/api/tournaments/{tournamentId}/groups", testTournamentId)
                     .header("Authorization", "Bearer $authToken")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
@@ -184,7 +211,7 @@ class GroupControllerIntegrationTest {
         @Order(8)
         fun `should search groups by name substring case insensitively`() {
             mockMvc.perform(
-                get("/api/groups")
+                get("/api/tournaments/{tournamentId}/groups", testTournamentId)
                     .header("Authorization", "Bearer $authToken")
                     .param("search", "updated")
             )
@@ -197,7 +224,7 @@ class GroupControllerIntegrationTest {
         @Order(9)
         fun `should return empty list when search has no matches`() {
             mockMvc.perform(
-                get("/api/groups")
+                get("/api/tournaments/{tournamentId}/groups", testTournamentId)
                     .header("Authorization", "Bearer $authToken")
                     .param("search", "zzznomatch")
             )
@@ -209,7 +236,7 @@ class GroupControllerIntegrationTest {
         @Order(10)
         fun `should fetch all groups without search`() {
             mockMvc.perform(
-                get("/api/groups")
+                get("/api/tournaments/{tournamentId}/groups", testTournamentId)
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isOk)
@@ -220,14 +247,14 @@ class GroupControllerIntegrationTest {
         @Order(11)
         fun `should delete the group successfully`() {
             mockMvc.perform(
-                delete("/api/groups/{groupId}", createdGroupId)
+                delete("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, createdGroupId)
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isNoContent)
 
             // Verify it's gone
             mockMvc.perform(
-                get("/api/groups/{groupId}", createdGroupId)
+                get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, createdGroupId)
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isNotFound)
@@ -242,7 +269,7 @@ class GroupControllerIntegrationTest {
             val body = mapOf("name" to "", "private" to false, "maxMembers" to 10)
 
             mockMvc.perform(
-                post("/api/groups")
+                post("/api/tournaments/{tournamentId}/groups", testTournamentId)
                     .header("Authorization", "Bearer $authToken")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(body))
@@ -255,7 +282,7 @@ class GroupControllerIntegrationTest {
             val body = mapOf("name" to "Valid Name", "private" to false, "maxMembers" to 0)
 
             mockMvc.perform(
-                post("/api/groups")
+                post("/api/tournaments/{tournamentId}/groups", testTournamentId)
                     .header("Authorization", "Bearer $authToken")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(body))
@@ -268,7 +295,7 @@ class GroupControllerIntegrationTest {
             val nonExistentId = UUID.randomUUID()
 
             mockMvc.perform(
-                get("/api/groups/{groupId}", nonExistentId)
+                get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, nonExistentId)
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isNotFound)
@@ -280,7 +307,7 @@ class GroupControllerIntegrationTest {
             val nonExistentId = UUID.randomUUID()
 
             mockMvc.perform(
-                delete("/api/groups/{groupId}", nonExistentId)
+                delete("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, nonExistentId)
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isNotFound)
@@ -295,23 +322,23 @@ class GroupControllerIntegrationTest {
             val request = CreateGroupRequest(name = "Auth Test Group", isPrivate = false, maxMembers = 10)
 
             mockMvc.perform(
-                post("/api/groups")
+                post("/api/tournaments/{tournamentId}/groups", testTournamentId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
-                .andExpect(status().isForbidden)
+                .andExpect(status().isUnauthorized)
         }
 
         @Test
         fun `should reject get all groups without authentication`() {
-            mockMvc.perform(get("/api/groups"))
-                .andExpect(status().isForbidden)
+            mockMvc.perform(get("/api/tournaments/{tournamentId}/groups", testTournamentId))
+                .andExpect(status().isUnauthorized)
         }
 
         @Test
         fun `should reject get group by id without authentication`() {
-            mockMvc.perform(get("/api/groups/{groupId}", UUID.randomUUID()))
-                .andExpect(status().isForbidden)
+            mockMvc.perform(get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, UUID.randomUUID()))
+                .andExpect(status().isUnauthorized)
         }
 
         @Test
@@ -319,17 +346,17 @@ class GroupControllerIntegrationTest {
             val request = UpdateGroupRequest(name = "New Name")
 
             mockMvc.perform(
-                patch("/api/groups/{groupId}", UUID.randomUUID())
+                patch("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, UUID.randomUUID())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
-                .andExpect(status().isForbidden)
+                .andExpect(status().isUnauthorized)
         }
 
         @Test
         fun `should reject group deletion without authentication`() {
-            mockMvc.perform(delete("/api/groups/{groupId}", UUID.randomUUID()))
-                .andExpect(status().isForbidden)
+            mockMvc.perform(delete("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, UUID.randomUUID()))
+                .andExpect(status().isUnauthorized)
         }
     }
 }
