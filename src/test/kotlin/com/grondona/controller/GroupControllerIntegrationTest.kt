@@ -1,12 +1,16 @@
 package com.grondona.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.grondona.createTestingTournamentRequest
+import com.grondona.createTestingUserRequest
 import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.CreateGroupRequest
+import com.grondona.model.dto.request.CreateTournamentRequest
 import com.grondona.model.dto.request.CreateUserRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.model.dto.response.AuthResponse
 import com.grondona.model.dto.response.GroupResponse
+import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.repository.GroupRepository
 import com.grondona.repository.UserRepository
 import org.junit.jupiter.api.*
@@ -52,9 +56,7 @@ class GroupControllerIntegrationTest {
         val adminResult = mockMvc.perform(
             post("/api/users")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(
-                    CreateUserRequest("Admin", "admin", "admin@test.com", "password123")
-                ))
+                .content(objectMapper.writeValueAsString(createTestingUserRequest()))
         ).andReturn()
         val adminId = objectMapper.readValue(adminResult.response.contentAsString, AuthResponse::class.java).userId
         val adminUser = userRepository.findById(adminId).get()
@@ -67,23 +69,15 @@ class GroupControllerIntegrationTest {
             post("/api/tournaments")
                 .header("Authorization", "Bearer $adminToken")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(
-                    CreateTournamentRequest(name = "Test Tournament")
-                ))
+                .content(objectMapper.writeValueAsString(createTestingTournamentRequest()))
         ).andReturn()
         testTournamentId = objectMapper.readValue(tournamentResult.response.contentAsString, TournamentResponse::class.java).id.toString()
 
         // Create a user and get auth token for all group tests
-        val createUserRequest = CreateUserRequest(
-            fullname = "Group Test User",
-            username = "grouptestuser",
-            email = "grouptest@test.com",
-            password = "password123"
-        )
         val result = mockMvc.perform(
             post("/api/users")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(createUserRequest))
+                .content(objectMapper.writeValueAsString(createTestingUserRequest()))
         ).andReturn()
 
         val authResponse = objectMapper.readValue(result.response.contentAsString, AuthResponse::class.java)

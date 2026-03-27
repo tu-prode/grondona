@@ -11,6 +11,7 @@ import com.grondona.model.dto.response.GroupResponse
 import com.grondona.security.JwtUserPrincipal
 import com.grondona.service.GroupMembershipService
 import com.grondona.service.GroupService
+import com.grondona.service.PredictionsService
 import com.grondona.service.UserService
 import io.mockk.every
 import io.mockk.just
@@ -39,6 +40,7 @@ class GroupControllerTest {
     private lateinit var userService: UserService
     private lateinit var groupService: GroupService
     private lateinit var groupMembershipService: GroupMembershipService
+    private lateinit var predictionsService: PredictionsService
     private lateinit var objectMapper: ObjectMapper
 
     private val testUserId = UUID.randomUUID()
@@ -72,9 +74,10 @@ class GroupControllerTest {
         userService = mockk()
         groupService = mockk()
         groupMembershipService = mockk()
+        predictionsService = mockk()
         objectMapper = ObjectMapper().findAndRegisterModules()
         mockMvc = MockMvcBuilders
-            .standaloneSetup(GroupController(userService, groupService, groupMembershipService))
+            .standaloneSetup(GroupController(userService, groupService, groupMembershipService, predictionsService))
             .setControllerAdvice(GlobalExceptionHandler())
             .setCustomArgumentResolvers(TestPrincipalArgumentResolver())
             .build()

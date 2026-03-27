@@ -1,11 +1,15 @@
 package com.grondona.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.grondona.createTestingTournamentRequest
+import com.grondona.createTestingUserRequest
 import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.CreateGroupRequest
+import com.grondona.model.dto.request.CreateTournamentRequest
 import com.grondona.model.dto.request.CreateUserRequest
 import com.grondona.model.dto.response.AuthResponse
 import com.grondona.model.dto.response.GroupResponse
+import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.repository.GroupRepository
 import com.grondona.repository.GroupUserRepository
 import com.grondona.repository.UserRepository
@@ -48,9 +52,7 @@ class GroupMembershipIntegrationTest {
         val userResult = mockMvc.perform(
             post("/api/users")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(
-                    CreateUserRequest("Member User", "memberuser", "member@test.com", "password123")
-                ))
+                .content(objectMapper.writeValueAsString(createTestingUserRequest()))
         ).andReturn()
         authToken = objectMapper.readValue(userResult.response.contentAsString, AuthResponse::class.java).token
 
@@ -58,9 +60,7 @@ class GroupMembershipIntegrationTest {
         val secondUserResult = mockMvc.perform(
             post("/api/users")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(
-                    CreateUserRequest("Second User", "seconduser", "second@test.com", "password123")
-                ))
+                .content(objectMapper.writeValueAsString(createTestingUserRequest()))
         ).andReturn()
         secondUserToken = objectMapper.readValue(secondUserResult.response.contentAsString, AuthResponse::class.java).token
 
@@ -68,9 +68,7 @@ class GroupMembershipIntegrationTest {
         val adminResult = mockMvc.perform(
             post("/api/users")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(
-                    CreateUserRequest("Admin", "admin", "admin@test.com", "password123")
-                ))
+                .content(objectMapper.writeValueAsString(createTestingUserRequest()))
         ).andReturn()
         val adminId = objectMapper.readValue(adminResult.response.contentAsString, AuthResponse::class.java).userId
         val adminUser = userRepository.findById(adminId).get()
@@ -83,9 +81,7 @@ class GroupMembershipIntegrationTest {
             post("/api/tournaments")
                 .header("Authorization", "Bearer $adminToken")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(
-                    CreateTournamentRequest(name = "Test Tournament")
-                ))
+                .content(objectMapper.writeValueAsString(createTestingTournamentRequest()))
         ).andReturn()
         testTournamentId = objectMapper.readValue(tournamentResult.response.contentAsString, TournamentResponse::class.java).id.toString()
 

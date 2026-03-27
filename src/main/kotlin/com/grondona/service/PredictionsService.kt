@@ -30,5 +30,6 @@ class PredictionsService(
     @Transactional
     fun submitPredictions(userId: UUID, groupId: UUID, request: SubmitBulkPredictionsRequest): List<UserPredictionsResponse> {
         logger.info("Submitting {} predictions for user={} at group={}", request.predictions.size, userId, groupId)
+        return emptyList()
     }
 }

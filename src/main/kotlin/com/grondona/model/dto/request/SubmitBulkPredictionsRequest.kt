@@ -1,8 +1,8 @@
 package com.grondona.model.dto.request
 
 import java.util.UUID
-import javax.validation.constraints.NotBlank
-import javax.validation.constraints.PositiveOrZero
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.PositiveOrZero
 
 data class SubimtPredictionRequest(
     @field:NotBlank(message = "Match ID is required")

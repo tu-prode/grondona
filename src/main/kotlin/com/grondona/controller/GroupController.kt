@@ -12,7 +12,7 @@ import com.grondona.service.GroupMembershipService
 import com.grondona.service.GroupService
 import com.grondona.service.PredictionsService
 import com.grondona.service.UserService
-import javax.validation.Valid
+import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -147,7 +147,7 @@ class GroupController(
         return ResponseEntity.noContent().build()
     }
 
-    @PostMapping("/{groupId}/tournaments/{tournamentId}/predictions")
+    @PostMapping("/{groupId}/predictions")
     fun submitPredictions(
         @AuthenticationPrincipal principal: JwtUserPrincipal?,
         @PathVariable groupId: UUID, @PathVariable tournamentId: UUID,
