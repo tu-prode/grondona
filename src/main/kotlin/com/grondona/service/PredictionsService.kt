@@ -49,7 +49,7 @@ class PredictionsService(
             throw ForbiddenException("User doesn't belong to the group")
         }
 
-        val prediction = Prediction(
+        var prediction = Prediction(
             user = user,
             group = group,
             homeGoals = request.homeGoals,
@@ -64,7 +64,7 @@ class PredictionsService(
             throw BadRequestException(message = "Cannot submit predictions for this match")
         }
 
-        predictionRepository.upsert(prediction)
+        prediction = predictionRepository.upsert(prediction)
         return PredictionResponse.from(prediction)
     }
 
@@ -80,7 +80,7 @@ class PredictionsService(
             throw ForbiddenException("User doesn't belong to the group")
         }
 
-        val predictions = request.predictions.map { prediction ->
+        var predictions = request.predictions.map { prediction ->
             Prediction(
                 user = user,
                 group = group,
@@ -94,7 +94,7 @@ class PredictionsService(
         } }
 
 
-        predictionRepository.saveAll(predictions)
+        predictions = predictionRepository.upsertAll(predictions)
         return GroupPredictionsResponse.fromPrediction(group, predictions)
     }
 
