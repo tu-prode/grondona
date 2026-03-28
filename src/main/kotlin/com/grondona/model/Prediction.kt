@@ -8,6 +8,10 @@ import org.hibernate.annotations.SQLRestriction
 import java.time.LocalDateTime
 import java.util.UUID
 
+enum class PredictionStatus {
+    CORRECT, PARTIAL, INCORRECT, PENDING
+}
+
 @Entity
 @Table(name = "predictions")
 @SQLDelete(sql = "UPDATE predictions SET deleted_at = CURRENT_TIMESTAMP WHERE id=?")
@@ -37,6 +41,10 @@ data class Prediction(
 
     @Column(name = "away_goals", nullable = false)
     var awayGoals: Int,
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    var status: PredictionStatus = PredictionStatus.PENDING,
 
     @Column(name = "created_at", nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),

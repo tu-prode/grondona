@@ -1,5 +1,13 @@
 -- Initialize database schema for Grondona application
 
+-- Remove existing tables
+drop table predictions;
+drop table matches;
+drop table group_users;
+drop table groups;
+drop table tournaments;
+drop table users;
+
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -32,7 +40,15 @@ COMMENT ON COLUMN users.deleted_at IS 'Timestamp when the user was deleted';
 
 -- Seed default users
 INSERT INTO users (id, fullname, username, email, password_hash, permissions) VALUES
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'Cristian Raña', 'cris', 'cristian.rana8@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'SUPERUSER')
+    ('c97ec073-c40c-4094-9f9e-b07074188936', 'Cristian Raña', 'cris', 'cris@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'SUPERUSER'),
+    ('60635292-4a13-43d8-b976-b2e292020deb', 'Lautaro Chamorro', 'chas', 'chas@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('4fc682de-233f-4b0f-b4c3-4ee0f5716675', 'Manuel Domínguez', 'manu', 'manu@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('56118705-5d57-4a6d-9f38-46606c78dbd6', 'Federico Cornago', 'corna', 'corna@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('a2618ce3-03a0-4f81-bb0b-010c0245a65b', 'Gastón Macrini', 'macro', 'macro@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('2b67aaa9-2ecf-4d21-9ce1-e378337b6adb', 'Gastón Añón', 'añon', 'añon@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('b7d358aa-42c0-4b22-9da2-ed292a00ee47', 'Federico Groisman', 'grois', 'grois@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('4cb252f7-9dac-4249-a9a2-b45d5234d384', 'Franco Rapallini', 'fran', 'fran@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('bdbf29ee-cfda-4d02-9928-af93ebd40892', 'Facundo Gándara', 'rifle', 'rifle@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER')
 ON CONFLICT (id) DO NOTHING;
 
 -- Create tournaments table
@@ -80,7 +96,7 @@ CREATE TABLE IF NOT EXISTS groups (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_groups_name ON groups(tournament_id, name) WHERE deleted_at IS NULL;
 
 -- Add comments to table and columns
-COMMENT ON TABLE groups IS 'Prode groups table';
+COMMENT ON TABLE groups IS 'Groups table';
 COMMENT ON COLUMN groups.id IS 'Unique identifier for the group';
 COMMENT ON COLUMN groups.tournament_id IS 'Reference to the tournament';
 COMMENT ON COLUMN groups.name IS 'Unique group name';
@@ -134,7 +150,23 @@ INSERT INTO group_users (user_id, group_id, role) VALUES
     ('c97ec073-c40c-4094-9f9e-b07074188936', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'OWNER'),
     ('c97ec073-c40c-4094-9f9e-b07074188936', '7c9e6679-7425-40de-944b-e07fc1f90ae7', 'OWNER'),
     ('c97ec073-c40c-4094-9f9e-b07074188936', 'b5d4c3a2-1e0f-4d9c-8b7a-6f5e4d3c2b1a', 'OWNER'),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', 'OWNER')
+    ('c97ec073-c40c-4094-9f9e-b07074188936', 'e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', 'OWNER'),
+    ('60635292-4a13-43d8-b976-b2e292020deb', '7c9e6679-7425-40de-944b-e07fc1f90ae7', 'ADMIN'),
+    ('4fc682de-233f-4b0f-b4c3-4ee0f5716675', '7c9e6679-7425-40de-944b-e07fc1f90ae7', 'MEMBER'),
+    ('56118705-5d57-4a6d-9f38-46606c78dbd6', '7c9e6679-7425-40de-944b-e07fc1f90ae7', 'MEMBER'),
+    ('a2618ce3-03a0-4f81-bb0b-010c0245a65b', 'e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', 'ADMIN'),
+    ('2b67aaa9-2ecf-4d21-9ce1-e378337b6adb', 'e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', 'MEMBER'),
+    ('b7d358aa-42c0-4b22-9da2-ed292a00ee47', 'e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', 'MEMBER'),
+    ('4cb252f7-9dac-4249-a9a2-b45d5234d384', 'b5d4c3a2-1e0f-4d9c-8b7a-6f5e4d3c2b1a', 'ADMIN'),
+    ('bdbf29ee-cfda-4d02-9928-af93ebd40892', 'b5d4c3a2-1e0f-4d9c-8b7a-6f5e4d3c2b1a', 'MEMBER'),
+    ('60635292-4a13-43d8-b976-b2e292020deb', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'ADMIN'),
+    ('4fc682de-233f-4b0f-b4c3-4ee0f5716675', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
+    ('56118705-5d57-4a6d-9f38-46606c78dbd6', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
+    ('a2618ce3-03a0-4f81-bb0b-010c0245a65b', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
+    ('2b67aaa9-2ecf-4d21-9ce1-e378337b6adb', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
+    ('b7d358aa-42c0-4b22-9da2-ed292a00ee47', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
+    ('4cb252f7-9dac-4249-a9a2-b45d5234d384', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
+    ('bdbf29ee-cfda-4d02-9928-af93ebd40892', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER')
 ON CONFLICT (id) DO NOTHING;
 
 -- Create teams table
@@ -217,7 +249,7 @@ ON CONFLICT (id) DO NOTHING;
 -- Create matches table
 CREATE TABLE IF NOT EXISTS matches (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    match_key VARCHAR(10) NOT NULL,
+    code VARCHAR(10) NOT NULL,
     tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
     home_team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
     away_team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
@@ -244,7 +276,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_matches_tournament_key ON matches(tourname
 -- Add comments to table and columns
 COMMENT ON TABLE matches IS 'Matches table';
 COMMENT ON COLUMN matches.id IS 'Unique identifier for the match';
-COMMENT ON COLUMN matches.match_key IS 'Unique identifier for the match within the tournament';
+COMMENT ON COLUMN matches.code IS 'Unique identifier for the match within the tournament';
 COMMENT ON COLUMN matches.tournament_id IS 'Reference to the tournament';
 COMMENT ON COLUMN matches.home_team_id IS 'Home team identifier';
 COMMENT ON COLUMN matches.away_team_id IS 'Away team identifier';
@@ -264,7 +296,7 @@ COMMENT ON COLUMN matches.updated_at IS 'Timestamp when the match was last updat
 COMMENT ON COLUMN matches.deleted_at IS 'Timestamp when the match was deleted';
 
 -- Seed default matches
-INSERT INTO matches (id, tournament_id, match_key, home_team_id, away_team_id, started_at, home_quota, tie_quota, away_quota) VALUES
+INSERT INTO matches (id, tournament_id, code, home_team_id, away_team_id, started_at, home_quota, tie_quota, away_quota) VALUES
     ('6a7c9c74-9a3d-4b9e-9a45-0a5dce3a8f3a', '28652183-a2d6-4f33-a624-0d24645ce3cd', '1', 'd3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30', 'f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38', '2026-06-11 13:00:00 -06:00'::timestamptz, 1+2*round(cast(log(1.45) as numeric), 2), 1+2*round(cast(log(4.1) as numeric), 2), 1+2*round(cast(log(5.75) as numeric), 2)),
     ('0c3d4b9f-cc8b-4c6f-8a54-0c1d9f3c3c41', '28652183-a2d6-4f33-a624-0d24645ce3cd', '2', 'e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', '219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', '2026-06-11 20:00:00 -06:00'::timestamptz, 1, 1, 1),
     ('0dfe0d4b-80fa-41a8-9e52-7c2b66a67b12', '28652183-a2d6-4f33-a624-0d24645ce3cd', '3', '5a1c9e3b-7d2f-4a6c-8b9e-2f3d7a1c4b10', 'fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', '2026-06-12 15:00:00 -04:00'::timestamptz, 1, 1, 1),
@@ -340,16 +372,18 @@ INSERT INTO matches (id, tournament_id, match_key, home_team_id, away_team_id, s
 ON CONFLICT (id) DO NOTHING;
 
 -- Testing matches
--- update matches set status='FINISHED', started_at=(current_timestamp - interval '1 days 20 hours'), finished_at=(current_timestamp - interval '1 days 18 hours'), home_goals=2, away_goals=1 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and match_key='1';
--- update matches set status='FINISHED', started_at=(current_timestamp - interval '1 days 17 hours'), finished_at=(current_timestamp - interval '1 days 15 hours'), home_goals=1, away_goals=0 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and match_key='2';
--- update matches set status='FINISHED', started_at=(current_timestamp - interval '21 hours'), finished_at=(current_timestamp - interval '19 hours'), home_goals=0, away_goals=0 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and match_key='3';
--- update matches set status='FINISHED', started_at=(current_timestamp - interval '18 hours'), finished_at=(current_timestamp - interval '16 hours'), home_goals=1, away_goals=2 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and match_key='4';
--- update matches set status='IN_PROGRESS', substatus='HT', started_at=(current_timestamp - interval '1 hours 30 minutes'), home_goals=3, away_goals=1 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and match_key='7';
--- update matches set status='IN_PROGRESS', substatus='45+7''', started_at=(current_timestamp - interval '30 minutes'), home_goals=0, away_goals=2 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and match_key='8';
--- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '1 days') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and match_key='5';
--- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '1 days 2 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and match_key='6';
--- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '2 days 1 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and match_key='9';
--- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '2 days 3 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and match_key='11';
+-- update matches set status='FINISHED', started_at=(current_timestamp - interval '1 days 20 hours'), finished_at=(current_timestamp - interval '1 days 18 hours'), home_goals=2, away_goals=1 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='1';
+-- update matches set status='FINISHED', started_at=(current_timestamp - interval '1 days 17 hours'), finished_at=(current_timestamp - interval '1 days 15 hours'), home_goals=1, away_goals=0 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='2';
+-- update matches set status='FINISHED', started_at=(current_timestamp - interval '21 hours'), finished_at=(current_timestamp - interval '19 hours'), home_goals=0, away_goals=0 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='3';
+-- update matches set status='FINISHED', started_at=(current_timestamp - interval '18 hours'), finished_at=(current_timestamp - interval '16 hours'), home_goals=1, away_goals=2 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='4';
+-- update matches set status='IN_PROGRESS', substatus='HT', started_at=(current_timestamp - interval '1 hours 30 minutes'), home_goals=3, away_goals=1 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='7';
+-- update matches set status='IN_PROGRESS', substatus='45+7''', started_at=(current_timestamp - interval '30 minutes'), home_goals=0, away_goals=2 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='8';
+-- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '1 days') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='5';
+-- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '1 days 2 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='6';
+-- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '2 days 1 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='9';
+-- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '2 days 3 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='11';
+-- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '3 days 0 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='10';
+-- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '3 days 2 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='12';
 
 -- Create predictions table
 CREATE TABLE IF NOT EXISTS predictions (
@@ -359,6 +393,7 @@ CREATE TABLE IF NOT EXISTS predictions (
     match_id UUID NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
     home_goals INT,
     away_goals INT,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP DEFAULT NULL,
@@ -376,6 +411,26 @@ COMMENT ON COLUMN predictions.group_id IS 'Reference to the group';
 COMMENT ON COLUMN predictions.match_id IS 'Reference to the match';
 COMMENT ON COLUMN predictions.home_goals IS 'The home goals predicted';
 COMMENT ON COLUMN predictions.away_goals IS 'The away goals predicted';
+COMMENT ON COLUMN predictions.status IS 'Status of the prediction (can be either CORRECT, PARTIAL, INCORRECT or PENDING)';
 COMMENT ON COLUMN predictions.created_at IS 'Timestamp when the prediction was created';
 COMMENT ON COLUMN predictions.updated_at IS 'Timestamp when the prediction was updated';
 COMMENT ON COLUMN predictions.deleted_at IS 'Timestamp when the prediction was deleted';
+
+-- Adding testing predictions
+INSERT INTO predictions (user_id, group_id, match_id, home_goals, away_goals, status)
+SELECT gu.user_id, gu.group_id, m.id, floor(random()*5)::int, floor(random()*5)::int, 'PENDING'
+FROM group_users gu
+         JOIN matches m ON m.code::int BETWEEN 1 AND 12;
+
+-- Set testing predictions' status.
+UPDATE predictions p
+SET status = CASE
+    WHEN m.status <> 'FINISHED' THEN 'PENDING'
+    WHEN m.home_goals = p.home_goals AND m.away_goals = p.away_goals THEN 'CORRECT'
+    WHEN ((m.home_goals - m.away_goals = 0 AND p.home_goals - p.away_goals = 0) OR
+          (m.home_goals - m.away_goals > 0 AND p.home_goals - p.away_goals > 0) OR
+          (m.home_goals - m.away_goals < 0 AND p.home_goals - p.away_goals < 0)) THEN 'PARTIAL'
+    ELSE 'INCORRECT'
+END
+FROM matches m
+WHERE m.id = p.match_id;

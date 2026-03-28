@@ -1407,7 +1407,7 @@ components:
       type: object
       required:
         - id
-        - match_key
+        - code
         - home_team
         - away_team
         - home_quota
@@ -1420,7 +1420,7 @@ components:
           format: uuid
           description: Unique match identifier
           example: f47ac10b-58cc-4372-a567-0e02b2c3d479
-        match_key:
+        code:
           type: string
           description: Unique identifier for the match within the tournament
           example: "QF2"
@@ -1528,6 +1528,15 @@ components:
           description: The amount of goals scored by the home team
           example: 1
 
+    PredictionStatus:
+      description: The status of a prediction
+      type: string
+      enum:
+        - PENDING
+        - CORRECT
+        - PARTIAL
+        - INCORRECT
+
     MatchPredictionResponse:
       description: A match prediction
       type: object
@@ -1546,6 +1555,8 @@ components:
           $ref: '#/components/schemas/MatchResponse'
         predicted_score:
           $ref: '#/components/schemas/ScorePredictionResponse'
+        status:
+          $ref: '#/components/schemas/PredictionStatus'
 
     GroupPredictionsResponse:
       description: List of predictions for a group and tournament

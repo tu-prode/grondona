@@ -5,6 +5,7 @@ import com.grondona.exception.NotFoundException
 import com.grondona.model.Group
 import com.grondona.model.GroupUser
 import com.grondona.model.Tournament
+import com.grondona.model.User
 import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.model.dto.response.GroupResponse
@@ -107,7 +108,7 @@ class GroupService(
         return GroupResponse.from(group)
     }
 
-    fun findGroups(tournamentId: UUID, search: String?, joined: Boolean?): List<GroupResponse> {
+    fun findOtherGroups(userId: UUID, tournamentId: UUID, search: String?, joined: Boolean?): List<GroupResponse> {
         return groupRepository.findAll { root, query, builder ->
             val predicates = mutableListOf<Predicate>()
 
@@ -124,6 +125,15 @@ class GroupService(
             // joined filter [optional]
             if (joined != null) {
                 val join = root.join<Group, GroupUser>("groupUsers", JoinType.LEFT)
+
+                join.on(
+                    builder.equal(
+                        join
+                            .get<User>(GroupUser::user.name)
+                            .get<UUID>(User::id.name),
+                        userId
+                    )
+                )
 
                 if (joined) {
                     predicates.add(builder.isNotNull(join.get<Long>("id")))

@@ -27,7 +27,7 @@ data class Match(
     val id: UUID? = null,
 
     @Column(nullable = false)
-    var matchKey: String,
+    var code: String,
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "tournament_id", nullable = false)

@@ -111,7 +111,7 @@ class GroupController(
         logger.info("GET /api/tournaments/{}/groups - Fetching groups, search='{}', joined='{}'", tournamentId, search, joined)
         principal?.userId ?: throw UnauthorizedException("Authentication required")
 
-        val response = groupService.findGroups(tournamentId, search, joined)
+        val response = groupService.findOtherGroups(principal.userId, tournamentId, search, joined)
         logger.info("GET /api/tournaments/{}/groups - Returning {} groups", tournamentId, response.size)
         return ResponseEntity.ok(response)
     }

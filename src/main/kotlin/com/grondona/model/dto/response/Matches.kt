@@ -8,7 +8,7 @@ import java.util.UUID
 
 data class MatchResponse(
     val id: UUID,
-    val matchKey: String,
+    val code: String,
     val homeTeam: TeamResponse,
     val awayTeam: TeamResponse,
     val homeQuota: Float,
@@ -26,7 +26,7 @@ data class MatchResponse(
     companion object {
         fun from(match: Match): MatchResponse = MatchResponse(
             id = match.id!!,
-            matchKey = match.matchKey,
+            code = match.code,
             homeTeam = TeamResponse.from(match.homeTeam),
             awayTeam = TeamResponse.from(match.awayTeam),
             homeQuota = match.homeQuota,
