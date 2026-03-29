@@ -2,17 +2,20 @@ package com.grondona.model.dto.response
 
 import com.grondona.model.Group
 import com.grondona.model.Prediction
+import com.grondona.model.PredictionStatus
 import com.grondona.model.PredictionView
 import java.util.UUID
 
 data class PredictionScoreResponse(
     val homeGoals: Int,
     val awayGoals: Int,
+    val status: PredictionStatus,
 ) {
     companion object {
         fun from(prediction: Prediction): PredictionScoreResponse = PredictionScoreResponse(
             homeGoals = prediction.homeGoals,
             awayGoals = prediction.awayGoals,
+            status = prediction.status,
         )
     }
 }
@@ -21,21 +24,21 @@ data class PredictionResponse(
     val id: UUID?,
     val user: UserResponse,
     val match: MatchResponse,
-    val predictedScore: PredictionScoreResponse?
+    val prediction: PredictionScoreResponse?
 ) {
     companion object {
         fun from(prediction: Prediction): PredictionResponse = PredictionResponse(
             id = prediction.id,
             user = UserResponse.from(prediction.user),
             match = MatchResponse.from(prediction.match),
-            predictedScore = PredictionScoreResponse.from(prediction)
+            prediction = PredictionScoreResponse.from(prediction)
         )
 
         fun fromPredictionView(view: PredictionView): PredictionResponse = PredictionResponse(
-            id = view.id!!,
+            id = view.id,
             user = UserResponse.from(view.user),
             match = MatchResponse.from(view.match),
-            predictedScore = view.prediction?.let(PredictionScoreResponse::from)
+            prediction = view.prediction?.let(PredictionScoreResponse::from)
         )
     }
 }

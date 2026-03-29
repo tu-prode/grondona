@@ -59,6 +59,7 @@ data class Prediction(
 data class PredictionView(
     val id: UUID?,
     val user: User,
+    val rank: Int?,
     val match: Match,
     val prediction: Prediction?,
 )

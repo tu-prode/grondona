@@ -96,7 +96,7 @@ class TournamentService(
         return TournamentResponse.from(tournament)
     }
 
-    fun getTournamentMatches(tournamentId: UUID): TournamentMatchesResponse {
+    fun getTournamentMatches(tournamentId: UUID, past: Int?, next: Int?, live: Int?): TournamentMatchesResponse {
         logger.info("Fetching matches for tournament id={}", tournamentId)
 
         val tournament = tournamentRepository.findById(tournamentId).orElseThrow {
@@ -106,6 +106,6 @@ class TournamentService(
 
         val matches = matchRepository.findByTournamentIdOrderByStartedAt(tournamentId)
         logger.info("Tournament matches fetched successfully: id={}, matches='{}'", tournamentId, matches.size)
-        return TournamentMatchesResponse.from(tournament, matches)
+        return TournamentMatchesResponse.from(tournament, matches, past, next, live)
     }
 }

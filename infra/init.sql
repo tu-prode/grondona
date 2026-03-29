@@ -1,12 +1,12 @@
 -- Initialize database schema for Grondona application
 
 -- Remove existing tables
-drop table predictions;
-drop table matches;
-drop table group_users;
-drop table groups;
-drop table tournaments;
-drop table users;
+drop table if exists predictions;
+drop table if exists matches;
+drop table if exists group_users;
+drop table if exists groups;
+drop table if exists tournaments;
+drop table if exists users;
 
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
@@ -209,12 +209,12 @@ INSERT INTO teams (id, name, code, icon) VALUES
     ('c3e7b1a9-5f2d-4c8a-9e6b-1a2f3d7c5b11', 'Catar', 'QAT', 'https://flagcdn.com/w40/qa.png'),
     ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Colombia', 'COL', 'https://flagcdn.com/w40/co.png'),
     ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Corea del Sur', 'KOR', 'https://flagcdn.com/w40/kr.png'),
-    ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', 'Costa de Marfil', 'CIV', 'https://flagcdn.com/w40/kr.png'),
+    ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', 'Costa de Marfil', 'CIV', 'https://flagcdn.com/w40/ci.png'),
     ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Croacia', 'CRO', 'https://flagcdn.com/w40/hr.png'),
     ('b7e3c1a5-2f9d-4a6c-8e1b-3d7a5c2f9e16', 'Curazao', 'CUW', 'https://flagcdn.com/w40/cw.png'),
     ('c1a5e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b17', 'Ecuador', 'ECU', 'https://flagcdn.com/w40/ec.png'),
     ('d5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18', 'Egipto', 'EGY', 'https://flagcdn.com/w40/eg.png'),
-    ('e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19', 'Escocia', 'SCO', 'https://flagcdn.com/w40/gb-sco.png'),
+    ('e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19', 'Escocia', 'SCO', 'https://flagcdn.com/w40/gb-sct.png'),
     ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'España', 'ESP', 'https://flagcdn.com/w40/es.png'),
     ('a9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b21', 'Estados Unidos', 'USA', 'https://flagcdn.com/w40/us.png'),
     ('b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22', 'Francia', 'FRA', 'https://flagcdn.com/w40/fr.png'),
@@ -372,18 +372,18 @@ INSERT INTO matches (id, tournament_id, code, home_team_id, away_team_id, starte
 ON CONFLICT (id) DO NOTHING;
 
 -- Testing matches
--- update matches set status='FINISHED', started_at=(current_timestamp - interval '1 days 20 hours'), finished_at=(current_timestamp - interval '1 days 18 hours'), home_goals=2, away_goals=1 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='1';
--- update matches set status='FINISHED', started_at=(current_timestamp - interval '1 days 17 hours'), finished_at=(current_timestamp - interval '1 days 15 hours'), home_goals=1, away_goals=0 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='2';
--- update matches set status='FINISHED', started_at=(current_timestamp - interval '21 hours'), finished_at=(current_timestamp - interval '19 hours'), home_goals=0, away_goals=0 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='3';
--- update matches set status='FINISHED', started_at=(current_timestamp - interval '18 hours'), finished_at=(current_timestamp - interval '16 hours'), home_goals=1, away_goals=2 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='4';
--- update matches set status='IN_PROGRESS', substatus='HT', started_at=(current_timestamp - interval '1 hours 30 minutes'), home_goals=3, away_goals=1 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='7';
--- update matches set status='IN_PROGRESS', substatus='45+7''', started_at=(current_timestamp - interval '30 minutes'), home_goals=0, away_goals=2 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='8';
--- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '1 days') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='5';
--- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '1 days 2 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='6';
--- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '2 days 1 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='9';
--- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '2 days 3 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='11';
--- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '3 days 0 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='10';
--- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '3 days 2 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='12';
+update matches set status='FINISHED', started_at=(current_timestamp - interval '1 days 20 hours'), finished_at=(current_timestamp - interval '1 days 18 hours'), home_goals=2, away_goals=1 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='1';
+update matches set status='FINISHED', started_at=(current_timestamp - interval '1 days 17 hours'), finished_at=(current_timestamp - interval '1 days 15 hours'), home_goals=1, away_goals=0 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='2';
+update matches set status='FINISHED', started_at=(current_timestamp - interval '21 hours'), finished_at=(current_timestamp - interval '19 hours'), home_goals=0, away_goals=0 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='3';
+update matches set status='FINISHED', started_at=(current_timestamp - interval '18 hours'), finished_at=(current_timestamp - interval '16 hours'), home_goals=1, away_goals=2 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='4';
+update matches set status='IN_PROGRESS', substatus='HT', started_at=(current_timestamp - interval '1 hours 30 minutes'), home_goals=3, away_goals=1 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='7';
+update matches set status='IN_PROGRESS', substatus='45+7''', started_at=(current_timestamp - interval '30 minutes'), home_goals=0, away_goals=2 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='8';
+update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '1 days') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='5';
+update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '1 days 2 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='6';
+update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '2 days 1 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='9';
+update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '2 days 3 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='11';
+update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '3 days 0 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='10';
+update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '3 days 2 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='12';
 
 -- Create predictions table
 CREATE TABLE IF NOT EXISTS predictions (

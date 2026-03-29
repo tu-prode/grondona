@@ -464,6 +464,27 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: past
+          in: query
+          required: false
+          description: Amount of past matches to return
+          schema:
+            type: integer
+            format: int8
+        - name: live
+          in: query
+          required: false
+          description: Amount of live matches to return
+          schema:
+            type: integer
+            format: int8
+        - name: next
+          in: query
+          required: false
+          description: Amount of next matches to return
+          schema:
+            type: integer
+            format: int8
       responses:
         "200":
           description: Tournament matches retrieved successfully
@@ -695,6 +716,12 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: standings
+          in: path
+          required: false
+          description: Flag to indicate if the response should return the group standings
+          schema:
+            type: boolean
       responses:
         "200":
           description: Group retrieved successfully
@@ -888,7 +915,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/tournaments/{tournamentId}/groups/{groupId}/match/{matchId}/predictions:
+  /api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches/{matchId}:
     post:
       tags:
         - Predictions
@@ -957,7 +984,7 @@ paths:
       summary: Get the list of my predictions for a certain match.
       description: |
         Retrieve the list of past or live predictions for a certain match within a group and tournament.
-      operationId: getGroupPredictions
+      operationId: getGroupMatchPredictions
       security:
         - bearerAuth: [ ]
       parameters:
@@ -1193,7 +1220,6 @@ components:
         - group_id
         - group_name
         - tournament_id
-        - member_count
         - points
         - rank
         - role
@@ -1216,11 +1242,6 @@ components:
           type: string
           description: Group name
           example: Copa del Mundo 2026
-        member_count:
-          type: integer
-          format: int16
-          description: Current number of members in the group
-          example: 12
         points:
           type: number
           format: float16
@@ -1279,6 +1300,43 @@ components:
           minimum: 1
           example: 30
 
+    GroupStanding:
+      type: object
+      required:
+        - user_id
+        - username
+        - points
+        - rank
+        - last_predictions
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: Unique user identifier
+          example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+        username:
+          type: string
+          description: Unique username
+          example: fa4e6142-20eb-43ac-a772-7cb58f409720
+        rank:
+          type: integer
+          format: int16
+          description: Ranking in the group
+          example: 7
+        points:
+          type: boolean
+          description: Whether the group is private
+          example: false
+        max_members:
+          type: integer
+          format: int16
+          description: Maximum number of members allowed
+          example: 50
+        standings:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupStanding'
+
     GroupResponse:
       type: object
       required:
@@ -1311,6 +1369,10 @@ components:
           format: int16
           description: Maximum number of members allowed
           example: 50
+        standings:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupStanding'
 
     TournamentStatus:
       description: The status of a tournament
@@ -1517,16 +1579,18 @@ components:
         - home_goals
         - away_goals
       properties:
-        home_goals_predicted:
+        home_goals:
           type: integer
           format: int8
           description: The amount of goals scored by the home team
           example: 1
-        away_goals_predicted:
+        away_goals:
           type: integer
           format: int8
           description: The amount of goals scored by the home team
           example: 1
+        status:
+          $ref: '#/components/schemas/PredictionStatus'
 
     PredictionStatus:
       description: The status of a prediction
@@ -1553,10 +1617,8 @@ components:
           $ref: '#/components/schemas/UserResponse'
         match:
           $ref: '#/components/schemas/MatchResponse'
-        predicted_score:
+        prediction:
           $ref: '#/components/schemas/ScorePredictionResponse'
-        status:
-          $ref: '#/components/schemas/PredictionStatus'
 
     GroupPredictionsResponse:
       description: List of predictions for a group and tournament
