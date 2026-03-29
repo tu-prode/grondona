@@ -34,7 +34,7 @@ interface PredictionRepository : JpaRepository<Prediction, UUID>, JpaSpecificati
 
     @Query(
         """
-        SELECT new com.grondona.model.PredictionView(p.id, gu.user, m, p)
+        SELECT new com.grondona.model.PredictionView(p.id, gu.user, gu.rank, m, p)
         FROM GroupUser gu
         JOIN Match m ON m.tournament.id = gu.group.tournament.id
         LEFT JOIN Prediction p
@@ -49,7 +49,7 @@ interface PredictionRepository : JpaRepository<Prediction, UUID>, JpaSpecificati
 
     @Query(
         """
-        SELECT new com.grondona.model.PredictionView(p.id, gu.user, m, p)
+        SELECT new com.grondona.model.PredictionView(p.id, gu.user, gu.rank, m, p)
         FROM GroupUser gu
         JOIN Match m ON m.id = :matchId
         LEFT JOIN Prediction p

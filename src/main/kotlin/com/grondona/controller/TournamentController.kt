@@ -88,9 +88,14 @@ class TournamentController(
     }
 
     @GetMapping("/{tournamentId}/matches")
-    fun getTournamentMatches(@PathVariable tournamentId: UUID): ResponseEntity<TournamentMatchesResponse> {
+    fun getTournamentMatches(
+        @PathVariable tournamentId: UUID,
+        @RequestParam(required = false) past: Int?,
+        @RequestParam(required = false) live: Int?,
+        @RequestParam(required = false) next: Int?
+    ): ResponseEntity<TournamentMatchesResponse> {
         logger.info("GET /api/tournaments/{}/matches - Fetching tournament matches", tournamentId)
-        val response = tournamentService.getTournamentMatches(tournamentId)
+        val response = tournamentService.getTournamentMatches(tournamentId, past, next, live)
         return ResponseEntity.ok(response)
     }
 }
