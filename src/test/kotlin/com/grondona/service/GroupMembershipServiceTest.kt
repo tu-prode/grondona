@@ -8,9 +8,9 @@ import com.grondona.model.GroupUser
 import com.grondona.model.Tournament
 import com.grondona.model.TournamentStatus
 import com.grondona.model.User
-import com.grondona.model.dto.response.UserGroupResponse
+import com.grondona.model.dto.response.MembershipResponse
 import com.grondona.repository.GroupRepository
-import com.grondona.repository.GroupUserRepository
+import com.grondona.repository.MembershipRepository
 import com.grondona.repository.UserRepository
 import io.mockk.*
 import io.mockk.impl.annotations.InjectMockKs
@@ -32,10 +32,10 @@ class GroupMembershipServiceTest {
     private lateinit var userRepository: UserRepository
 
     @MockK
-    private lateinit var groupUserRepository: GroupUserRepository
+    private lateinit var groupUserRepository: MembershipRepository
 
     @InjectMockKs
-    private lateinit var groupMembershipService: GroupMembershipService
+    private lateinit var groupMembershipService: MembershipService
 
     private val testUserId = UUID.randomUUID()
     private val testGroupId = UUID.randomUUID()
@@ -207,8 +207,8 @@ class GroupMembershipServiceTest {
             val group1 = testGroup.copy(id = UUID.randomUUID(), name = "Group A")
             val group2 = testGroup.copy(id = UUID.randomUUID(), name = "Group B")
             val memberships = listOf(
-                UserGroupResponse(group1.id!!, group1.name, 3L, 10.5f, GroupRole.ADMIN),
-                UserGroupResponse(group2.id!!, group2.name, 7L, 5.0f, GroupRole.MEMBER)
+                MembershipResponse(group1.id!!, group1.name, 3L, 10.5f, 1, GroupRole.ADMIN),
+                MembershipResponse(group2.id!!, group2.name, 7L, 5.0f, 2, GroupRole.MEMBER)
             )
 
             every { groupUserRepository.findUserGroups(testUserId) } returns memberships
@@ -219,11 +219,13 @@ class GroupMembershipServiceTest {
             assertEquals("Group A", result[0].name)
             assertEquals(3, result[0].memberCount)
             assertEquals(10.5f, result[0].points)
+            assertEquals(1, result[0].rank)
             assertEquals(GroupRole.ADMIN, result[0].role)
             assertEquals(group1.id, result[0].groupId)
             assertEquals("Group B", result[1].name)
             assertEquals(7, result[1].memberCount)
             assertEquals(5.0f, result[1].points)
+            assertEquals(2, result[1].rank)
             assertEquals(GroupRole.MEMBER, result[1].role)
             assertEquals(group2.id, result[1].groupId)
         }

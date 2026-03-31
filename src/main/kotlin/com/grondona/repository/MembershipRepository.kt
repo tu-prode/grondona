@@ -1,7 +1,7 @@
 package com.grondona.repository
 
 import com.grondona.model.GroupUser
-import com.grondona.model.dto.response.UserGroupResponse
+import com.grondona.model.dto.response.MembershipResponse
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -10,11 +10,13 @@ import java.util.Optional
 import java.util.UUID
 
 @Repository
-interface GroupUserRepository : JpaRepository<GroupUser, UUID> {
+interface MembershipRepository : JpaRepository<GroupUser, UUID> {
 
     fun existsByUserIdAndGroupId(userId: UUID, groupId: UUID): Boolean
 
     fun findByUserIdAndGroupId(userId: UUID, groupId: UUID): Optional<GroupUser>
+
+    fun findByGroupId(groupId: UUID): List<GroupUser>
 
     fun countByGroupId(groupId: UUID): Long
 
@@ -24,11 +26,12 @@ interface GroupUserRepository : JpaRepository<GroupUser, UUID> {
             gu.group.name,
             (SELECT COUNT(m) FROM GroupUser m WHERE m.group.id = gu.group.id AND m.deletedAt IS NULL),
             gu.points,
+            gu.rank,
             gu.role
         )
         FROM GroupUser gu
         WHERE gu.user.id = :userId
         ORDER BY gu.joinedAt DESC
     """)
-    fun findUserGroups(@Param("userId") userId: UUID): List<UserGroupResponse>
+    fun findUserGroups(@Param("userId") userId: UUID): List<MembershipResponse>
 }

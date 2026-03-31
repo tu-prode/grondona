@@ -5,10 +5,10 @@ import com.grondona.model.dto.request.CreateUserRequest
 import com.grondona.model.dto.request.LoginUserRequest
 import com.grondona.model.dto.request.UpdateUserRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
-import com.grondona.model.dto.response.UserGroupResponse
+import com.grondona.model.dto.response.MembershipResponse
 import com.grondona.model.dto.response.UserResponse
 import com.grondona.security.JwtUserPrincipal
-import com.grondona.service.GroupMembershipService
+import com.grondona.service.MembershipService
 import com.grondona.service.UserService
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
@@ -22,7 +22,7 @@ import java.util.UUID
 @RequestMapping("/api/users")
 class UserController(
     private val userService: UserService,
-    private val groupMembershipService: GroupMembershipService
+    private val groupMembershipService: MembershipService
 ) {
 
     companion object {
@@ -85,7 +85,7 @@ class UserController(
     @GetMapping("/me/groups")
     fun getMyGroups(
         @AuthenticationPrincipal principal: JwtUserPrincipal?
-    ): ResponseEntity<List<UserGroupResponse>> {
+    ): ResponseEntity<List<MembershipResponse>> {
         val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
 
         logger.info("GET /api/users/me/groups - Fetching groups for userId={}", userId)

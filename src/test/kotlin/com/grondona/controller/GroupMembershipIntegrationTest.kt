@@ -9,7 +9,7 @@ import com.grondona.model.dto.response.AuthenticatedUserResponse
 import com.grondona.model.dto.response.GroupResponse
 import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.repository.GroupRepository
-import com.grondona.repository.GroupUserRepository
+import com.grondona.repository.MembershipRepository
 import com.grondona.repository.UserRepository
 import org.junit.jupiter.api.*
 import org.springframework.beans.factory.annotation.Autowired
@@ -32,7 +32,7 @@ class GroupMembershipIntegrationTest {
     @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper
     @Autowired private lateinit var groupRepository: GroupRepository
-    @Autowired private lateinit var groupUserRepository: GroupUserRepository
+    @Autowired private lateinit var groupUserRepository: MembershipRepository
     @Autowired private lateinit var userRepository: UserRepository
 
     private var authToken: String? = null

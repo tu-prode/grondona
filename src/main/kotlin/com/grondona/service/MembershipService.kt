@@ -4,9 +4,9 @@ import com.grondona.exception.BadRequestException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.GroupRole
 import com.grondona.model.GroupUser
-import com.grondona.model.dto.response.UserGroupResponse
+import com.grondona.model.dto.response.MembershipResponse
 import com.grondona.repository.GroupRepository
-import com.grondona.repository.GroupUserRepository
+import com.grondona.repository.MembershipRepository
 import com.grondona.repository.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -15,14 +15,14 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 @Service
-class GroupMembershipService(
+class MembershipService(
     private val groupRepository: GroupRepository,
     private val userRepository: UserRepository,
-    private val groupUserRepository: GroupUserRepository
+    private val groupUserRepository: MembershipRepository
 ) {
 
     companion object {
-        private val logger = LoggerFactory.getLogger(GroupMembershipService::class.java)
+        private val logger = LoggerFactory.getLogger(MembershipService::class.java)
     }
 
     @Transactional
@@ -75,7 +75,7 @@ class GroupMembershipService(
     }
 
     @Transactional(readOnly = true)
-    fun getMyGroups(userId: UUID): List<UserGroupResponse> {
+    fun getMyGroups(userId: UUID): List<MembershipResponse> {
         logger.info("Fetching groups for user {}", userId)
         val memberships = groupUserRepository.findUserGroups(userId)
         logger.info("User {} belongs to {} groups", userId, memberships.size)

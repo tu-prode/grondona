@@ -10,7 +10,7 @@ import com.grondona.model.dto.request.SubmitBulkPredictionsRequest
 import com.grondona.model.dto.response.GroupPredictionsResponse
 import com.grondona.model.dto.response.PredictionResponse
 import com.grondona.repository.GroupRepository
-import com.grondona.repository.GroupUserRepository
+import com.grondona.repository.MembershipRepository
 import com.grondona.repository.MatchRepository
 import com.grondona.repository.PredictionRepository
 import com.grondona.repository.UserRepository
@@ -22,16 +22,16 @@ import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 @Service
-class PredictionsService(
+class PredictionService(
     private val userRepository: UserRepository,
     private val groupRepository: GroupRepository,
     private val matchRepository: MatchRepository,
-    private val groupUserRepository: GroupUserRepository,
+    private val groupUserRepository: MembershipRepository,
     private val predictionRepository: PredictionRepository,
 ) {
 
     companion object {
-        private val logger = LoggerFactory.getLogger(PredictionsService::class.java)
+        private val logger = LoggerFactory.getLogger(PredictionService::class.java)
 
         fun canSubmit(match: Match): Boolean =
             match.startedAt != null && match.startedAt!! > LocalDateTime.now().plus(15, ChronoUnit.MINUTES)

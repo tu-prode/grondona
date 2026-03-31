@@ -6,7 +6,7 @@ import com.grondona.model.dto.request.SubmitPredictionRequest
 import com.grondona.model.dto.response.GroupPredictionsResponse
 import com.grondona.model.dto.response.PredictionResponse
 import com.grondona.security.JwtUserPrincipal
-import com.grondona.service.PredictionsService
+import com.grondona.service.PredictionService
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -18,7 +18,7 @@ import java.util.UUID
 @RestController
 @RequestMapping("/api/tournaments/{tournamentId}/groups/{groupId}/predictions")
 class PredictionController(
-    private val predictionsService: PredictionsService
+    private val predictionsService: PredictionService
 ) {
 
     companion object {

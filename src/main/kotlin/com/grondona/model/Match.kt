@@ -11,7 +11,9 @@ import java.util.UUID
 data class Score(
     val homeGoals: Int,
     val awayGoals: Int,
-)
+) {
+    fun goals() = homeGoals + awayGoals
+}
 
 enum class MatchStatus {
     NOT_STARTED, IN_PROGRESS, FINISHED,
@@ -86,4 +88,6 @@ data class Match(
 
     @Column(name = "deleted_at")
     var deletedAt: LocalDateTime? = null
-)
+) {
+    fun score(): Score? = homeGoals?.let { home -> awayGoals?.let { away -> Score(home, away) } }
+}

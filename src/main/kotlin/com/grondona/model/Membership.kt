@@ -45,7 +45,7 @@ data class GroupUser(
     val joinedAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "calculated_at", nullable = false)
-    val calculatedAt: LocalDateTime = LocalDateTime.now(),
+    var calculatedAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "deleted_at")
     val deletedAt: LocalDateTime? = null

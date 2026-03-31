@@ -8,10 +8,10 @@ import com.grondona.model.dto.request.CreateUserRequest
 import com.grondona.model.dto.request.LoginUserRequest
 import com.grondona.model.dto.request.UpdateUserRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
-import com.grondona.model.dto.response.UserGroupResponse
+import com.grondona.model.dto.response.MembershipResponse
 import com.grondona.model.dto.response.UserResponse
 import com.grondona.security.JwtUserPrincipal
-import com.grondona.service.GroupMembershipService
+import com.grondona.service.MembershipService
 import com.grondona.service.UserService
 import io.mockk.every
 import io.mockk.just
@@ -38,7 +38,7 @@ class UserControllerTest {
 
     private lateinit var mockMvc: MockMvc
     private lateinit var userService: UserService
-    private lateinit var groupMembershipService: GroupMembershipService
+    private lateinit var groupMembershipService: MembershipService
     private lateinit var userController: UserController
     private lateinit var objectMapper: ObjectMapper
 
@@ -250,7 +250,7 @@ class UserControllerTest {
             setAuthenticatedUser(testUserId, "testuser")
             val groupId = UUID.randomUUID()
             val groups = listOf(
-                UserGroupResponse(
+                MembershipResponse(
                     groupId = groupId,
                     name = "My Group",
                     memberCount = 5L,

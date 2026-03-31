@@ -8,6 +8,13 @@ import org.hibernate.annotations.SQLRestriction
 import java.time.LocalDateTime
 import java.util.UUID
 
+data class Standing(
+    val rank: Int,
+    val user: User,
+    val points: Float,
+    val lastPredictions: List<PredictionStatus>
+)
+
 @Entity
 @Table(name = "groups")
 @SQLDelete(sql = "UPDATE groups SET deleted_at = CURRENT_TIMESTAMP WHERE id=?")
@@ -41,5 +48,5 @@ data class Group(
     var deletedAt: LocalDateTime? = null,
 
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
-    val groupUsers: MutableList<GroupUser> = emptyList<GroupUser>().toMutableList()
+    val members: MutableList<GroupUser> = emptyList<GroupUser>().toMutableList()
 )

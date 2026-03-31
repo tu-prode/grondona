@@ -3,6 +3,7 @@ package com.grondona.repository
 import com.grondona.model.Group
 import com.grondona.model.Match
 import com.grondona.model.Prediction
+import com.grondona.model.PredictionStatus
 import com.grondona.model.PredictionView
 import com.grondona.model.User
 import jakarta.persistence.EntityManager
@@ -62,6 +63,9 @@ interface PredictionRepository : JpaRepository<Prediction, UUID>, JpaSpecificati
     )
     fun findGroupPredictionsForMatch(groupId: UUID, matchId: UUID): List<PredictionView>
 
+    fun findByGroupId(groupId: UUID): List<Prediction>
+
+    fun findByGroupIdAndMatchIdIn(groupId: UUID, matchIds: List<UUID>): List<Prediction>
 }
 
 interface PredictionRepositoryCustom {
@@ -77,9 +81,9 @@ class PredictionRepositoryImpl(
     override fun upsertAll(predictions: List<Prediction>): List<Prediction> {
         if (predictions.isEmpty()) return emptyList()
 
-        val valuesClause = predictions.joinToString(",") { "(gen_random_uuid(), ?, ?, ?, ?, ?)" }
+        val valuesClause = predictions.joinToString(",") { "(gen_random_uuid(), ?, ?, ?, ?, ?, ?)" }
         val sql = """
-            INSERT INTO predictions (id, user_id, group_id, match_id, home_goals, away_goals)
+            INSERT INTO predictions (id, user_id, group_id, match_id, home_goals, away_goals, status)
             VALUES $valuesClause
             ON CONFLICT (user_id, group_id, match_id) WHERE deleted_at IS NULL
             DO UPDATE SET
@@ -100,6 +104,7 @@ class PredictionRepositoryImpl(
                     stmt.setObject(i++, p.match.id)
                     stmt.setInt(i++, p.homeGoals)
                     stmt.setInt(i++, p.awayGoals)
+                    stmt.setString(i++, p.status.name)
                 }
 
                 val rs = stmt.executeQuery()
@@ -123,6 +128,7 @@ class PredictionRepositoryImpl(
                             ),
                             homeGoals = rs.getInt("home_goals"),
                             awayGoals = rs.getInt("away_goals"),
+                            status = PredictionStatus.valueOf(rs.getString("status")),
                             createdAt = rs.getTimestamp("created_at").toLocalDateTime(),
                             updatedAt = rs.getTimestamp("updated_at").toLocalDateTime(),
                             deletedAt = rs.getTimestamp("deleted_at")?.toLocalDateTime()
