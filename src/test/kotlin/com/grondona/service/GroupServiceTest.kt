@@ -9,6 +9,7 @@ import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.repository.GroupRepository
 import com.grondona.repository.TournamentRepository
+import com.grondona.service.PredictionService
 import io.mockk.*
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
@@ -27,6 +28,9 @@ class GroupServiceTest {
 
     @MockK
     private lateinit var tournamentRepository: TournamentRepository
+
+    @MockK
+    private lateinit var predictionService: PredictionService
 
     @InjectMockKs
     private lateinit var groupService: GroupService
@@ -101,6 +105,19 @@ class GroupServiceTest {
             assertEquals("Group name already exists", exception.message)
             assertEquals("name", exception.field)
             assertEquals("Existing Group", exception.rejectedValue)
+            verify(exactly = 0) { groupRepository.save(any()) }
+        }
+
+        @Test
+        fun `createGroup should throw NotFoundException when tournament not found`() {
+            val request = CreateGroupRequest(name = "New Group", isPrivate = false, maxMembers = 10)
+            every { groupRepository.existsByName(request.name) } returns false
+            every { tournamentRepository.findById(testTournamentId) } returns Optional.empty()
+
+            val exception = assertThrows<NotFoundException> {
+                groupService.createGroup(testTournamentId, request)
+            }
+            assertEquals("Tournament not found", exception.message)
             verify(exactly = 0) { groupRepository.save(any()) }
         }
     }
@@ -231,6 +248,43 @@ class GroupServiceTest {
                 groupService.getGroupById(testGroupId)
             }
             assertEquals("Group not found", exception.message)
+        }
+
+        @Test
+        fun `getGroupById with standings should return GroupResponse with standings data`() {
+            val standing = com.grondona.model.Standing(
+                rank = 1,
+                user = com.grondona.model.User(
+                    id = UUID.randomUUID(),
+                    fullname = "Player",
+                    username = "player",
+                    email = "player@test.com",
+                    passwordHash = "hash"
+                ),
+                points = 12.5f,
+                lastPredictions = emptyList()
+            )
+            every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
+            every { predictionService.calculateStandings(testGroup) } returns listOf(standing)
+
+            val result = groupService.getGroupById(testGroupId, withStandings = true)
+
+            assertEquals(testGroupId, result.id)
+            assertEquals(1, result.standings.size)
+            assertEquals(1, result.standings[0].rank)
+            assertEquals(12.5f, result.standings[0].points)
+            verify { predictionService.calculateStandings(testGroup) }
+        }
+
+        @Test
+        fun `getGroupById without standings should not call calculateStandings`() {
+            every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
+
+            val result = groupService.getGroupById(testGroupId, withStandings = false)
+
+            assertEquals(testGroupId, result.id)
+            assertTrue(result.standings.isEmpty())
+            verify(exactly = 0) { predictionService.calculateStandings(any()) }
         }
     }
 }
