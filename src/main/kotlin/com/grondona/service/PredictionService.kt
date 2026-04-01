@@ -144,17 +144,13 @@ class PredictionService(
 
         val match = matchRepository.findById(matchId).orElseThrow { NotFoundException("Match not found") }
         if (canSubmit(match)) {
-            logger.warn(
-                "User={} trying fetch predictions for the match={} at group={}, but it's not locked",
-                userId,
-                matchId,
-                groupId
-            )
+            logger.warn("User={} trying fetch predictions for the match={} at group={}, but it's not locked", userId, matchId, groupId)
             throw BadRequestException("Match is still open")
         }
 
-        val predictions = predictionRepository.findGroupPredictionsForMatch(groupId, matchId)
-        return GroupPredictionsResponse.fromPredictionView(group, predictions)
+        val predictionViews = predictionRepository.findGroupPredictionsForMatch(groupId, matchId)
+        predictionRepository.saveAll(PredictionEngine.check(predictionViews.mapNotNull { it.prediction }))
+        return GroupPredictionsResponse.fromPredictionView(group, predictionViews)
     }
 
     fun calculateStandings(group: Group): List<Standing> {

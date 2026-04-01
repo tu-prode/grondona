@@ -3,6 +3,7 @@
 -- Remove existing tables
 drop table if exists predictions;
 drop table if exists matches;
+drop table if exists teams;
 drop table if exists group_users;
 drop table if exists groups;
 drop table if exists tournaments;
@@ -377,7 +378,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Testing matches
 update matches set status='FINISHED', started_at=(current_timestamp - interval '1 days 20 hours'), finished_at=(current_timestamp - interval '1 days 18 hours'), home_goals=2, away_goals=1 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='1';
-update matches set status='FINISHED', started_at=(current_timestamp - interval '1 days 17 hours'), finished_at=(current_timestamp - interval '1 days 15 hours'), home_goals=1, away_goals=0 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='2';
+update matches set status='FINISHED', started_at=(current_timestamp - interval '1 days 17 hours'), finished_at=(current_timestamp - interval '1 days 15 hours'), home_goals=5, away_goals=0 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='2';
 update matches set status='FINISHED', started_at=(current_timestamp - interval '21 hours'), finished_at=(current_timestamp - interval '19 hours'), home_goals=0, away_goals=0 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='3';
 update matches set status='FINISHED', started_at=(current_timestamp - interval '18 hours'), finished_at=(current_timestamp - interval '16 hours'), home_goals=1, away_goals=2 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='4';
 update matches set status='IN_PROGRESS', substatus='HT', started_at=(current_timestamp - interval '1 hours 30 minutes'), home_goals=3, away_goals=1 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='7';
@@ -424,17 +425,25 @@ COMMENT ON COLUMN predictions.deleted_at IS 'Timestamp when the prediction was d
 INSERT INTO predictions (user_id, group_id, match_id, home_goals, away_goals, status)
 SELECT gu.user_id, gu.group_id, m.id, floor(random()*5)::int, floor(random()*5)::int, 'PENDING'
 FROM group_users gu
-         JOIN matches m ON m.code::int BETWEEN 1 AND 12;
+JOIN matches m ON m.code::int BETWEEN 1 AND 12;
+
+UPDATE predictions
+SET home_goals=2, away_goals=1
+WHERE user_id='c97ec073-c40c-4094-9f9e-b07074188936' AND match_id='6a7c9c74-9a3d-4b9e-9a45-0a5dce3a8f3a';
+
+UPDATE predictions
+SET home_goals=5, away_goals=0
+WHERE user_id='c97ec073-c40c-4094-9f9e-b07074188936' AND match_id='0c3d4b9f-cc8b-4c6f-8a54-0c1d9f3c3c41';
 
 -- Set testing predictions' status.
-UPDATE predictions p
-SET status = CASE
-    WHEN m.status <> 'FINISHED' THEN 'PENDING'
-    WHEN m.home_goals = p.home_goals AND m.away_goals = p.away_goals THEN 'CORRECT'
-    WHEN ((m.home_goals - m.away_goals = 0 AND p.home_goals - p.away_goals = 0) OR
-          (m.home_goals - m.away_goals > 0 AND p.home_goals - p.away_goals > 0) OR
-          (m.home_goals - m.away_goals < 0 AND p.home_goals - p.away_goals < 0)) THEN 'PARTIAL'
-    ELSE 'INCORRECT'
-END
-FROM matches m
-WHERE m.id = p.match_id;
+-- UPDATE predictions p
+-- SET status = CASE
+--     WHEN m.status <> 'FINISHED' THEN 'PENDING'
+--     WHEN m.home_goals = p.home_goals AND m.away_goals = p.away_goals THEN 'CORRECT'
+--     WHEN ((m.home_goals - m.away_goals = 0 AND p.home_goals - p.away_goals = 0) OR
+--           (m.home_goals - m.away_goals > 0 AND p.home_goals - p.away_goals > 0) OR
+--           (m.home_goals - m.away_goals < 0 AND p.home_goals - p.away_goals < 0)) THEN 'PARTIAL'
+--     ELSE 'INCORRECT'
+-- END
+-- FROM matches m
+-- WHERE m.id = p.match_id;
