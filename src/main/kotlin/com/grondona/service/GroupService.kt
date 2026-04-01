@@ -4,20 +4,13 @@ import com.grondona.exception.ConflictException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.Group
 import com.grondona.model.GroupUser
-import com.grondona.model.MatchStatus
-import com.grondona.model.PredictionStatus
-import com.grondona.model.Standing
 import com.grondona.model.Tournament
 import com.grondona.model.User
 import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.model.dto.response.GroupResponse
 import com.grondona.repository.GroupRepository
-import com.grondona.repository.MatchRepository
-import com.grondona.repository.MembershipRepository
-import com.grondona.repository.PredictionRepository
 import com.grondona.repository.TournamentRepository
-import com.grondona.utils.PredictionCalculator
 import jakarta.persistence.criteria.JoinType
 import jakarta.persistence.criteria.Predicate
 import org.slf4j.LoggerFactory
@@ -29,10 +22,8 @@ import java.util.UUID
 @Service
 class GroupService(
     private val groupRepository: GroupRepository,
-    private val matchRepository: MatchRepository,
-    private val membershipRepository: MembershipRepository,
     private val tournamentRepository: TournamentRepository,
-    private val predictionRepository: PredictionRepository,
+    private val predictionService: PredictionService
 ) {
 
     companion object {
@@ -123,71 +114,10 @@ class GroupService(
         logger.info("Group fetched successfully: id={}, name='{}'", group.id, group.name)
 
         if (withStandings) {
-            return GroupResponse.from(group, calculateStandings(group))
+            return GroupResponse.from(group, predictionService.calculateStandings(group))
         }
 
         return GroupResponse.from(group)
-    }
-
-    // TODO: Here we can implement the last-check logic. Currently we'll recalculate points every time.
-    fun calculateStandings(group: Group): List<Standing> {
-        logger.info("Retrieving past matches for group={}", group.id!!)
-        val matches = matchRepository.findByTournamentIdAndStatusOrderByStartedAt(group.tournament.id!!, MatchStatus.FINISHED)
-        logger.debug("Matches to calculate predictions: {}", matches.size)
-
-        logger.info("Checking prediction statuses for group={}", group.id)
-        var predictions = predictionRepository.findByGroupIdAndMatchIdIn(group.id, matches.map { it.id!! })
-        predictions = PredictionCalculator.check(predictions)
-        predictions = predictionRepository.saveAll(predictions)
-        logger.debug("Predictions retrieved: {}", predictions.size)
-
-        // List of predictions indexed by user-id and match-id
-        val predictionsIndexed = predictions.groupBy { it.user.id!! }
-            .mapValues { (_, predictions) ->
-                predictions.groupBy { it.match.id!! }
-                    // Within a group, there's only one prediction per user, per match.
-                    .mapValues { (_, predictions) -> predictions[0] }
-            }
-
-        logger.info("Checking members for group={}", group.id)
-        val groupMembers = membershipRepository.findByGroupId(group.id)
-        logger.debug("Members retrieved: {}", groupMembers.size)
-
-        val memberStandings = groupMembers.groupBy { it.user }
-            .mapValues { (user, _) ->
-                val userPredictions = predictionsIndexed[user.id!!]
-                matches.map { userPredictions?.get(it.id!!) }
-            }
-            .map { (user, predictions) ->
-                Standing(
-                    rank = 0,
-                    user = user,
-                    points = PredictionCalculator.points(predictions.filterNotNull()),
-                    lastPredictions = predictions.map { it?.status ?: PredictionStatus.MISSING }.takeLast(5)
-                )
-            }
-            .sortedByDescending { it.points }
-            .mapIndexed { index, standing ->
-                Standing(
-                    rank = index+1,
-                    user = standing.user,
-                    points = standing.points,
-                    lastPredictions = standing.lastPredictions,
-                )
-            }
-            .groupBy { it.user.id }
-            .mapValues { (_, standings) -> standings[0] } // There's only one standing prediction per user.
-
-        logger.info("Updating members rank and points for group={}", group.id)
-        groupMembers.forEach {
-            val userStanding = memberStandings[it.user.id]
-            it.points = userStanding?.points ?: 0f
-            it.rank = userStanding?.rank
-            it.calculatedAt = LocalDateTime.now()
-        }
-        membershipRepository.saveAll(groupMembers)
-
-        return memberStandings.map { it.value }.sortedBy { it.rank}
     }
 
     fun findOtherGroups(userId: UUID, tournamentId: UUID, search: String?, joined: Boolean?): List<GroupResponse> {

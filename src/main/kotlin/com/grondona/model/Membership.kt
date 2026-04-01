@@ -1,10 +1,12 @@
 package com.grondona.model
 
 import jakarta.persistence.*
+import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.annotations.OnDelete
 import org.hibernate.annotations.OnDeleteAction
 import org.hibernate.annotations.SQLDelete
 import org.hibernate.annotations.SQLRestriction
+import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -45,7 +47,12 @@ data class GroupUser(
     val joinedAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "calculated_at", nullable = false)
-    var calculatedAt: LocalDateTime = LocalDateTime.now(),
+    var calculatedAt: LocalDateTime? = null,
+
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "last_predictions", nullable = false, columnDefinition = "varchar(20)[]")
+    var lastPredictions: List<PredictionStatus> = emptyList(),
 
     @Column(name = "deleted_at")
     val deletedAt: LocalDateTime? = null

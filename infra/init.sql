@@ -123,7 +123,8 @@ CREATE TABLE IF NOT EXISTS group_users (
     rank INTEGER DEFAULT NULL,
     points FLOAT NOT NULL DEFAULT 0,
     joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    calculated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    calculated_at TIMESTAMP DEFAULT NULL,
+    last_predictions VARCHAR(20)[] NOT NULL DEFAULT '{}',
     deleted_at TIMESTAMP DEFAULT NULL,
     CONSTRAINT uq_group_users UNIQUE (id)
 );
@@ -143,6 +144,7 @@ COMMENT ON COLUMN group_users.rank IS 'Ranking of the user in the group';
 COMMENT ON COLUMN group_users.points IS 'Amount of points of the given user in the given tournament';
 COMMENT ON COLUMN group_users.joined_at IS 'Timestamp when the user joined the group';
 COMMENT ON COLUMN group_users.calculated_at IS 'Timestamp when the points were calculated for the last time';
+COMMENT ON COLUMN group_users.last_predictions IS 'Status of the last 5 predictions';
 COMMENT ON COLUMN group_users.deleted_at IS 'Timestamp when the user left the group';
 
 -- Seed default members
@@ -238,12 +240,12 @@ INSERT INTO teams (id, name, code, icon) VALUES
     ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Túnez', 'TUN', 'https://flagcdn.com/w40/tn.png'),
     ('c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41', 'Uruguay', 'URU', 'https://flagcdn.com/w40/uy.png'),
     ('d9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42', 'Uzbekistán', 'UZB', 'https://flagcdn.com/w40/uz.png'),
-    ('8f251495-81ba-4724-b575-f7ebecf213c4', 'FIFA 1', 'FIFA1', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Flag_of_FIFA.svg/1920px-Flag_of_FIFA.svg.png'),
+    ('8f251495-81ba-4724-b575-f7ebecf213c4', 'RD Congo', 'COD', 'https://flagcdn.com/w40/cd.png'),
     ('da0e5c75-ba1c-4090-bbba-ad57d0e3b153', 'FIFA 2', 'FIFA2', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Flag_of_FIFA.svg/1920px-Flag_of_FIFA.svg.png'),
-    ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', 'UEFA 1', 'UEFA1', 'https://www.no1flag.com/Content/ue/net/upload/2017-04-10/74b35597-c1cd-4e02-9b95-1e8a1ef1bf0d.gif'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'UEFA 2', 'UEFA2', 'https://www.no1flag.com/Content/ue/net/upload/2017-04-10/74b35597-c1cd-4e02-9b95-1e8a1ef1bf0d.gif'),
-    ('07782a28-4f6d-4037-86b8-ccff4c2de218', 'UEFA 3', 'UEFA3', 'https://www.no1flag.com/Content/ue/net/upload/2017-04-10/74b35597-c1cd-4e02-9b95-1e8a1ef1bf0d.gif'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'UEFA 4', 'UEFA4', 'https://www.no1flag.com/Content/ue/net/upload/2017-04-10/74b35597-c1cd-4e02-9b95-1e8a1ef1bf0d.gif')
+    ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', 'Bosnia-Herzegovina', 'BIH', 'https://flagcdn.com/w40/ba.png'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Suecia', 'SWE', 'https://flagcdn.com/w40/se.png'),
+    ('07782a28-4f6d-4037-86b8-ccff4c2de218', 'Turquía', 'TUR', 'https://flagcdn.com/w40/tr.png'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Chequia', 'UEFA4', 'https://flagcdn.com/w40/cz.png')
 ON CONFLICT (id) DO NOTHING;
 
 -- Create matches table
@@ -295,7 +297,7 @@ COMMENT ON COLUMN matches.created_at IS 'Timestamp when the match was created';
 COMMENT ON COLUMN matches.updated_at IS 'Timestamp when the match was last updated';
 COMMENT ON COLUMN matches.deleted_at IS 'Timestamp when the match was deleted';
 
--- Seed default matches
+-- Seed default matches (using Bet365 quotas)
 INSERT INTO matches (id, tournament_id, code, home_team_id, away_team_id, started_at, home_quota, tie_quota, away_quota) VALUES
     ('6a7c9c74-9a3d-4b9e-9a45-0a5dce3a8f3a', '28652183-a2d6-4f33-a624-0d24645ce3cd', '1', 'd3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30', 'f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38', '2026-06-11 13:00:00 -06:00'::timestamptz, 1+2*round(cast(log(1.45) as numeric), 2), 1+2*round(cast(log(4.1) as numeric), 2), 1+2*round(cast(log(5.75) as numeric), 2)),
     ('0c3d4b9f-cc8b-4c6f-8a54-0c1d9f3c3c41', '28652183-a2d6-4f33-a624-0d24645ce3cd', '2', 'e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', '219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', '2026-06-11 20:00:00 -06:00'::timestamptz, 1, 1, 1),

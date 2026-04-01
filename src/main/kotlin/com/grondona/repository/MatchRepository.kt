@@ -12,14 +12,6 @@ import java.util.UUID
 @Repository
 interface MatchRepository : JpaRepository<Match, UUID>, JpaSpecificationExecutor<Match> {
 
-    @Query("""
-        select m
-        from Match m
-        where m.tournament.id = :tournamentId
-        order by m.finishedAt asc nulls first
-    """)
-    fun findLastMatch(@Param("tournamentId") tournamentId: UUID): Match?
-
     fun findByTournamentIdOrderByStartedAt(tournamentId: UUID): List<Match>
 
     fun findByTournamentIdAndStatusOrderByStartedAt(tournamentId: UUID, status: MatchStatus): List<Match>

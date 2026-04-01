@@ -252,8 +252,8 @@ class UserControllerTest {
             val groups = listOf(
                 MembershipResponse(
                     groupId = groupId,
-                    name = "My Group",
-                    memberCount = 5L,
+                    groupName = "My Group",
+                    memberCount = 5,
                 )
             )
             every { groupMembershipService.getMyGroups(testUserId) } returns groups

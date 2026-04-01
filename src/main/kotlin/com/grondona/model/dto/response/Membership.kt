@@ -5,8 +5,8 @@ import java.util.UUID
 
 data class MembershipResponse(
     val groupId: UUID,
-    val name: String,
-    val memberCount: Long,
+    val groupName: String,
+    val memberCount: Int,
     val points: Float = 0f,
     val rank: Int? = null,
     val role: GroupRole = GroupRole.MEMBER,

@@ -207,22 +207,22 @@ class GroupMembershipServiceTest {
             val group1 = testGroup.copy(id = UUID.randomUUID(), name = "Group A")
             val group2 = testGroup.copy(id = UUID.randomUUID(), name = "Group B")
             val memberships = listOf(
-                MembershipResponse(group1.id!!, group1.name, 3L, 10.5f, 1, GroupRole.ADMIN),
-                MembershipResponse(group2.id!!, group2.name, 7L, 5.0f, 2, GroupRole.MEMBER)
+                MembershipResponse(group1.id!!, group1.name, 3, 10.5f, 1, GroupRole.ADMIN),
+                MembershipResponse(group2.id!!, group2.name, 7, 5.0f, 2, GroupRole.MEMBER)
             )
 
-            every { groupUserRepository.findUserGroups(testUserId) } returns memberships
+            //every { groupUserRepository.findUserGroups(testUserId) } returns memberships
 
             val result = groupMembershipService.getMyGroups(testUserId)
 
             assertEquals(2, result.size)
-            assertEquals("Group A", result[0].name)
+            assertEquals("Group A", result[0].groupName)
             assertEquals(3, result[0].memberCount)
             assertEquals(10.5f, result[0].points)
             assertEquals(1, result[0].rank)
             assertEquals(GroupRole.ADMIN, result[0].role)
             assertEquals(group1.id, result[0].groupId)
-            assertEquals("Group B", result[1].name)
+            assertEquals("Group B", result[1].groupName)
             assertEquals(7, result[1].memberCount)
             assertEquals(5.0f, result[1].points)
             assertEquals(2, result[1].rank)
@@ -232,7 +232,7 @@ class GroupMembershipServiceTest {
 
         @Test
         fun `getMyGroups should return empty list when user is not in any group`() {
-            every { groupUserRepository.findUserGroups(testUserId) } returns emptyList()
+            //every { groupUserRepository.findUserGroups(testUserId) } returns emptyList()
 
             val result = groupMembershipService.getMyGroups(testUserId)
 

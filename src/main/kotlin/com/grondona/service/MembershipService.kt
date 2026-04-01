@@ -18,7 +18,8 @@ import java.util.UUID
 class MembershipService(
     private val groupRepository: GroupRepository,
     private val userRepository: UserRepository,
-    private val groupUserRepository: MembershipRepository
+    private val membershipRepository: MembershipRepository,
+    private val predictionService: PredictionService,
 ) {
 
     companion object {
@@ -39,19 +40,19 @@ class MembershipService(
             NotFoundException("User not found")
         }
 
-        if (groupUserRepository.existsByUserIdAndGroupId(userId, groupId)) {
+        if (membershipRepository.existsByUserIdAndGroupId(userId, groupId)) {
             logger.warn("Join failed: user {} is already a member of group {}", userId, groupId)
             throw BadRequestException("You are already member of this group")
         }
 
-        val memberCount = groupUserRepository.countByGroupId(groupId)
+        val memberCount = membershipRepository.countByGroupId(groupId)
         if (memberCount >= group.maxMembers) {
             logger.warn("Join failed: group {} is full ({}/{})", groupId, memberCount, group.maxMembers)
             throw BadRequestException("Group is full")
         }
 
         val membership = GroupUser(user = user, group = group, role = role, joinedAt = LocalDateTime.now())
-        groupUserRepository.save(membership)
+        membershipRepository.save(membership)
 
         logger.info("User {} joined group '{}' successfully ({}/{} members)", userId, group.name, memberCount + 1, group.maxMembers)
     }
@@ -65,31 +66,43 @@ class MembershipService(
             NotFoundException("Group not found")
         }
 
-        val membership = groupUserRepository.findByUserIdAndGroupId(userId, groupId).orElseThrow {
+        val membership = membershipRepository.findByUserIdAndGroupId(userId, groupId).orElseThrow {
             logger.warn("Leave failed: user {} is not a member of group {}", userId, groupId)
             NotFoundException("You are not member of this group")
         }
 
-        groupUserRepository.delete(membership)
+        membershipRepository.delete(membership)
         logger.info("User {} left group {} successfully", userId, groupId)
     }
 
     @Transactional(readOnly = true)
     fun getMyGroups(userId: UUID): List<MembershipResponse> {
         logger.info("Fetching groups for user {}", userId)
-        val memberships = groupUserRepository.findUserGroups(userId)
+        val memberships = membershipRepository.findByUserId(userId)
         logger.info("User {} belongs to {} groups", userId, memberships.size)
-        return memberships
+
+        return memberships.map {
+            val groupStandings = predictionService.calculateStandings(it.group)
+            val userStanding = groupStandings.filter { standing -> standing.user.id == userId }[0]
+            MembershipResponse(
+                groupId = it.group.id!!,
+                groupName = it.group.name,
+                memberCount = groupStandings.size,
+                points = userStanding.points,
+                rank = userStanding.rank,
+                role = it.role,
+            )
+        }
     }
 
     fun isAdmin(userId: UUID, groupId: UUID): Boolean {
         logger.info("Checking if user={} is admin of group={}", userId, groupId)
-        return groupUserRepository.findByUserIdAndGroupId(userId, groupId)
+        return membershipRepository.findByUserIdAndGroupId(userId, groupId)
             .map { it.role == GroupRole.ADMIN || it.role == GroupRole.OWNER }.orElse(false)
     }
 
     fun isMember(userId: UUID, groupId: UUID): Boolean {
         logger.info("Checking if user={} is admin of group={}", userId, groupId)
-        return groupUserRepository.findByUserIdAndGroupId(userId, groupId).isPresent
+        return membershipRepository.findByUserIdAndGroupId(userId, groupId).isPresent
     }
 }

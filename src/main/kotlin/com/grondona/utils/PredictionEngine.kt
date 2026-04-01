@@ -6,12 +6,12 @@ import com.grondona.model.PredictionStatus
 import com.grondona.model.Score
 import org.slf4j.LoggerFactory
 
-object PredictionCalculator {
+object PredictionEngine {
 
     private const val POINTS_PARTIAL = 1
     private const val EXTRA_POINTS_CORRECT = 3
     private const val EXTRA_POINTS_FIVE_GOALS = 2
-    private val logger = LoggerFactory.getLogger(PredictionCalculator::class.java)
+    private val logger = LoggerFactory.getLogger(PredictionEngine::class.java)
 
     private enum class MatchOutcome {
         HOME, TIE, AWAY
