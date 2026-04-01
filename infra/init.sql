@@ -174,6 +174,7 @@ ON CONFLICT (id) DO NOTHING;
 -- Create teams table
 CREATE TABLE IF NOT EXISTS teams (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     code VARCHAR(5) NOT NULL,
     icon TEXT DEFAULT 'https://flagicons.lipis.dev/flags/4x3/xx.svg',
@@ -184,11 +185,12 @@ CREATE TABLE IF NOT EXISTS teams (
 );
 
 -- Create indexes for uniqueness and better query performance
-CREATE INDEX IF NOT EXISTS idx_teams_code ON teams(code) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_teams_code ON teams(code, tournament_id) WHERE deleted_at IS NULL;
 
 -- Add comments to table and columns
 COMMENT ON TABLE teams IS 'Teams table';
 COMMENT ON COLUMN teams.id IS 'Unique identifier for the team';
+COMMENT ON COLUMN teams.tournament_id IS 'Reference to the tournament';
 COMMENT ON COLUMN teams.name IS 'Name of the team';
 COMMENT ON COLUMN teams.code IS 'FIFA code of the team';
 COMMENT ON COLUMN teams.icon IS 'URL with the team icon';
@@ -197,55 +199,55 @@ COMMENT ON COLUMN teams.updated_at IS 'Timestamp when the team was last updated'
 COMMENT ON COLUMN teams.deleted_at IS 'Timestamp when the team was deleted';
 
 -- Seed default tournaments
-INSERT INTO teams (id, name, code, icon) VALUES
-    ('6f1c5f6e-9c9e-4f3b-8d8e-2b5e2a6a1c01', 'Alemania', 'GER', 'https://flagcdn.com/w40/de.png'),
-    ('b2c9c3e7-7f7e-4a5a-9f2b-3c1d9a4e8b02', 'Arabia Saudita', 'KSA', 'https://flagcdn.com/w40/sa.png'),
-    ('1a4d2b6c-5e7f-4c8a-9d1e-6b3f2a7c9d03', 'Argelia', 'ALG', 'https://flagcdn.com/w40/dz.png'),
-    ('9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04', 'Argentina', 'ARG', 'https://flagcdn.com/w40/ar.png'),
-    ('3e7b1c9d-6f2a-4d8c-8b1e-5c9a2f7d3b05', 'Australia', 'AUS', 'https://flagcdn.com/w40/au.png'),
-    ('7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06', 'Austria', 'AUT', 'https://flagcdn.com/w40/at.png'),
-    ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07', 'Brasil', 'BRA', 'https://flagcdn.com/w40/br.png'),
-    ('8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08', 'Bélgica', 'BEL', 'https://flagcdn.com/w40/be.png'),
-    ('4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09', 'Cabo Verde', 'CPV', 'https://flagcdn.com/w40/cv.png'),
-    ('5a1c9e3b-7d2f-4a6c-8b9e-2f3d7a1c4b10', 'Canadá', 'CAN', 'https://flagcdn.com/w40/ca.png'),
-    ('c3e7b1a9-5f2d-4c8a-9e6b-1a2f3d7c5b11', 'Catar', 'QAT', 'https://flagcdn.com/w40/qa.png'),
-    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Colombia', 'COL', 'https://flagcdn.com/w40/co.png'),
-    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Corea del Sur', 'KOR', 'https://flagcdn.com/w40/kr.png'),
-    ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', 'Costa de Marfil', 'CIV', 'https://flagcdn.com/w40/ci.png'),
-    ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Croacia', 'CRO', 'https://flagcdn.com/w40/hr.png'),
-    ('b7e3c1a5-2f9d-4a6c-8e1b-3d7a5c2f9e16', 'Curazao', 'CUW', 'https://flagcdn.com/w40/cw.png'),
-    ('c1a5e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b17', 'Ecuador', 'ECU', 'https://flagcdn.com/w40/ec.png'),
-    ('d5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18', 'Egipto', 'EGY', 'https://flagcdn.com/w40/eg.png'),
-    ('e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19', 'Escocia', 'SCO', 'https://flagcdn.com/w40/gb-sct.png'),
-    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'España', 'ESP', 'https://flagcdn.com/w40/es.png'),
-    ('a9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b21', 'Estados Unidos', 'USA', 'https://flagcdn.com/w40/us.png'),
-    ('b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22', 'Francia', 'FRA', 'https://flagcdn.com/w40/fr.png'),
-    ('c9e3a1b5-5f2d-4c8a-9e6b-1a2f3d7c5b23', 'Ghana', 'GHA', 'https://flagcdn.com/w40/gh.png'),
-    ('d1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24', 'Haití', 'HAI', 'https://flagcdn.com/w40/ht.png'),
-    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Inglaterra', 'ENG', 'https://flagcdn.com/w40/gb-eng.png'),
-    ('f3a1c5e7-2f9d-4a6c-8e1b-3d7a5c2f9e26', 'Irán', 'IRN', 'https://flagcdn.com/w40/ir.png'),
-    ('a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27', 'Japón', 'JPN', 'https://flagcdn.com/w40/jp.png'),
-    ('b5e1c7a3-2f9d-4a6c-8e1b-3d7a5c2f9e28', 'Jordania', 'JOR', 'https://flagcdn.com/w40/jo.png'),
-    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Marruecos', 'MAR', 'https://flagcdn.com/w40/ma.png'),
-    ('d3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30', 'México', 'MEX', 'https://flagcdn.com/w40/mx.png'),
-    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Noruega', 'NOR', 'https://flagcdn.com/w40/no.png'),
-    ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', 'Nueva Zelanda', 'NZL', 'https://flagcdn.com/w40/nz.png'),
-    ('a1e7c3b5-9d2f-4c8a-9e6b-2f3a1c7d5b33', 'Países Bajos', 'NED', 'https://flagcdn.com/w40/nl.png'),
-    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Panamá', 'PAN', 'https://flagcdn.com/w40/pa.png'),
-    ('c5e1a7b3-9d2f-4c8a-9e6b-2f3a1c7d5b35', 'Paraguay', 'PAR', 'https://flagcdn.com/w40/py.png'),
-    ('d7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36', 'Portugal', 'POR', 'https://flagcdn.com/w40/pt.png'),
-    ('e3c1a7b5-9d2f-4c8a-9e6b-2f3a1c7d5b37', 'Senegal', 'SEN', 'https://flagcdn.com/w40/sn.png'),
-    ('f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38', 'Sudáfrica', 'RSA', 'https://flagcdn.com/w40/za.png'),
-    ('a3c1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b39', 'Suiza', 'SUI', 'https://flagcdn.com/w40/ch.png'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Túnez', 'TUN', 'https://flagcdn.com/w40/tn.png'),
-    ('c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41', 'Uruguay', 'URU', 'https://flagcdn.com/w40/uy.png'),
-    ('d9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42', 'Uzbekistán', 'UZB', 'https://flagcdn.com/w40/uz.png'),
-    ('8f251495-81ba-4724-b575-f7ebecf213c4', 'RD Congo', 'COD', 'https://flagcdn.com/w40/cd.png'),
-    ('da0e5c75-ba1c-4090-bbba-ad57d0e3b153', 'FIFA 2', 'FIFA2', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Flag_of_FIFA.svg/1920px-Flag_of_FIFA.svg.png'),
-    ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', 'Bosnia-Herzegovina', 'BIH', 'https://flagcdn.com/w40/ba.png'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Suecia', 'SWE', 'https://flagcdn.com/w40/se.png'),
-    ('07782a28-4f6d-4037-86b8-ccff4c2de218', 'Turquía', 'TUR', 'https://flagcdn.com/w40/tr.png'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Chequia', 'UEFA4', 'https://flagcdn.com/w40/cz.png')
+INSERT INTO teams (id, tournament_id, name, code, icon) VALUES
+    ('6f1c5f6e-9c9e-4f3b-8d8e-2b5e2a6a1c01', '28652183-a2d6-4f33-a624-0d24645ce3cd','Alemania', 'GER', 'https://flagcdn.com/w40/de.png'),
+    ('b2c9c3e7-7f7e-4a5a-9f2b-3c1d9a4e8b02', '28652183-a2d6-4f33-a624-0d24645ce3cd','Arabia Saudita', 'KSA', 'https://flagcdn.com/w40/sa.png'),
+    ('1a4d2b6c-5e7f-4c8a-9d1e-6b3f2a7c9d03', '28652183-a2d6-4f33-a624-0d24645ce3cd','Argelia', 'ALG', 'https://flagcdn.com/w40/dz.png'),
+    ('9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04', '28652183-a2d6-4f33-a624-0d24645ce3cd','Argentina', 'ARG', 'https://flagcdn.com/w40/ar.png'),
+    ('3e7b1c9d-6f2a-4d8c-8b1e-5c9a2f7d3b05', '28652183-a2d6-4f33-a624-0d24645ce3cd','Australia', 'AUS', 'https://flagcdn.com/w40/au.png'),
+    ('7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06', '28652183-a2d6-4f33-a624-0d24645ce3cd','Austria', 'AUT', 'https://flagcdn.com/w40/at.png'),
+    ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07', '28652183-a2d6-4f33-a624-0d24645ce3cd','Brasil', 'BRA', 'https://flagcdn.com/w40/br.png'),
+    ('8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08', '28652183-a2d6-4f33-a624-0d24645ce3cd','Bélgica', 'BEL', 'https://flagcdn.com/w40/be.png'),
+    ('4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09', '28652183-a2d6-4f33-a624-0d24645ce3cd','Cabo Verde', 'CPV', 'https://flagcdn.com/w40/cv.png'),
+    ('5a1c9e3b-7d2f-4a6c-8b9e-2f3d7a1c4b10', '28652183-a2d6-4f33-a624-0d24645ce3cd','Canadá', 'CAN', 'https://flagcdn.com/w40/ca.png'),
+    ('c3e7b1a9-5f2d-4c8a-9e6b-1a2f3d7c5b11', '28652183-a2d6-4f33-a624-0d24645ce3cd','Catar', 'QAT', 'https://flagcdn.com/w40/qa.png'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', '28652183-a2d6-4f33-a624-0d24645ce3cd','Colombia', 'COL', 'https://flagcdn.com/w40/co.png'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', '28652183-a2d6-4f33-a624-0d24645ce3cd','Corea del Sur', 'KOR', 'https://flagcdn.com/w40/kr.png'),
+    ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', '28652183-a2d6-4f33-a624-0d24645ce3cd','Costa de Marfil', 'CIV', 'https://flagcdn.com/w40/ci.png'),
+    ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', '28652183-a2d6-4f33-a624-0d24645ce3cd','Croacia', 'CRO', 'https://flagcdn.com/w40/hr.png'),
+    ('b7e3c1a5-2f9d-4a6c-8e1b-3d7a5c2f9e16', '28652183-a2d6-4f33-a624-0d24645ce3cd','Curazao', 'CUW', 'https://flagcdn.com/w40/cw.png'),
+    ('c1a5e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b17', '28652183-a2d6-4f33-a624-0d24645ce3cd','Ecuador', 'ECU', 'https://flagcdn.com/w40/ec.png'),
+    ('d5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18', '28652183-a2d6-4f33-a624-0d24645ce3cd','Egipto', 'EGY', 'https://flagcdn.com/w40/eg.png'),
+    ('e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19', '28652183-a2d6-4f33-a624-0d24645ce3cd','Escocia', 'SCO', 'https://flagcdn.com/w40/gb-sct.png'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', '28652183-a2d6-4f33-a624-0d24645ce3cd','España', 'ESP', 'https://flagcdn.com/w40/es.png'),
+    ('a9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b21', '28652183-a2d6-4f33-a624-0d24645ce3cd','Estados Unidos', 'USA', 'https://flagcdn.com/w40/us.png'),
+    ('b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22', '28652183-a2d6-4f33-a624-0d24645ce3cd','Francia', 'FRA', 'https://flagcdn.com/w40/fr.png'),
+    ('c9e3a1b5-5f2d-4c8a-9e6b-1a2f3d7c5b23', '28652183-a2d6-4f33-a624-0d24645ce3cd','Ghana', 'GHA', 'https://flagcdn.com/w40/gh.png'),
+    ('d1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24', '28652183-a2d6-4f33-a624-0d24645ce3cd','Haití', 'HAI', 'https://flagcdn.com/w40/ht.png'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', '28652183-a2d6-4f33-a624-0d24645ce3cd','Inglaterra', 'ENG', 'https://flagcdn.com/w40/gb-eng.png'),
+    ('f3a1c5e7-2f9d-4a6c-8e1b-3d7a5c2f9e26', '28652183-a2d6-4f33-a624-0d24645ce3cd','Irán', 'IRN', 'https://flagcdn.com/w40/ir.png'),
+    ('a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27', '28652183-a2d6-4f33-a624-0d24645ce3cd','Japón', 'JPN', 'https://flagcdn.com/w40/jp.png'),
+    ('b5e1c7a3-2f9d-4a6c-8e1b-3d7a5c2f9e28', '28652183-a2d6-4f33-a624-0d24645ce3cd','Jordania', 'JOR', 'https://flagcdn.com/w40/jo.png'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', '28652183-a2d6-4f33-a624-0d24645ce3cd','Marruecos', 'MAR', 'https://flagcdn.com/w40/ma.png'),
+    ('d3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30', '28652183-a2d6-4f33-a624-0d24645ce3cd','México', 'MEX', 'https://flagcdn.com/w40/mx.png'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', '28652183-a2d6-4f33-a624-0d24645ce3cd','Noruega', 'NOR', 'https://flagcdn.com/w40/no.png'),
+    ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', '28652183-a2d6-4f33-a624-0d24645ce3cd','Nueva Zelanda', 'NZL', 'https://flagcdn.com/w40/nz.png'),
+    ('a1e7c3b5-9d2f-4c8a-9e6b-2f3a1c7d5b33', '28652183-a2d6-4f33-a624-0d24645ce3cd','Países Bajos', 'NED', 'https://flagcdn.com/w40/nl.png'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', '28652183-a2d6-4f33-a624-0d24645ce3cd','Panamá', 'PAN', 'https://flagcdn.com/w40/pa.png'),
+    ('c5e1a7b3-9d2f-4c8a-9e6b-2f3a1c7d5b35', '28652183-a2d6-4f33-a624-0d24645ce3cd','Paraguay', 'PAR', 'https://flagcdn.com/w40/py.png'),
+    ('d7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36', '28652183-a2d6-4f33-a624-0d24645ce3cd','Portugal', 'POR', 'https://flagcdn.com/w40/pt.png'),
+    ('e3c1a7b5-9d2f-4c8a-9e6b-2f3a1c7d5b37', '28652183-a2d6-4f33-a624-0d24645ce3cd','Senegal', 'SEN', 'https://flagcdn.com/w40/sn.png'),
+    ('f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38', '28652183-a2d6-4f33-a624-0d24645ce3cd','Sudáfrica', 'RSA', 'https://flagcdn.com/w40/za.png'),
+    ('a3c1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b39', '28652183-a2d6-4f33-a624-0d24645ce3cd','Suiza', 'SUI', 'https://flagcdn.com/w40/ch.png'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', '28652183-a2d6-4f33-a624-0d24645ce3cd','Túnez', 'TUN', 'https://flagcdn.com/w40/tn.png'),
+    ('c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41', '28652183-a2d6-4f33-a624-0d24645ce3cd','Uruguay', 'URU', 'https://flagcdn.com/w40/uy.png'),
+    ('d9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42', '28652183-a2d6-4f33-a624-0d24645ce3cd','Uzbekistán', 'UZB', 'https://flagcdn.com/w40/uz.png'),
+    ('8f251495-81ba-4724-b575-f7ebecf213c4', '28652183-a2d6-4f33-a624-0d24645ce3cd','RD Congo', 'COD', 'https://flagcdn.com/w40/cd.png'),
+    ('da0e5c75-ba1c-4090-bbba-ad57d0e3b153', '28652183-a2d6-4f33-a624-0d24645ce3cd','FIFA 2', 'FIFA2', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Flag_of_FIFA.svg/1920px-Flag_of_FIFA.svg.png'),
+    ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', '28652183-a2d6-4f33-a624-0d24645ce3cd','Bosnia-Herzegovina', 'BIH', 'https://flagcdn.com/w40/ba.png'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', '28652183-a2d6-4f33-a624-0d24645ce3cd','Suecia', 'SWE', 'https://flagcdn.com/w40/se.png'),
+    ('07782a28-4f6d-4037-86b8-ccff4c2de218', '28652183-a2d6-4f33-a624-0d24645ce3cd','Turquía', 'TUR', 'https://flagcdn.com/w40/tr.png'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', '28652183-a2d6-4f33-a624-0d24645ce3cd','Chequia', 'UEFA4', 'https://flagcdn.com/w40/cz.png')
 ON CONFLICT (id) DO NOTHING;
 
 -- Create matches table
