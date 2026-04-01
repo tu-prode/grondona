@@ -8,11 +8,20 @@ import org.hibernate.annotations.SQLRestriction
 import java.time.LocalDateTime
 import java.util.UUID
 
+enum class MatchOutcome {
+    HOME, TIE, AWAY
+}
+
 data class Score(
     val homeGoals: Int,
     val awayGoals: Int,
 ) {
     fun goals() = homeGoals + awayGoals
+    fun outcome() = when {
+        homeGoals > awayGoals -> MatchOutcome.HOME
+        homeGoals < awayGoals -> MatchOutcome.AWAY
+        else -> MatchOutcome.TIE
+    }
 }
 
 enum class MatchStatus {

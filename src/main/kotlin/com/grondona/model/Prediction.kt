@@ -9,7 +9,7 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 enum class PredictionStatus {
-    CORRECT, PARTIAL, INCORRECT, PENDING, MISSING
+    BONUS, CORRECT, PARTIAL, INCORRECT, PENDING, MISSING
 }
 
 @Entity

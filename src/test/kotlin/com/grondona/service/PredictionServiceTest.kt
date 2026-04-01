@@ -4,6 +4,7 @@ import com.grondona.exception.BadRequestException
 import com.grondona.exception.ForbiddenException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.Group
+import com.grondona.model.GroupRole
 import com.grondona.model.GroupUser
 import com.grondona.model.Match
 import com.grondona.model.MatchStatus
@@ -455,6 +456,190 @@ class PredictionServiceTest {
             assertThrows<NotFoundException> {
                 predictionService.getGroupMatchPredictions(testUserId, testGroupId, testMatchId)
             }
+        }
+    }
+
+    @Nested
+    inner class CalculateStandingsTests {
+
+        private val userId2 = UUID.randomUUID()
+        private val testUser2 = testUser.copy(id = userId2, username = "user2", email = "user2@example.com")
+
+        // A finished match with actual goals for scoring
+        private val finishedMatch = testMatchLocked.copy(
+            id = UUID.randomUUID(),
+            homeGoals = 2,
+            awayGoals = 1,
+            homeQuota = 2.0f,
+            finishedAt = LocalDateTime.now().minusHours(1),
+        )
+
+        private fun memberOf(user: User, joinedAt: LocalDateTime = LocalDateTime.now(), calculatedAt: LocalDateTime? = null) =
+            GroupUser(
+                id = UUID.randomUUID(), user = user, group = testGroup,
+                role = GroupRole.MEMBER, points = 0f, rank = null,
+                joinedAt = joinedAt, calculatedAt = calculatedAt,
+            )
+
+        @Test
+        fun `calculateStandings returns empty standings ranked by join date when no finished matches`() {
+            val member1 = memberOf(testUser, joinedAt = LocalDateTime.now().minusDays(2))
+            val member2 = memberOf(testUser2, joinedAt = LocalDateTime.now().minusDays(1))
+
+            every { matchRepository.findByTournamentIdAndStatusOrderByStartedAt(testTournamentId, MatchStatus.FINISHED) } returns emptyList()
+            every { membershipRepository.findByGroupId(testGroupId) } returns listOf(member1, member2)
+            every { membershipRepository.saveAll(any<Iterable<GroupUser>>()) } returns mutableListOf()
+
+            val result = predictionService.calculateStandings(testGroup)
+
+            assertEquals(2, result.size)
+            assertEquals(1, result[0].rank)
+            assertEquals(testUser.id, result[0].user.id)   // joined earlier → rank 1
+            assertEquals(2, result[1].rank)
+            assertEquals(userId2, result[1].user.id)
+            result.forEach { assertEquals(0f, it.points) }
+            verify(exactly = 0) { predictionRepository.findByGroupIdAndMatchIdIn(any(), any()) }
+        }
+
+        @Test
+        fun `calculateStandings returns empty list when group has no members`() {
+            every { matchRepository.findByTournamentIdAndStatusOrderByStartedAt(testTournamentId, MatchStatus.FINISHED) } returns emptyList()
+            every { membershipRepository.findByGroupId(testGroupId) } returns emptyList()
+            every { membershipRepository.saveAll(any<Iterable<GroupUser>>()) } returns mutableListOf()
+
+            val result = predictionService.calculateStandings(testGroup)
+
+            assertTrue(result.isEmpty())
+        }
+
+        @Test
+        fun `calculateStandings computes new standings when calculatedAt is null`() {
+            val member1 = memberOf(testUser, calculatedAt = null)
+            val member2 = memberOf(testUser2, calculatedAt = null)
+
+            val prediction1 = Prediction(
+                id = UUID.randomUUID(), user = testUser, group = testGroup,
+                match = finishedMatch, homeGoals = 2, awayGoals = 1, // exact match → CORRECT
+            )
+            val prediction2 = Prediction(
+                id = UUID.randomUUID(), user = testUser2, group = testGroup,
+                match = finishedMatch, homeGoals = 0, awayGoals = 1, // wrong outcome → INCORRECT
+            )
+
+            every { matchRepository.findByTournamentIdAndStatusOrderByStartedAt(testTournamentId, MatchStatus.FINISHED) } returns listOf(finishedMatch)
+            every { membershipRepository.findByGroupId(testGroupId) } returns listOf(member1, member2)
+            every { predictionRepository.findByGroupIdAndMatchIdIn(testGroupId, listOf(finishedMatch.id!!)) } returns listOf(prediction1, prediction2)
+            every { predictionRepository.saveAll(any<List<Prediction>>()) } answers { firstArg() }
+            every { membershipRepository.saveAll(any<List<GroupUser>>()) } answers { firstArg() }
+
+            val result = predictionService.calculateStandings(testGroup)
+
+            assertEquals(2, result.size)
+            // testUser predicted correctly → more points → rank 1
+            val user1Standing = result.find { it.user.id == testUser.id }!!
+            val user2Standing = result.find { it.user.id == userId2 }!!
+            assertTrue(user1Standing.points > user2Standing.points)
+            assertEquals(1, user1Standing.rank)
+            assertEquals(2, user2Standing.rank)
+            verify { predictionRepository.saveAll(any<List<Prediction>>()) }
+            verify { membershipRepository.saveAll(any<List<GroupUser>>()) }
+        }
+
+        @Test
+        fun `calculateStandings computes new standings when calculatedAt is before last match finishedAt`() {
+            val staleTime = LocalDateTime.now().minusHours(3)
+            val member = memberOf(testUser, calculatedAt = staleTime)
+
+            val prediction = Prediction(
+                id = UUID.randomUUID(), user = testUser, group = testGroup,
+                match = finishedMatch, homeGoals = 2, awayGoals = 1,
+            )
+
+            every { matchRepository.findByTournamentIdAndStatusOrderByStartedAt(testTournamentId, MatchStatus.FINISHED) } returns listOf(finishedMatch)
+            every { membershipRepository.findByGroupId(testGroupId) } returns listOf(member)
+            every { predictionRepository.findByGroupIdAndMatchIdIn(testGroupId, listOf(finishedMatch.id!!)) } returns listOf(prediction)
+            every { predictionRepository.saveAll(any<List<Prediction>>()) } answers { firstArg() }
+            every { membershipRepository.saveAll(any<List<GroupUser>>()) } answers { firstArg() }
+
+            val result = predictionService.calculateStandings(testGroup)
+
+            assertEquals(1, result.size)
+            assertEquals(1, result[0].rank)
+            verify { predictionRepository.findByGroupIdAndMatchIdIn(any(), any()) }
+        }
+
+        @Test
+        fun `calculateStandings returns cached standings when all members are up to date`() {
+            val freshTime = LocalDateTime.now().minusMinutes(10)
+            val member = memberOf(testUser, calculatedAt = freshTime).copy(
+                points = 8.5f, rank = 1,
+                lastPredictions = listOf(PredictionStatus.CORRECT, PredictionStatus.PARTIAL)
+            )
+
+            every { matchRepository.findByTournamentIdAndStatusOrderByStartedAt(testTournamentId, MatchStatus.FINISHED) } returns listOf(finishedMatch)
+            every { membershipRepository.findByGroupId(testGroupId) } returns listOf(member)
+
+            val result = predictionService.calculateStandings(testGroup)
+
+            assertEquals(1, result.size)
+            assertEquals(1, result[0].rank)
+            assertEquals(8.5f, result[0].points)
+            assertEquals(listOf(PredictionStatus.CORRECT, PredictionStatus.PARTIAL), result[0].lastPredictions)
+            verify(exactly = 0) { predictionRepository.findByGroupIdAndMatchIdIn(any(), any()) }
+            verify(exactly = 0) { membershipRepository.saveAll(any<List<GroupUser>>()) }
+        }
+
+        @Test
+        fun `calculateStandings assigns zero points to members with no predictions`() {
+            val member1 = memberOf(testUser, calculatedAt = null)
+            val member2 = memberOf(testUser2, calculatedAt = null)
+
+            every { matchRepository.findByTournamentIdAndStatusOrderByStartedAt(testTournamentId, MatchStatus.FINISHED) } returns listOf(finishedMatch)
+            every { membershipRepository.findByGroupId(testGroupId) } returns listOf(member1, member2)
+            // Neither member has a prediction for this match
+            every { predictionRepository.findByGroupIdAndMatchIdIn(testGroupId, listOf(finishedMatch.id!!)) } returns emptyList()
+            every { predictionRepository.saveAll(any<Iterable<Prediction>>()) } returns mutableListOf()
+            every { membershipRepository.saveAll(any<Iterable<GroupUser>>()) } returns mutableListOf()
+
+            val result = predictionService.calculateStandings(testGroup)
+
+            assertEquals(2, result.size)
+            result.forEach { assertEquals(0f, it.points) }
+            // With 1 finished match and no predictions, each member gets 1 MISSING entry
+            result.forEach {
+                assertEquals(1, it.lastPredictions.size)
+                assertEquals(PredictionStatus.MISSING, it.lastPredictions[0])
+            }
+        }
+
+        @Test
+        fun `calculateStandings ranks members correctly by points descending`() {
+            val member1 = memberOf(testUser, calculatedAt = null)
+            val member2 = memberOf(testUser2, calculatedAt = null)
+
+            // testUser2 predicts exactly right, testUser predicts incorrectly
+            val pred1 = Prediction(
+                id = UUID.randomUUID(), user = testUser, group = testGroup,
+                match = finishedMatch, homeGoals = 0, awayGoals = 3, // wrong outcome
+            )
+            val pred2 = Prediction(
+                id = UUID.randomUUID(), user = testUser2, group = testGroup,
+                match = finishedMatch, homeGoals = 2, awayGoals = 1, // exact → higher score
+            )
+
+            every { matchRepository.findByTournamentIdAndStatusOrderByStartedAt(testTournamentId, MatchStatus.FINISHED) } returns listOf(finishedMatch)
+            every { membershipRepository.findByGroupId(testGroupId) } returns listOf(member1, member2)
+            every { predictionRepository.findByGroupIdAndMatchIdIn(testGroupId, listOf(finishedMatch.id!!)) } returns listOf(pred1, pred2)
+            every { predictionRepository.saveAll(any<List<Prediction>>()) } answers { firstArg() }
+            every { membershipRepository.saveAll(any<List<GroupUser>>()) } answers { firstArg() }
+
+            val result = predictionService.calculateStandings(testGroup)
+
+            assertEquals(2, result.size)
+            assertEquals(userId2, result[0].user.id)   // testUser2 predicted correctly → rank 1
+            assertEquals(testUserId, result[1].user.id)
+            assertEquals(1, result[0].rank)
+            assertEquals(2, result[1].rank)
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.grondona.utils
 
+import com.grondona.model.MatchOutcome
 import com.grondona.model.MatchStatus
 import com.grondona.model.Prediction
 import com.grondona.model.PredictionStatus
@@ -9,19 +10,9 @@ import org.slf4j.LoggerFactory
 object PredictionEngine {
 
     private const val POINTS_PARTIAL = 1
-    private const val EXTRA_POINTS_CORRECT = 3
-    private const val EXTRA_POINTS_FIVE_GOALS = 2
+    private const val POINTS_CORRECT = 3
+    private const val POINTS_BONUS = 5
     private val logger = LoggerFactory.getLogger(PredictionEngine::class.java)
-
-    private enum class MatchOutcome {
-        HOME, TIE, AWAY
-    }
-
-    private fun outcome(score: Score) = when {
-        score.homeGoals > score.awayGoals -> MatchOutcome.HOME
-        score.homeGoals < score.awayGoals -> MatchOutcome.AWAY
-        else -> MatchOutcome.TIE
-    }
 
     fun check(predictions: List<Prediction>): List<Prediction> =
         predictions.toMutableList().map { prediction ->
@@ -33,8 +24,9 @@ object PredictionEngine {
                     val predictionScore = prediction.score()
 
                     when {
+                        matchScore == predictionScore && matchScore.goals() >= 5 -> prediction.status = PredictionStatus.BONUS
                         matchScore == predictionScore -> prediction.status = PredictionStatus.CORRECT
-                        outcome(matchScore) == outcome(predictionScore) -> prediction.status = PredictionStatus.PARTIAL
+                        matchScore.outcome() == predictionScore.outcome() -> prediction.status = PredictionStatus.PARTIAL
                         else -> prediction.status = PredictionStatus.INCORRECT
                     }
                 }
@@ -51,23 +43,20 @@ object PredictionEngine {
             if (matchScore == null) {
                 logger.error("Match with id={} has no goals submitted but status FINISHED", prediction.match.id)
             } else {
-                val predictionScore = prediction.score()
-                if (outcome(matchScore) == outcome(predictionScore)) {
-                    points += POINTS_PARTIAL
+                points += when (prediction.status) {
+                    PredictionStatus.BONUS -> POINTS_BONUS
+                    PredictionStatus.CORRECT -> POINTS_CORRECT
+                    PredictionStatus.PARTIAL -> POINTS_PARTIAL
+                    else -> 0
                 }
 
-                if (matchScore == predictionScore) {
-                    points += EXTRA_POINTS_CORRECT
-                }
-
-                if (matchScore.goals() >= 5) {
-                    points += EXTRA_POINTS_FIVE_GOALS
-                }
-
-                points += when (outcome(matchScore)) {
-                    MatchOutcome.HOME -> prediction.match.homeQuota
-                    MatchOutcome.TIE -> prediction.match.tieQuota
-                    MatchOutcome.AWAY -> prediction.match.awayQuota
+                val matchOutcome = matchScore.outcome()
+                if (matchOutcome == prediction.score().outcome()) {
+                    points += when (matchOutcome) {
+                        MatchOutcome.HOME -> prediction.match.homeQuota
+                        MatchOutcome.TIE -> prediction.match.tieQuota
+                        MatchOutcome.AWAY -> prediction.match.awayQuota
+                    }
                 }
             }
 
