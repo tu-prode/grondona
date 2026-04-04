@@ -36,7 +36,7 @@ data class Group(
     var isPrivate: Boolean = false,
 
     @Column(name = "max_members", nullable = false)
-    var maxMembers: Int,
+    var maxMembers: Int = 128,
 
     @Column(name = "created_at", nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),

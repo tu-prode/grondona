@@ -29,7 +29,7 @@ data class Team(
     var code: String,
 
     @Column(nullable = false)
-    var icon: String,
+    var icon: String = "",
 
     @Column(name = "created_at", nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
