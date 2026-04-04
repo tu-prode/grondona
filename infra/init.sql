@@ -41,7 +41,7 @@ COMMENT ON COLUMN users.deleted_at IS 'Timestamp when the user was deleted';
 
 -- Seed default users
 INSERT INTO users (id, fullname, username, email, password_hash, permissions) VALUES
-    ('d8a1290d-6bee-4710-a5a4-5dd3f45c6c8c', 'Cron', 'cron', 'cron@app.com', '123e83616bbb0ad464c3d8ef1093060be4761265d90d6fe1aabc765ca45747f8', 'CRON'),
+    ('d8a1290d-6bee-4710-a5a4-5dd3f45c6c8c', 'CronJob', 'cron', 'cron@app.com', 'f03a08ce9005a2d659803a2958e4a3546c45010b2e4fc4f93f4cc477d86b15da', 'CRON'),
     ('c97ec073-c40c-4094-9f9e-b07074188936', 'Cristian Raña', 'cris', 'cris@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'SUPERUSER'),
     ('60635292-4a13-43d8-b976-b2e292020deb', 'Lautaro Chamorro', 'chas', 'chas@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
     ('4fc682de-233f-4b0f-b4c3-4ee0f5716675', 'Manuel Domínguez', 'manu', 'manu@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
@@ -50,7 +50,7 @@ INSERT INTO users (id, fullname, username, email, password_hash, permissions) VA
     ('2b67aaa9-2ecf-4d21-9ce1-e378337b6adb', 'Gastón Añón', 'añon', 'añon@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
     ('b7d358aa-42c0-4b22-9da2-ed292a00ee47', 'Federico Groisman', 'grois', 'grois@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
     ('4cb252f7-9dac-4249-a9a2-b45d5234d384', 'Franco Rapallini', 'fran', 'fran@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('bdbf29ee-cfda-4d02-9928-af93ebd40892', 'Facundo Gándara', 'rifle', 'rifle@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER')
+    ('bdbf29ee-cfda-4d02-9928-af93ebd40892', 'Facundo Gandara', 'rifle', 'rifle@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER')
 ON CONFLICT (id) DO NOTHING;
 
 -- Create tournaments table
@@ -253,7 +253,7 @@ INSERT INTO teams (id, tournament_id, name, code, icon) VALUES
     ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', '28652183-a2d6-4f33-a624-0d24645ce3cd','Bosnia-Herzegovina', 'BIH', 'https://flagcdn.com/w40/ba.png'),
     ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', '28652183-a2d6-4f33-a624-0d24645ce3cd','Suecia', 'SWE', 'https://flagcdn.com/w40/se.png'),
     ('07782a28-4f6d-4037-86b8-ccff4c2de218', '28652183-a2d6-4f33-a624-0d24645ce3cd','Turquía', 'TUR', 'https://flagcdn.com/w40/tr.png'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', '28652183-a2d6-4f33-a624-0d24645ce3cd','Chequia', 'UEFA4', 'https://flagcdn.com/w40/cz.png')
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', '28652183-a2d6-4f33-a624-0d24645ce3cd','Chequia', 'CZE', 'https://flagcdn.com/w40/cz.png')
 ON CONFLICT (id) DO NOTHING;
 
 -- Create matches table
