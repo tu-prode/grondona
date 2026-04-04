@@ -57,7 +57,7 @@ data class GroupUser(
 
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Enumerated(EnumType.STRING)
-    @Column(name = "last_predictions", nullable = false, columnDefinition = "varchar(20)[]")
+    @Column(name = "last_predictions", nullable = false, columnDefinition = "varchar(20) array")
     var lastPredictions: List<PredictionStatus> = emptyList(),
 
     @Column(name = "deleted_at")

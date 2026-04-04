@@ -21,7 +21,7 @@ data class GroupResponse(
     @get:JsonProperty("private")
     val isPrivate: Boolean,
     val maxMembers: Int,
-    val standings: List<StandingResponse>
+    val standings: List<StandingResponse> = emptyList()
 ) {
     companion object {
         fun from(group: Group): GroupResponse = GroupResponse(
