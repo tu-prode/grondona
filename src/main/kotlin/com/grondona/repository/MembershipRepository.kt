@@ -18,11 +18,9 @@ interface MembershipRepository : JpaRepository<GroupUser, UUID> {
 
     fun findByGroupId(groupId: UUID): List<GroupUser>
 
-    fun findByUserId(userId: UUID): List<GroupUser>
-
     @Query(
         """
-        SELECT new com.grondona.model.dto.response.MembershipView(
+        SELECT new com.grondona.model.MembershipView(
             gu.group,
             (SELECT COUNT(m) FROM GroupUser m WHERE m.group.id = gu.group.id AND m.deletedAt IS NULL),
             gu.points,

@@ -1,4 +1,4 @@
-package com.grondona.controller.integration
+package com.grondona.integration
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.grondona.createTestingTournamentRequest
@@ -27,12 +27,12 @@ import java.util.UUID
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-class GroupMembershipIntegrationTest {
+class MembershipIntegrationTest {
 
     @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper
     @Autowired private lateinit var groupRepository: GroupRepository
-    @Autowired private lateinit var groupUserRepository: MembershipRepository
+    @Autowired private lateinit var membershipRepository: MembershipRepository
     @Autowired private lateinit var userRepository: UserRepository
 
     private var authToken: String? = null
@@ -42,7 +42,7 @@ class GroupMembershipIntegrationTest {
 
     @BeforeAll
     fun setUp() {
-        groupUserRepository.deleteAll()
+        membershipRepository.deleteAll()
         groupRepository.deleteAll()
         userRepository.deleteAll()
 
@@ -97,7 +97,7 @@ class GroupMembershipIntegrationTest {
 
     @AfterAll
     fun tearDown() {
-        groupUserRepository.deleteAll()
+        membershipRepository.deleteAll()
         groupRepository.deleteAll()
         userRepository.deleteAll()
     }

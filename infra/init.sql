@@ -147,7 +147,9 @@ COMMENT ON COLUMN group_users.role IS 'Role of the user in the group (can be eit
 COMMENT ON COLUMN group_users.rank IS 'Ranking of the user in the group';
 COMMENT ON COLUMN group_users.points IS 'Amount of points of the given user in the given tournament';
 COMMENT ON COLUMN group_users.joined_at IS 'Timestamp when the user joined the group';
-COMMENT ON COLUMN group_users.calculated_at IS 'Timestamp when the points were calculated for the last time';
+COMMENT ON COLUMN group_users.amount_bonus IS 'Amount of BONUS predictions';
+COMMENT ON COLUMN group_users.amount_correct IS 'Amount of CORRECT predictions';
+COMMENT ON COLUMN group_users.amount_partial IS 'Amount of PARTIAL predictions';
 COMMENT ON COLUMN group_users.last_predictions IS 'Status of the last 5 predictions';
 COMMENT ON COLUMN group_users.deleted_at IS 'Timestamp when the user left the group';
 

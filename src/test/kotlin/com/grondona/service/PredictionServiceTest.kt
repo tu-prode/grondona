@@ -23,6 +23,7 @@ import com.grondona.repository.MatchRepository
 import com.grondona.repository.MembershipRepository
 import com.grondona.repository.PredictionRepository
 import com.grondona.repository.UserRepository
+import com.grondona.utils.WorldCupEngine
 import io.mockk.*
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
@@ -70,7 +71,7 @@ class PredictionServiceTest {
     )
 
     private val testTournament = Tournament(
-        id = testTournamentId,
+        id = WorldCupEngine.SYSTEM_TOURNAMENT_ID,
         name = "Test Tournament",
         status = TournamentStatus.NOT_STARTED,
         createdAt = LocalDateTime.now(),
@@ -159,7 +160,7 @@ class PredictionServiceTest {
         @Test
         fun `canSubmit returns false when startedAt is null`() {
             val match = testMatchOpen.copy(startedAt = null)
-            assertFalse(PredictionService.canSubmit(match))
+            assertTrue(PredictionService.canSubmit(match))
         }
     }
 

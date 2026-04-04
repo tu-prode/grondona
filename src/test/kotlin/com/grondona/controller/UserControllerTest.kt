@@ -262,7 +262,7 @@ class UserControllerTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].groupId").value(groupId.toString()))
-                .andExpect(jsonPath("$[0].name").value("My Group"))
+                .andExpect(jsonPath("$[0].groupName").value("My Group"))
                 .andExpect(jsonPath("$[0].memberCount").value(5))
 
             clearAuthentication()

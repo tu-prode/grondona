@@ -10,5 +10,5 @@ object WorldCupEngine {
     const val API_TOURNAMENT_ID: String = "107"
 
     fun isMatchUnlocked(match: Match) =
-        match.startedAt?.isAfter(LocalDateTime.now().plus(15, ChronoUnit.MINUTES)) ?: false
+        match.startedAt?.isAfter(LocalDateTime.now().plus(15, ChronoUnit.MINUTES)) ?: true
 }

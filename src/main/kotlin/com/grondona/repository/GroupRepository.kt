@@ -11,6 +11,4 @@ interface GroupRepository : JpaRepository<Group, UUID>, JpaSpecificationExecutor
 
     fun existsByName(name: String): Boolean
 
-    fun findByTournamentId(tournamentId: UUID): List<Group>
-
 }

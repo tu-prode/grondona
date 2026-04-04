@@ -1,10 +1,8 @@
 package com.grondona.model.dto.request
 
 import java.util.UUID
-import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.NotNull
-import jakarta.validation.constraints.Positive
 import jakarta.validation.constraints.PositiveOrZero
 
 data class SubmitPredictionRequest(

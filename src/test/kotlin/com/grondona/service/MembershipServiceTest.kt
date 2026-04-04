@@ -32,10 +32,7 @@ class MembershipServiceTest {
     private lateinit var userRepository: UserRepository
 
     @MockK
-    private lateinit var groupUserRepository: MembershipRepository
-
-    @MockK
-    private lateinit var predictionService: PredictionService
+    private lateinit var membershipRepository: MembershipRepository
 
     @InjectMockKs
     private lateinit var membershipService: MembershipService
@@ -99,26 +96,26 @@ class MembershipServiceTest {
         fun `joinGroup should succeed when all conditions are met`() {
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
-            every { groupUserRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns false
-            every { groupUserRepository.countByGroupId(testGroupId) } returns 5L
-            every { groupUserRepository.save(any()) } returns testMembership
+            every { membershipRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns false
+            every { membershipRepository.countByGroupId(testGroupId) } returns 5L
+            every { membershipRepository.save(any()) } returns testMembership
 
             membershipService.joinGroup(testUserId, testGroupId)
 
-            verify { groupUserRepository.save(any()) }
+            verify { membershipRepository.save(any()) }
         }
 
         @Test
         fun `joinGroup should succeed with custom role`() {
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
-            every { groupUserRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns false
-            every { groupUserRepository.countByGroupId(testGroupId) } returns 0L
-            every { groupUserRepository.save(any()) } returns testMembership.copy(role = GroupRole.ADMIN)
+            every { membershipRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns false
+            every { membershipRepository.countByGroupId(testGroupId) } returns 0L
+            every { membershipRepository.save(any()) } returns testMembership.copy(role = GroupRole.ADMIN)
 
             membershipService.joinGroup(testUserId, testGroupId, GroupRole.ADMIN)
 
-            verify { groupUserRepository.save(match { it.role == GroupRole.ADMIN }) }
+            verify { membershipRepository.save(match { it.role == GroupRole.ADMIN }) }
         }
 
         @Test
@@ -129,7 +126,7 @@ class MembershipServiceTest {
                 membershipService.joinGroup(testUserId, testGroupId)
             }
             assertEquals("Group not found", exception.message)
-            verify(exactly = 0) { groupUserRepository.save(any()) }
+            verify(exactly = 0) { membershipRepository.save(any()) }
         }
 
         @Test
@@ -141,47 +138,47 @@ class MembershipServiceTest {
                 membershipService.joinGroup(testUserId, testGroupId)
             }
             assertEquals("User not found", exception.message)
-            verify(exactly = 0) { groupUserRepository.save(any()) }
+            verify(exactly = 0) { membershipRepository.save(any()) }
         }
 
         @Test
         fun `joinGroup should throw BadRequestException when user is already a member`() {
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
-            every { groupUserRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns true
+            every { membershipRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns true
 
             val exception = assertThrows<BadRequestException> {
                 membershipService.joinGroup(testUserId, testGroupId)
             }
             assertEquals("You are already member of this group", exception.message)
-            verify(exactly = 0) { groupUserRepository.save(any()) }
+            verify(exactly = 0) { membershipRepository.save(any()) }
         }
 
         @Test
         fun `joinGroup should throw BadRequestException when group is full`() {
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
-            every { groupUserRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns false
-            every { groupUserRepository.countByGroupId(testGroupId) } returns 10L
+            every { membershipRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns false
+            every { membershipRepository.countByGroupId(testGroupId) } returns 10L
 
             val exception = assertThrows<BadRequestException> {
                 membershipService.joinGroup(testUserId, testGroupId)
             }
             assertEquals("Group is full", exception.message)
-            verify(exactly = 0) { groupUserRepository.save(any()) }
+            verify(exactly = 0) { membershipRepository.save(any()) }
         }
 
         @Test
         fun `joinGroup should allow joining when group has exactly one slot left`() {
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
-            every { groupUserRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns false
-            every { groupUserRepository.countByGroupId(testGroupId) } returns 9L
-            every { groupUserRepository.save(any()) } returns testMembership
+            every { membershipRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns false
+            every { membershipRepository.countByGroupId(testGroupId) } returns 9L
+            every { membershipRepository.save(any()) } returns testMembership
 
             membershipService.joinGroup(testUserId, testGroupId)
 
-            verify { groupUserRepository.save(any()) }
+            verify { membershipRepository.save(any()) }
         }
     }
 
@@ -191,12 +188,12 @@ class MembershipServiceTest {
         @Test
         fun `leaveGroup should succeed when user is a member`() {
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
-            every { groupUserRepository.findByUserIdAndGroupId(testUserId, testGroupId) } returns Optional.of(testMembership)
-            every { groupUserRepository.delete(testMembership) } just Runs
+            every { membershipRepository.findByUserIdAndGroupId(testUserId, testGroupId) } returns Optional.of(testMembership)
+            every { membershipRepository.delete(testMembership) } just Runs
 
             membershipService.leaveGroup(testUserId, testGroupId)
 
-            verify { groupUserRepository.delete(testMembership) }
+            verify { membershipRepository.delete(testMembership) }
         }
 
         @Test
@@ -207,19 +204,19 @@ class MembershipServiceTest {
                 membershipService.leaveGroup(testUserId, testGroupId)
             }
             assertEquals("Group not found", exception.message)
-            verify(exactly = 0) { groupUserRepository.delete(any()) }
+            verify(exactly = 0) { membershipRepository.delete(any()) }
         }
 
         @Test
         fun `leaveGroup should throw NotFoundException when user is not a member`() {
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
-            every { groupUserRepository.findByUserIdAndGroupId(testUserId, testGroupId) } returns Optional.empty()
+            every { membershipRepository.findByUserIdAndGroupId(testUserId, testGroupId) } returns Optional.empty()
 
             val exception = assertThrows<NotFoundException> {
                 membershipService.leaveGroup(testUserId, testGroupId)
             }
             assertEquals("You are not member of this group", exception.message)
-            verify(exactly = 0) { groupUserRepository.delete(any()) }
+            verify(exactly = 0) { membershipRepository.delete(any()) }
         }
     }
 
@@ -228,14 +225,14 @@ class MembershipServiceTest {
 
         @Test
         fun `getMyGroups should return empty list when user has no memberships`() {
-            every { groupUserRepository.findUserGroups(testUserId) } returns emptyList()
+            every { membershipRepository.findUserGroups(testUserId) } returns emptyList()
             val result = membershipService.getMyGroups(testUserId)
             assertTrue(result.isEmpty())
         }
 
         @Test
         fun `getMyGroups should return membership response with standing data`() {
-            every { groupUserRepository.findUserGroups(testUserId) } returns listOf(testMembershipView)
+            every { membershipRepository.findUserGroups(testUserId) } returns listOf(testMembershipView)
 
             val result = membershipService.getMyGroups(testUserId)
             assertEquals(1, result.size)
@@ -254,7 +251,7 @@ class MembershipServiceTest {
             val membership1 = testMembershipView.copy(rank = 1, points = 7.5f, membersCount = 6)
             val membership2 = testMembershipView.copy(group = secondGroup, role = GroupRole.ADMIN, rank = 2, points = 13.4f)
 
-            every { groupUserRepository.findUserGroups(testUserId) } returns listOf(membership1, membership2)
+            every { membershipRepository.findUserGroups(testUserId) } returns listOf(membership1, membership2)
 
             val result = membershipService.getMyGroups(testUserId)
 
@@ -279,13 +276,13 @@ class MembershipServiceTest {
 
         @Test
         fun `isMember should return true when user is a member`() {
-            every { groupUserRepository.findByUserIdAndGroupId(testUserId, testGroupId) } returns Optional.of(testMembership)
+            every { membershipRepository.findByUserIdAndGroupId(testUserId, testGroupId) } returns Optional.of(testMembership)
             assertTrue(membershipService.isMember(testUserId, testGroupId))
         }
 
         @Test
         fun `isMember should return false when user is not a member`() {
-            every { groupUserRepository.findByUserIdAndGroupId(testUserId, testGroupId) } returns Optional.empty()
+            every { membershipRepository.findByUserIdAndGroupId(testUserId, testGroupId) } returns Optional.empty()
             assertFalse(membershipService.isMember(testUserId, testGroupId))
         }
     }
@@ -296,27 +293,27 @@ class MembershipServiceTest {
         @Test
         fun `isAdmin should return true for ADMIN role`() {
             val adminMembership = testMembership.copy(role = GroupRole.ADMIN)
-            every { groupUserRepository.findByUserIdAndGroupId(testUserId, testGroupId) } returns Optional.of(adminMembership)
+            every { membershipRepository.findByUserIdAndGroupId(testUserId, testGroupId) } returns Optional.of(adminMembership)
             assertTrue(membershipService.isAdmin(testUserId, testGroupId))
         }
 
         @Test
         fun `isAdmin should return true for OWNER role`() {
             val ownerMembership = testMembership.copy(role = GroupRole.OWNER)
-            every { groupUserRepository.findByUserIdAndGroupId(testUserId, testGroupId) } returns Optional.of(ownerMembership)
+            every { membershipRepository.findByUserIdAndGroupId(testUserId, testGroupId) } returns Optional.of(ownerMembership)
             assertTrue(membershipService.isAdmin(testUserId, testGroupId))
         }
 
         @Test
         fun `isAdmin should return false for MEMBER role`() {
             val memberMembership = testMembership.copy(role = GroupRole.MEMBER)
-            every { groupUserRepository.findByUserIdAndGroupId(testUserId, testGroupId) } returns Optional.of(memberMembership)
+            every { membershipRepository.findByUserIdAndGroupId(testUserId, testGroupId) } returns Optional.of(memberMembership)
             assertFalse(membershipService.isAdmin(testUserId, testGroupId))
         }
 
         @Test
         fun `isAdmin should return false when user is not a member`() {
-            every { groupUserRepository.findByUserIdAndGroupId(testUserId, testGroupId) } returns Optional.empty()
+            every { membershipRepository.findByUserIdAndGroupId(testUserId, testGroupId) } returns Optional.empty()
             assertFalse(membershipService.isAdmin(testUserId, testGroupId))
         }
     }

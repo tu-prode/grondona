@@ -3,13 +3,8 @@ package com.grondona.service
 import com.grondona.exception.BadRequestException
 import com.grondona.exception.ForbiddenException
 import com.grondona.exception.NotFoundException
-import com.grondona.model.Group
-import com.grondona.model.GroupUser
 import com.grondona.model.Match
-import com.grondona.model.MatchStatus
 import com.grondona.model.Prediction
-import com.grondona.model.PredictionStatus
-import com.grondona.model.Standing
 import com.grondona.model.dto.request.SubmitPredictionRequest
 import com.grondona.model.dto.request.SubmitBulkPredictionsRequest
 import com.grondona.model.dto.response.GroupPredictionsResponse

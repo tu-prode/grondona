@@ -117,9 +117,9 @@ data class ExternalMatch(
 ) {
     private enum class Status { TO_START, IN_PLAY, COMPLETED }
 
-    fun toMatchUpdated(matches: List<Match>): Pair<Match?, Boolean> {
+    fun toMatchUpdated(matches: List<Match>): Pair<Match, Boolean>? {
         var changedToFinished = false
-        val match = matches.filter { it.status != MatchStatus.NOT_STARTED }
+        val match = matches.filter { it.status != MatchStatus.FINISHED }
             .firstOrNull { it.homeTeam.name == home && it.awayTeam.name == away }?.also {
                 when (status) {
                     Status.IN_PLAY.name -> {
@@ -127,10 +127,10 @@ data class ExternalMatch(
                         it.awayGoals = awayGoals
                         it.status = MatchStatus.IN_PROGRESS
                         it.substatus = when {
-                            half == 1 && minutes <= 45 -> "$minutes PT"
+                            half == 1 && minutes <= 45 -> "$minutes' PT"
                             half == 1 && minutes > 45 -> "45+${minutes - 45}' PT"
-                            half == 2 && minutes <= 45 -> "$minutes ST"
-                            half == 2 && minutes > 45 -> "45+${minutes - 45}' ST"
+                            half == 2 && minutes <= 90 -> "${minutes - 45}' ST"
+                            half == 2 && minutes > 90 -> "45+${minutes - 90}' ST"
                             else -> null
                         }
                     }
@@ -148,7 +148,7 @@ data class ExternalMatch(
                 }
             }
 
-        return Pair(match, changedToFinished)
+        return match?.let { Pair(it, changedToFinished) }
     }
 
     fun toQuotasUpdated(matches: List<Match>): Match? =

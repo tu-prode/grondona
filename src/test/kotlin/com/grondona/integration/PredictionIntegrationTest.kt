@@ -1,4 +1,4 @@
-package com.grondona.controller.integration
+package com.grondona.integration
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.grondona.createTestingTournamentRequest
@@ -29,7 +29,7 @@ import java.util.UUID
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class PredictionControllerIntegrationTest {
+class PredictionIntegrationTest {
 
     @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper

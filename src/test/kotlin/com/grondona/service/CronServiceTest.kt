@@ -276,7 +276,7 @@ class CronServiceTest {
         @Test
         fun `updateMatchesStatuses updates a match during the added time of the second half`() {
             val externalMatch = matchFromAPI(
-                home = "QAT", away = "ECU", homeGoals = 2, awayGoals = 0, minutes = 93, half = 2, status = "IN_PLAY"
+                home = "QAT", away = "ECU", homeGoals = 2, awayGoals = 0, minutes = 94, half = 2, status = "IN_PLAY"
             )
             every { matchClient.getMatches(testTournamentId) } returns listOf(externalMatch)
 
@@ -396,7 +396,7 @@ class CronServiceTest {
             every { matchClient.getMatches(testTournamentId) } returns listOf(externalMatch1, externalMatch2)
 
             val dbMatch1 = matchFromDB(home = "POL", away = "ARG", homeGoals = 1, awayGoals = 0, status = MatchStatus.IN_PROGRESS)
-            val dbMatch2 = matchFromDB(home = "QAT", away = "MEX", homeGoals = 2, awayGoals = 0, status = MatchStatus.IN_PROGRESS)
+            val dbMatch2 = matchFromDB(home = "QAT", away = "MEX", homeGoals = 0, awayGoals = 2, status = MatchStatus.IN_PROGRESS)
             val dbMatch3 = matchFromDB(home = "CRO", away = "BEL")
             every {
                 matchRepository.findAllByTournamentIdAndStatusIn(
@@ -420,11 +420,37 @@ class CronServiceTest {
             assertEquals("22' ST", savedMatches[0].substatus)
             assertEquals("QAT", savedMatches[1].homeTeam.code)
             assertEquals("MEX", savedMatches[1].awayTeam.code)
-            assertEquals(2, savedMatches[1].homeGoals)
-            assertEquals(0, savedMatches[1].awayGoals)
+            assertEquals(0, savedMatches[1].homeGoals)
+            assertEquals(2, savedMatches[1].awayGoals)
             assertEquals(MatchStatus.IN_PROGRESS, savedMatches[1].status)
-            assertEquals( "22' PT", savedMatches[1].substatus)
+            assertEquals( "22' ST", savedMatches[1].substatus)
 
+            verify(exactly = 0) { predictionRepository.findByStatusAndMatchIdIn(any(), any()) }
+            verify(exactly = 0) { predictionRepository.saveAll<Prediction>(any()) }
+            verify(exactly = 0) { membershipRepository.findByGroupId(any()) }
+            verify(exactly = 0) { membershipRepository.saveAll<GroupUser>(any()) }
+        }
+
+        @Test
+        fun `updateMatchesStatuses ignores a match not present in the DB`() {
+            val externalMatch = matchFromAPI(
+                home = "ITA", away = "CHI", homeGoals = 0, awayGoals = 0, minutes = 0, half = 1, status = "IN_PLAY"
+            )
+            every { matchClient.getMatches(testTournamentId) } returns listOf(externalMatch)
+
+            val dbMatch1 = matchFromDB(home = "POL", away = "ARG")
+            val dbMatch2 = matchFromDB(home = "QAT", away = "MEX")
+            val dbMatch3 = matchFromDB(home = "CRO", away = "BEL")
+            every {
+                matchRepository.findAllByTournamentIdAndStatusIn(
+                    testTournamentId,
+                    listOf(MatchStatus.NOT_STARTED, MatchStatus.IN_PROGRESS)
+                )
+            } returns listOf(dbMatch1, dbMatch2, dbMatch3)
+
+            cronService.updateMatchesStatuses(testTournamentId)
+
+            verify(exactly = 0) { matchRepository.saveAll<Match>(any()) }
             verify(exactly = 0) { predictionRepository.findByStatusAndMatchIdIn(any(), any()) }
             verify(exactly = 0) { predictionRepository.saveAll<Prediction>(any()) }
             verify(exactly = 0) { membershipRepository.findByGroupId(any()) }
@@ -529,7 +555,7 @@ class CronServiceTest {
         @Test
         fun `updateMatchesQuotas updates a match quotas before it starts`() {
             val externalMatch1 = matchFromAPI(
-                home = "QAT", away = "ECU", status = "TO_START", homeQuota = 1f, tieQuota = 2.5f, awayQuota = 2f,
+                home = "QAT", away = "ECU", status = "TO_START", homeQuota = 1f, tieQuota = 1.5f, awayQuota = 2f,
             )
             val externalMatch2 = matchFromAPI(
                 home = "ENG", away = "IRN", status = "IN_PLAY", homeQuota = 2f, tieQuota = 2.5f, awayQuota = 3f,
@@ -541,6 +567,7 @@ class CronServiceTest {
             every {
                 matchRepository.findAllByTournamentIdAndStatusIn(testTournamentId, listOf(MatchStatus.NOT_STARTED))
             } returns listOf(dbMatch1, dbMatch2)
+            every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
 
             cronService.updateMatchesQuotas(testTournamentId)
 
@@ -561,9 +588,9 @@ class CronServiceTest {
             assertEquals("IRN", savedMatches[1].awayTeam.code)
             assertEquals(0, savedMatches[1].homeGoals)
             assertEquals(0, savedMatches[1].awayGoals)
-            assertEquals(2f, savedMatches[1].homeQuota)
-            assertEquals(2.5f, savedMatches[1].tieQuota)
-            assertEquals(3f, savedMatches[1].awayQuota)
+            assertEquals(4f, savedMatches[1].homeQuota)
+            assertEquals(3f, savedMatches[1].tieQuota)
+            assertEquals(2f, savedMatches[1].awayQuota)
             assertEquals(MatchStatus.NOT_STARTED, savedMatches[1].status)
             assertNull(savedMatches[1].substatus)
         }
@@ -574,7 +601,7 @@ class CronServiceTest {
                 home = "QAT", away = "ECU", status = "TO_START", homeQuota = 1f, tieQuota = 2.5f, awayQuota = 2f,
             )
             val externalMatch2 = matchFromAPI(
-                home = "ENG", away = "IRN", status = "IN_PLAY", homeQuota = 2f, tieQuota = 2.5f, awayQuota = 3f,
+                home = "ENG", away = "IRN", status = "TO_START", homeQuota = 2f, tieQuota = 2.5f, awayQuota = 3f,
             )
             every { matchClient.getMatches(testTournamentId) } returns listOf(externalMatch1, externalMatch2)
 
@@ -585,6 +612,7 @@ class CronServiceTest {
             every {
                 matchRepository.findAllByTournamentIdAndStatusIn(testTournamentId, listOf(MatchStatus.NOT_STARTED))
             } returns listOf(dbMatch1, dbMatch2)
+            every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
 
             cronService.updateMatchesQuotas(testTournamentId)
 
@@ -592,15 +620,15 @@ class CronServiceTest {
             verify(exactly = 1) { matchRepository.saveAll(capture(slot)) }
             val savedMatches = slot.captured
             assertEquals(1, savedMatches.size)
-            assertEquals("ENG", savedMatches[1].homeTeam.code)
-            assertEquals("IRN", savedMatches[1].awayTeam.code)
-            assertEquals(0, savedMatches[1].homeGoals)
-            assertEquals(0, savedMatches[1].awayGoals)
-            assertEquals(2f, savedMatches[1].homeQuota)
-            assertEquals(2.5f, savedMatches[1].tieQuota)
-            assertEquals(3f, savedMatches[1].awayQuota)
-            assertEquals(MatchStatus.NOT_STARTED, savedMatches[1].status)
-            assertNull(savedMatches[1].substatus)
+            assertEquals("ENG", savedMatches[0].homeTeam.code)
+            assertEquals("IRN", savedMatches[0].awayTeam.code)
+            assertEquals(0, savedMatches[0].homeGoals)
+            assertEquals(0, savedMatches[0].awayGoals)
+            assertEquals(2f, savedMatches[0].homeQuota)
+            assertEquals(2.5f, savedMatches[0].tieQuota)
+            assertEquals(3f, savedMatches[0].awayQuota)
+            assertEquals(MatchStatus.NOT_STARTED, savedMatches[0].status)
+            assertNull(savedMatches[0].substatus)
         }
 
         @Test

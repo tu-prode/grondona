@@ -43,8 +43,8 @@ class CronService(
         )
         logger.debug("System matches retrieved={}", systemMatches.size)
 
-        val (matchesToUpdate, anyJustFinished) = apiMatches.map { it.toMatchUpdated(systemMatches) }.let {
-            val updatedMatches = it.mapNotNull { (match, _) -> match }
+        val (matchesToUpdate, anyJustFinished) = apiMatches.mapNotNull { it.toMatchUpdated(systemMatches) }.let {
+            val updatedMatches = it.map { (match, _) -> match }
             val statusUpdate = it.any { (_, status) -> status }
             updatedMatches to statusUpdate
         }
@@ -121,7 +121,7 @@ class CronService(
         )
         logger.debug("System matches retrieved={}", systemMatches.size)
 
-        val matchesToUpdate = apiMatches.map { it.toQuotasUpdated(systemMatches) }
+        val matchesToUpdate = apiMatches.mapNotNull { it.toQuotasUpdated(systemMatches) }
         if (matchesToUpdate.isNotEmpty()) {
             logger.debug("Matches to update in DB={}", matchesToUpdate.size)
             matchRepository.saveAll(matchesToUpdate)
