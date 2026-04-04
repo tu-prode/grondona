@@ -21,3 +21,9 @@ class ForbiddenException(message: String) : RuntimeException(message)
 
 @ResponseStatus(HttpStatus.UNAUTHORIZED)
 class UnauthorizedException(message: String) : RuntimeException(message)
+
+@ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+class GeneralException(message: String, cause: Throwable? = null) : RuntimeException(message)
+
+@ResponseStatus(HttpStatus.FAILED_DEPENDENCY)
+class ExternalServiceException(message: String, cause: Throwable? = null) : RuntimeException(message)

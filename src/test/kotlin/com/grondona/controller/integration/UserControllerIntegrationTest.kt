@@ -1,4 +1,4 @@
-package com.grondona.controller
+package com.grondona.controller.integration
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.grondona.model.dto.response.AuthenticatedUserResponse

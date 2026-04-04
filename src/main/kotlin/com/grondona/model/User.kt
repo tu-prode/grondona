@@ -7,7 +7,7 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 enum class UserPermissions {
-    USER, SUPERUSER
+    USER, SUPERUSER, CRON
 }
 
 @Entity

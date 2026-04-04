@@ -46,8 +46,14 @@ data class GroupUser(
     @Column(name = "joined_at", nullable = false)
     val joinedAt: LocalDateTime = LocalDateTime.now(),
 
-    @Column(name = "calculated_at", nullable = false)
-    var calculatedAt: LocalDateTime? = null,
+    @Column(name = "amount_bonus", nullable = false)
+    var amountBonus: Int = 0,
+
+    @Column(name = "amount_correct", nullable = false)
+    var amountCorrect: Int = 0,
+
+    @Column(name = "amount_partial", nullable = false)
+    var amountPartial: Int = 0,
 
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Enumerated(EnumType.STRING)
@@ -56,4 +62,12 @@ data class GroupUser(
 
     @Column(name = "deleted_at")
     val deletedAt: LocalDateTime? = null
+)
+
+data class MembershipView(
+    val group: Group,
+    val membersCount: Long,
+    val points: Float,
+    val rank: Int? = null,
+    val role: GroupRole,
 )

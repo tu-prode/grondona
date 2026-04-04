@@ -1,7 +1,7 @@
 package com.grondona.repository
 
 import com.grondona.model.GroupUser
-import com.grondona.model.dto.response.MembershipResponse
+import com.grondona.model.MembershipView
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -19,6 +19,22 @@ interface MembershipRepository : JpaRepository<GroupUser, UUID> {
     fun findByGroupId(groupId: UUID): List<GroupUser>
 
     fun findByUserId(userId: UUID): List<GroupUser>
+
+    @Query(
+        """
+        SELECT new com.grondona.model.dto.response.MembershipView(
+            gu.group,
+            (SELECT COUNT(m) FROM GroupUser m WHERE m.group.id = gu.group.id AND m.deletedAt IS NULL),
+            gu.points,
+            gu.rank,
+            gu.role
+        )
+        FROM GroupUser gu
+        WHERE gu.user.id = :userId
+        ORDER BY gu.joinedAt DESC
+    """
+    )
+    fun findUserGroups(@Param("userId") userId: UUID): List<MembershipView>
 
     fun countByGroupId(groupId: UUID): Long
 

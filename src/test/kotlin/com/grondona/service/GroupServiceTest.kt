@@ -3,13 +3,16 @@ package com.grondona.service
 import com.grondona.exception.ConflictException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.Group
+import com.grondona.model.GroupUser
+import com.grondona.model.PredictionStatus
 import com.grondona.model.Tournament
 import com.grondona.model.TournamentStatus
+import com.grondona.model.User
 import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.repository.GroupRepository
+import com.grondona.repository.MembershipRepository
 import com.grondona.repository.TournamentRepository
-import com.grondona.service.PredictionService
 import io.mockk.*
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
@@ -19,6 +22,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import java.util.*
 
 class GroupServiceTest {
@@ -27,13 +31,22 @@ class GroupServiceTest {
     private lateinit var groupRepository: GroupRepository
 
     @MockK
-    private lateinit var tournamentRepository: TournamentRepository
+    private lateinit var membershipRepository: MembershipRepository
 
     @MockK
-    private lateinit var predictionService: PredictionService
+    private lateinit var tournamentRepository: TournamentRepository
 
     @InjectMockKs
     private lateinit var groupService: GroupService
+
+    private val testUserId = UUID.randomUUID()
+    private val testUser: User = User(
+        id = testUserId,
+        fullname = "tester",
+        username = "tester",
+        email = "test@gmail.com",
+        passwordHash = "password",
+    )
 
     private val testTournamentId = UUID.randomUUID()
     private val testTournament: Tournament = Tournament(
@@ -251,40 +264,59 @@ class GroupServiceTest {
         }
 
         @Test
-        fun `getGroupById with standings should return GroupResponse with standings data`() {
-            val standing = com.grondona.model.Standing(
-                rank = 1,
-                user = com.grondona.model.User(
-                    id = UUID.randomUUID(),
-                    fullname = "Player",
-                    username = "player",
-                    email = "player@test.com",
-                    passwordHash = "hash"
-                ),
-                points = 12.5f,
-                lastPredictions = emptyList()
+        fun `getGroupById with standings flag should return GroupResponse with standings data (when no user has rank yet)`() {
+            val member1 = GroupUser(
+                user = testUser.copy(id = UUID.randomUUID()),
+                group = testGroup, joinedAt = LocalDateTime.now()
             )
+            val member2 = GroupUser(
+                user = testUser.copy(id = UUID.randomUUID()),
+                group = testGroup, joinedAt = LocalDateTime.now().minus(1, ChronoUnit.DAYS)
+            )
+
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
-            every { predictionService.calculateStandings(testGroup) } returns listOf(standing)
+            every { membershipRepository.findByGroupId(testGroupId) } returns listOf(member1, member2)
 
             val result = groupService.getGroupById(testGroupId, withStandings = true)
 
             assertEquals(testGroupId, result.id)
-            assertEquals(1, result.standings.size)
+            assertEquals(2, result.standings.size)
+            assertEquals(member2.user.id, result.standings[0].userId)
             assertEquals(1, result.standings[0].rank)
-            assertEquals(12.5f, result.standings[0].points)
-            verify { predictionService.calculateStandings(testGroup) }
+            assertEquals(0f, result.standings[0].points)
+            assertEquals(emptyList<PredictionStatus>(), result.standings[0].lastPredictions)
+            assertEquals(member1.user.id, result.standings[1].userId)
+            assertEquals(2, result.standings[1].rank)
+            assertEquals(0f, result.standings[1].points)
+            assertEquals(emptyList<PredictionStatus>(), result.standings[1].lastPredictions)
         }
 
         @Test
-        fun `getGroupById without standings should not call calculateStandings`() {
-            every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
+        fun `getGroupById with standings flag should return GroupResponse with standings data (when users are already ranked)`() {
+            val member1 = GroupUser(
+                user = testUser.copy(id = UUID.randomUUID()), rank = 1, points = 2f,
+                group = testGroup, joinedAt = LocalDateTime.now()
+            )
+            val member2 = GroupUser(
+                user = testUser.copy(id = UUID.randomUUID()), rank = 2, points = 1.5f,
+                group = testGroup, joinedAt = LocalDateTime.now().minus(1, ChronoUnit.DAYS)
+            )
 
-            val result = groupService.getGroupById(testGroupId, withStandings = false)
+            every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
+            every { membershipRepository.findByGroupId(testGroupId) } returns listOf(member1, member2)
+
+            val result = groupService.getGroupById(testGroupId, withStandings = true)
 
             assertEquals(testGroupId, result.id)
-            assertTrue(result.standings.isEmpty())
-            verify(exactly = 0) { predictionService.calculateStandings(any()) }
+            assertEquals(2, result.standings.size)
+            assertEquals(member1.user.id, result.standings[0].userId)
+            assertEquals(1, result.standings[0].rank)
+            assertEquals(2f, result.standings[0].points)
+            assertEquals(emptyList<PredictionStatus>(), result.standings[0].lastPredictions)
+            assertEquals(member2.user.id, result.standings[1].userId)
+            assertEquals(2, result.standings[1].rank)
+            assertEquals(1.5f, result.standings[1].points)
+            assertEquals(emptyList<PredictionStatus>(), result.standings[1].lastPredictions)
         }
     }
 }

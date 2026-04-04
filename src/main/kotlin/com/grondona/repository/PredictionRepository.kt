@@ -63,9 +63,9 @@ interface PredictionRepository : JpaRepository<Prediction, UUID>, JpaSpecificati
     )
     fun findGroupPredictionsForMatch(groupId: UUID, matchId: UUID): List<PredictionView>
 
-    fun findByGroupId(groupId: UUID): List<Prediction>
-
     fun findByGroupIdAndMatchIdIn(groupId: UUID, matchIds: List<UUID>): List<Prediction>
+
+    fun findByStatusAndMatchIdIn(status: PredictionStatus, matchIds: List<UUID>): List<Prediction>
 }
 
 interface PredictionRepositoryCustom {

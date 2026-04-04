@@ -4,12 +4,14 @@ import com.grondona.exception.ConflictException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.Group
 import com.grondona.model.GroupUser
+import com.grondona.model.Standing
 import com.grondona.model.Tournament
 import com.grondona.model.User
 import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.model.dto.response.GroupResponse
 import com.grondona.repository.GroupRepository
+import com.grondona.repository.MembershipRepository
 import com.grondona.repository.TournamentRepository
 import jakarta.persistence.criteria.JoinType
 import jakarta.persistence.criteria.Predicate
@@ -22,8 +24,8 @@ import java.util.UUID
 @Service
 class GroupService(
     private val groupRepository: GroupRepository,
+    private val membershipRepository: MembershipRepository,
     private val tournamentRepository: TournamentRepository,
-    private val predictionService: PredictionService
 ) {
 
     companion object {
@@ -114,7 +116,20 @@ class GroupService(
         logger.info("Group fetched successfully: id={}, name='{}'", group.id, group.name)
 
         if (withStandings) {
-            return GroupResponse.from(group, predictionService.calculateStandings(group))
+            val members = membershipRepository.findByGroupId(groupId)
+            val standings = if (members.all { it.rank == null }) {
+                members.sortedBy { it.joinedAt }.mapIndexed { index, member ->
+                    Standing(rank = index + 1, user = member.user, points = 0f, lastPredictions = emptyList())
+                }
+            } else {
+                members.sortedWith(
+                    compareBy<GroupUser> { it.rank == null }.thenBy { it.rank }.thenBy { it.joinedAt }
+                ).mapIndexed { index, member ->
+                    Standing(rank = member.rank ?: index, user = member.user, points = member.points, lastPredictions = member.lastPredictions)
+                }
+            }
+
+                return GroupResponse.from(group, standings)
         }
 
         return GroupResponse.from(group)

@@ -19,7 +19,6 @@ class MembershipService(
     private val groupRepository: GroupRepository,
     private val userRepository: UserRepository,
     private val membershipRepository: MembershipRepository,
-    private val predictionService: PredictionService,
 ) {
 
     companion object {
@@ -78,18 +77,16 @@ class MembershipService(
     @Transactional(readOnly = true)
     fun getMyGroups(userId: UUID): List<MembershipResponse> {
         logger.info("Fetching groups for user {}", userId)
-        val memberships = membershipRepository.findByUserId(userId)
+        val memberships = membershipRepository.findUserGroups(userId)
         logger.info("User {} belongs to {} groups", userId, memberships.size)
 
         return memberships.map {
-            val groupStandings = predictionService.calculateStandings(it.group)
-            val userStanding = groupStandings.filter { standing -> standing.user.id == userId }[0]
             MembershipResponse(
                 groupId = it.group.id!!,
                 groupName = it.group.name,
-                memberCount = groupStandings.size,
-                points = userStanding.points,
-                rank = userStanding.rank,
+                memberCount = it.membersCount.toInt(),
+                points = it.points,
+                rank = it.rank,
                 role = it.role,
             )
         }

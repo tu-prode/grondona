@@ -5,7 +5,7 @@ import com.grondona.exception.NotFoundException
 import com.grondona.model.Group
 import com.grondona.model.GroupRole
 import com.grondona.model.GroupUser
-import com.grondona.model.Standing
+import com.grondona.model.MembershipView
 import com.grondona.model.Tournament
 import com.grondona.model.TournamentStatus
 import com.grondona.model.User
@@ -77,6 +77,14 @@ class MembershipServiceTest {
         user = testUser,
         group = testGroup,
         joinedAt = LocalDateTime.now()
+    )
+
+    private val testMembershipView = MembershipView(
+        group = testGroup,
+        membersCount = 1L,
+        points = 12f,
+        rank = 1,
+        role = GroupRole.MEMBER,
     )
 
     @BeforeEach
@@ -220,67 +228,48 @@ class MembershipServiceTest {
 
         @Test
         fun `getMyGroups should return empty list when user has no memberships`() {
-            every { groupUserRepository.findByUserId(testUserId) } returns emptyList()
-
+            every { groupUserRepository.findUserGroups(testUserId) } returns emptyList()
             val result = membershipService.getMyGroups(testUserId)
-
             assertTrue(result.isEmpty())
-            verify(exactly = 0) { predictionService.calculateStandings(any()) }
         }
 
         @Test
         fun `getMyGroups should return membership response with standing data`() {
-            val standing = Standing(rank = 1, user = testUser, points = 15.5f, lastPredictions = emptyList())
-            every { groupUserRepository.findByUserId(testUserId) } returns listOf(testMembership)
-            every { predictionService.calculateStandings(testGroup) } returns listOf(standing)
+            every { groupUserRepository.findUserGroups(testUserId) } returns listOf(testMembershipView)
 
             val result = membershipService.getMyGroups(testUserId)
-
             assertEquals(1, result.size)
             assertEquals(testGroupId, result[0].groupId)
             assertEquals("Test Group", result[0].groupName)
             assertEquals(1, result[0].memberCount)
-            assertEquals(15.5f, result[0].points)
+            assertEquals(12f, result[0].points)
             assertEquals(1, result[0].rank)
             assertEquals(GroupRole.MEMBER, result[0].role)
-        }
-
-        @Test
-        fun `getMyGroups should aggregate member count from standings`() {
-            val secondUser = testUser.copy(id = UUID.randomUUID(), username = "other")
-            val standings = listOf(
-                Standing(rank = 1, user = testUser, points = 20f, lastPredictions = emptyList()),
-                Standing(rank = 2, user = secondUser, points = 10f, lastPredictions = emptyList())
-            )
-            every { groupUserRepository.findByUserId(testUserId) } returns listOf(testMembership)
-            every { predictionService.calculateStandings(testGroup) } returns standings
-
-            val result = membershipService.getMyGroups(testUserId)
-
-            assertEquals(1, result.size)
-            assertEquals(2, result[0].memberCount)
-            assertEquals(20f, result[0].points)
-            assertEquals(1, result[0].rank)
         }
 
         @Test
         fun `getMyGroups should return multiple memberships`() {
             val secondGroupId = UUID.randomUUID()
             val secondGroup = testGroup.copy(id = secondGroupId, name = "Second Group")
-            val secondMembership = testMembership.copy(group = secondGroup, role = GroupRole.ADMIN)
-            val standing1 = Standing(rank = 1, user = testUser, points = 10f, lastPredictions = emptyList())
-            val standing2 = Standing(rank = 2, user = testUser, points = 5f, lastPredictions = emptyList())
+            val membership1 = testMembershipView.copy(rank = 1, points = 7.5f, membersCount = 6)
+            val membership2 = testMembershipView.copy(group = secondGroup, role = GroupRole.ADMIN, rank = 2, points = 13.4f)
 
-            every { groupUserRepository.findByUserId(testUserId) } returns listOf(testMembership, secondMembership)
-            every { predictionService.calculateStandings(testGroup) } returns listOf(standing1)
-            every { predictionService.calculateStandings(secondGroup) } returns listOf(standing2)
+            every { groupUserRepository.findUserGroups(testUserId) } returns listOf(membership1, membership2)
 
             val result = membershipService.getMyGroups(testUserId)
 
             assertEquals(2, result.size)
-            assertEquals("Test Group", result[0].groupName)
+            assertEquals(testGroupId, result[0].groupId)
+            assertEquals(testGroup.name, result[0].groupName)
+            assertEquals(6, result[0].memberCount)
+            assertEquals(7.5f, result[0].points)
+            assertEquals(1, result[0].rank)
             assertEquals(GroupRole.MEMBER, result[0].role)
-            assertEquals("Second Group", result[1].groupName)
+            assertEquals(secondGroup.id, result[1].groupId)
+            assertEquals(secondGroup.name, result[1].groupName)
+            assertEquals(1, result[1].memberCount)
+            assertEquals(13.4f, result[1].points)
+            assertEquals(2, result[1].rank)
             assertEquals(GroupRole.ADMIN, result[1].role)
         }
     }

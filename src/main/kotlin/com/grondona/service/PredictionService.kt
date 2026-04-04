@@ -19,12 +19,11 @@ import com.grondona.repository.MembershipRepository
 import com.grondona.repository.MatchRepository
 import com.grondona.repository.PredictionRepository
 import com.grondona.repository.UserRepository
-import com.grondona.utils.PredictionEngine
+import com.grondona.utils.WorldCupEngine
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 @Service
@@ -39,8 +38,10 @@ class PredictionService(
     companion object {
         private val logger = LoggerFactory.getLogger(PredictionService::class.java)
 
-        fun canSubmit(match: Match): Boolean =
-            match.startedAt != null && match.startedAt!! > LocalDateTime.now().plus(15, ChronoUnit.MINUTES)
+        fun canSubmit(match: Match): Boolean = when (match.tournament.id) {
+            WorldCupEngine.SYSTEM_TOURNAMENT_ID -> WorldCupEngine.isMatchUnlocked(match)
+            else -> throw NotFoundException("Tournament not support")
+        }
     }
 
     @Transactional
@@ -144,105 +145,16 @@ class PredictionService(
 
         val match = matchRepository.findById(matchId).orElseThrow { NotFoundException("Match not found") }
         if (canSubmit(match)) {
-            logger.warn("User={} trying fetch predictions for the match={} at group={}, but it's not locked", userId, matchId, groupId)
+            logger.warn(
+                "User={} trying fetch predictions for the match={} at group={}, but it's not locked",
+                userId,
+                matchId,
+                groupId
+            )
             throw BadRequestException("Match is still open")
         }
 
         val predictionViews = predictionRepository.findGroupPredictionsForMatch(groupId, matchId)
-        predictionRepository.saveAll(PredictionEngine.check(predictionViews.mapNotNull { it.prediction }))
         return GroupPredictionsResponse.fromPredictionView(group, predictionViews)
-    }
-
-    fun calculateStandings(group: Group): List<Standing> {
-        logger.info("Retrieving past matches for group={}", group.id!!)
-        val matches = matchRepository.findByTournamentIdAndStatusOrderByStartedAt(group.tournament.id!!, MatchStatus.FINISHED)
-        logger.debug("Matches to calculate predictions: {}", matches.size)
-
-        logger.info("Checking members for group={}", group.id)
-        val groupMembers = membershipRepository.findByGroupId(group.id)
-        logger.debug("Members retrieved: {}", groupMembers.size)
-
-        val memberStandings = if (matches.isEmpty()) {
-            emptyStandings(groupMembers)
-        } else {
-            val lastMatchFinishedAt = matches.last().finishedAt ?: LocalDateTime.now().also {
-                logger.warn("No finished-at timestamp for match={} with status FINISHED", matches.last().id)
-            }
-
-            if (groupMembers.any { it.calculatedAt?.isBefore(lastMatchFinishedAt) ?: true }) {
-                newStandings(group, groupMembers, matches)
-            } else {
-                // If there are no new games updated since last time points were calculated, we'll return the same rank.
-                return groupMembers.map {
-                    Standing(rank = it.rank!!, user = it.user, points = it.points, lastPredictions = it.lastPredictions)
-                }.sortedBy { it.rank }
-            }
-        }
-
-        logger.info("Updating members rank and points for group={}", group.id)
-        groupMembers.forEach {
-            val userStanding = memberStandings[it.user.id]
-            it.points = userStanding?.points ?: 0f
-            it.rank = userStanding?.rank
-            it.calculatedAt = LocalDateTime.now()
-            it.lastPredictions = userStanding?.lastPredictions ?: emptyList()
-        }
-        membershipRepository.saveAll(groupMembers)
-
-        return memberStandings.map { it.value }.sortedBy { it.rank }
-    }
-
-    private fun emptyStandings(members: List<GroupUser>): Map<UUID, Standing> = members
-        .sortedBy { it.joinedAt }
-        .mapIndexed { index, member ->
-            Standing(
-                rank = index + 1,
-                user = member.user,
-                points = 0f,
-                lastPredictions = emptyList(),
-            )
-        }
-        .groupBy { it.user.id!! }
-        .mapValues { (_, standings) -> standings[0] } // There's only one standing prediction per user.
-
-    private fun newStandings(group: Group, members: List<GroupUser>, matches: List<Match>): Map<UUID, Standing> {
-        logger.info("Checking prediction statuses for group={}", group.id)
-        var predictions = predictionRepository.findByGroupIdAndMatchIdIn(group.id!!, matches.map { it.id!! })
-        predictions = PredictionEngine.check(predictions)
-        predictions = predictionRepository.saveAll(predictions)
-        logger.debug("Predictions retrieved: {}", predictions.size)
-
-        // List of predictions indexed by user-id and match-id
-        val predictionsIndexed = predictions.groupBy { it.user.id!! }
-            .mapValues { (_, predictions) ->
-                predictions.groupBy { it.match.id!! }
-                    // Within a group, there's only one prediction per user, per match.
-                    .mapValues { (_, predictions) -> predictions[0] }
-            }
-
-        return members.groupBy { it.user }
-            .mapValues { (user, _) ->
-                val userPredictions = predictionsIndexed[user.id!!]
-                matches.map { userPredictions?.get(it.id!!) }
-            }
-            .map { (user, predictions) ->
-                Standing(
-                    rank = 0,
-                    user = user,
-                    points = PredictionEngine.points(predictions.filterNotNull()),
-                    lastPredictions = predictions.map { it?.status ?: PredictionStatus.MISSING }.takeLast(5)
-                )
-            }
-            .sortedByDescending { it.points }
-            .mapIndexed { index, standing ->
-                Standing(
-                    rank = index + 1,
-                    user = standing.user,
-                    points = standing.points,
-                    lastPredictions = standing.lastPredictions,
-                )
-            }
-            .groupBy { it.user.id!! }
-            .mapValues { (_, standings) -> standings[0] } // There's only one standing prediction per user.
     }
 }

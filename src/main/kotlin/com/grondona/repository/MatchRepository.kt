@@ -16,4 +16,6 @@ interface MatchRepository : JpaRepository<Match, UUID>, JpaSpecificationExecutor
 
     fun findByTournamentIdAndStatusOrderByStartedAt(tournamentId: UUID, status: MatchStatus): List<Match>
 
+    fun findAllByTournamentIdAndStatusIn(tournamentId: UUID, statuses: List<MatchStatus>): List<Match>
+
 }

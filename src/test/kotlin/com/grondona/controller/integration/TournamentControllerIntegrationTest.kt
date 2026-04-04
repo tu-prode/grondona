@@ -1,4 +1,4 @@
-package com.grondona.controller
+package com.grondona.controller.integration
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.grondona.createTestingTournamentRequest
@@ -12,7 +12,6 @@ import com.grondona.repository.GroupRepository
 import com.grondona.repository.TournamentRepository
 import com.grondona.repository.UserRepository
 import org.junit.jupiter.api.*
-import org.junit.jupiter.api.Assertions.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.test.context.support.WithAnonymousUser
