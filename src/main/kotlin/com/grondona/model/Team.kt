@@ -17,6 +17,11 @@ data class Team(
     @GeneratedValue(strategy = GenerationType.UUID)
     val id: UUID? = null,
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "tournament_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    val tournament: Tournament,
+
     @Column(nullable = false)
     var name: String,
 
@@ -24,7 +29,7 @@ data class Team(
     var code: String,
 
     @Column(nullable = false)
-    var icon: String,
+    var icon: String = "",
 
     @Column(name = "created_at", nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),

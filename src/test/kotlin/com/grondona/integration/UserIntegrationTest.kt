@@ -1,4 +1,4 @@
-package com.grondona.controller
+package com.grondona.integration
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.grondona.model.dto.response.AuthenticatedUserResponse
@@ -22,7 +22,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-class UserControllerIntegrationTest {
+class UserIntegrationTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc

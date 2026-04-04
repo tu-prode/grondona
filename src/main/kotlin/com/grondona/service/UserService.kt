@@ -3,6 +3,7 @@ package com.grondona.service
 import com.grondona.exception.BadRequestException
 import com.grondona.exception.ConflictException
 import com.grondona.exception.ForbiddenException
+import com.grondona.exception.GeneralException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.User
 import com.grondona.model.UserPermissions
@@ -13,7 +14,8 @@ import com.grondona.model.dto.response.AuthenticatedUserResponse
 import com.grondona.model.dto.response.UserResponse
 import com.grondona.repository.UserRepository
 import com.grondona.security.JwtService
-import java.security.MessageDigest
+import com.grondona.utils.hashMD5
+import com.grondona.utils.hashSHA256
 import java.time.LocalDateTime
 import java.util.UUID
 import org.slf4j.LoggerFactory
@@ -52,7 +54,7 @@ class UserService(
             fullname = request.fullname,
             username = request.username,
             email = request.email,
-            passwordHash = hashMd5(request.password),
+            passwordHash = hashMD5(request.password),
             createdAt = LocalDateTime.now(),
         )
 
@@ -79,7 +81,7 @@ class UserService(
             }
         }
 
-        val hashedPassword = hashMd5(request.password)
+        val hashedPassword = hashMD5(request.password)
         if (user.passwordHash != hashedPassword) {
             logger.warn("Login failed: invalid password for username '{}'", request.user)
             throw BadRequestException("User or password incorrect")
@@ -129,7 +131,7 @@ class UserService(
             user.email = newEmail
         }
 
-        request.password?.let { user.passwordHash = hashMd5(it) }
+        request.password?.let { user.passwordHash = hashMD5(it) }
 
         user.updatedAt = LocalDateTime.now()
 
@@ -170,15 +172,24 @@ class UserService(
         return UserResponse.from(user)
     }
 
-    private fun hashMd5(input: String): String {
-        val md = MessageDigest.getInstance("MD5")
-        val digest = md.digest(input.toByteArray())
-        return digest.joinToString("") { "%02x".format(it) }
-    }
-
     fun hasAdminAccess(userId: UUID): Boolean =
         userRepository.findById(userId).map { it.permissions == UserPermissions.SUPERUSER }.orElseThrow {
             logger.warn("User not found: userId={}", userId)
             NotFoundException("User not found")
         }
+
+    fun validateCronUser(apiKey: String) {
+        logger.debug("Validating CRON user attempt")
+
+        val user = userRepository.findByPermissions(UserPermissions.CRON).orElseThrow {
+            logger.error("Failed to retrieve CRON user, not found")
+            GeneralException("Couldn't retrieve CRON user")
+        }
+
+        val hashedPassword = hashSHA256(apiKey)
+        if (user.passwordHash != hashedPassword) {
+            logger.error("Failed to validate CRON user API Key, invalid")
+            throw GeneralException("Couldn't validate CRON API key")
+        }
+    }
 }

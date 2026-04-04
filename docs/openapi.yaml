@@ -1324,18 +1324,15 @@ components:
           description: Ranking in the group
           example: 7
         points:
-          type: boolean
-          description: Whether the group is private
-          example: false
-        max_members:
-          type: integer
-          format: int16
-          description: Maximum number of members allowed
-          example: 50
-        standings:
+          type: number
+          format: float16
+          description: Points in the group
+          example: 44.68
+        last_predictions:
           type: array
+          description: Last 5 matches predicted
           items:
-            $ref: '#/components/schemas/GroupStanding'
+            $ref: '#/components/schemas/PredictionStatus'
 
     GroupResponse:
       type: object
@@ -1600,6 +1597,7 @@ components:
         - CORRECT
         - PARTIAL
         - INCORRECT
+        - MISSING
 
     MatchPredictionResponse:
       description: A match prediction

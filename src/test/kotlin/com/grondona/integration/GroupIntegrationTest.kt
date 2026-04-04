@@ -1,4 +1,4 @@
-package com.grondona.controller
+package com.grondona.integration
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.grondona.createTestingTournamentRequest
@@ -27,7 +27,7 @@ import java.util.UUID
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-class GroupControllerIntegrationTest {
+class GroupIntegrationTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc

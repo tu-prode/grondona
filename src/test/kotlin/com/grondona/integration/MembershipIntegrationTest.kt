@@ -1,4 +1,4 @@
-package com.grondona.controller
+package com.grondona.integration
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.grondona.createTestingTournamentRequest
@@ -9,7 +9,7 @@ import com.grondona.model.dto.response.AuthenticatedUserResponse
 import com.grondona.model.dto.response.GroupResponse
 import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.repository.GroupRepository
-import com.grondona.repository.GroupUserRepository
+import com.grondona.repository.MembershipRepository
 import com.grondona.repository.UserRepository
 import org.junit.jupiter.api.*
 import org.springframework.beans.factory.annotation.Autowired
@@ -27,12 +27,12 @@ import java.util.UUID
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-class GroupMembershipIntegrationTest {
+class MembershipIntegrationTest {
 
     @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper
     @Autowired private lateinit var groupRepository: GroupRepository
-    @Autowired private lateinit var groupUserRepository: GroupUserRepository
+    @Autowired private lateinit var membershipRepository: MembershipRepository
     @Autowired private lateinit var userRepository: UserRepository
 
     private var authToken: String? = null
@@ -42,7 +42,7 @@ class GroupMembershipIntegrationTest {
 
     @BeforeAll
     fun setUp() {
-        groupUserRepository.deleteAll()
+        membershipRepository.deleteAll()
         groupRepository.deleteAll()
         userRepository.deleteAll()
 
@@ -97,7 +97,7 @@ class GroupMembershipIntegrationTest {
 
     @AfterAll
     fun tearDown() {
-        groupUserRepository.deleteAll()
+        membershipRepository.deleteAll()
         groupRepository.deleteAll()
         userRepository.deleteAll()
     }
@@ -138,7 +138,7 @@ class GroupMembershipIntegrationTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].group_id").value(testGroupId))
-                .andExpect(jsonPath("$[0].name").value("Membership Test Group"))
+                .andExpect(jsonPath("$[0].group_name").value("Membership Test Group"))
                 .andExpect(jsonPath("$[0].member_count").value(2))
                 .andExpect(jsonPath("$[0].points").value(0.0))
                 .andExpect(jsonPath("$[0].rank").doesNotExist())
@@ -225,7 +225,7 @@ class GroupMembershipIntegrationTest {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].group_id").value(newGroupId))
-                .andExpect(jsonPath("$[0].name").value("New Group to Join"))
+                .andExpect(jsonPath("$[0].group_name").value("New Group to Join"))
                 .andExpect(jsonPath("$[0].member_count").value(1))
                 .andExpect(jsonPath("$[0].points").value(0.0))
                 .andExpect(jsonPath("$[0].role").value("OWNER"))

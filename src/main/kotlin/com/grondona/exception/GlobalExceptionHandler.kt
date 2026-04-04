@@ -30,6 +30,17 @@ class GlobalExceptionHandler {
         private val logger = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
     }
 
+    @ExceptionHandler(ExternalServiceException::class)
+    fun handleExternalService(ex: ExternalServiceException): ResponseEntity<ErrorResponse> {
+        logger.warn("External service failure: {}", ex.message)
+        val errorResponse = ErrorResponse(
+            status = HttpStatus.FAILED_DEPENDENCY.value(),
+            error = HttpStatus.FAILED_DEPENDENCY.reasonPhrase,
+            message = ex.message ?: "External service failure",
+        )
+        return ResponseEntity.status(HttpStatus.FAILED_DEPENDENCY).body(errorResponse)
+    }
+
     @ExceptionHandler(NotFoundException::class)
     fun handleNotFoundException(ex: NotFoundException): ResponseEntity<ErrorResponse> {
         logger.warn("Resource not found: {}", ex.message)

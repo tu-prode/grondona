@@ -9,7 +9,7 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 enum class PredictionStatus {
-    CORRECT, PARTIAL, INCORRECT, PENDING
+    BONUS, CORRECT, PARTIAL, INCORRECT, PENDING, MISSING
 }
 
 @Entity
@@ -54,7 +54,9 @@ data class Prediction(
 
     @Column(name = "deleted_at")
     var deletedAt: LocalDateTime? = null
-)
+) {
+    fun score() = Score(homeGoals, awayGoals)
+}
 
 data class PredictionView(
     val id: UUID?,

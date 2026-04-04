@@ -7,7 +7,7 @@ import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.model.dto.response.GroupResponse
 import com.grondona.security.JwtUserPrincipal
-import com.grondona.service.GroupMembershipService
+import com.grondona.service.MembershipService
 import com.grondona.service.GroupService
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
@@ -21,7 +21,7 @@ import java.util.UUID
 @RequestMapping("/api/tournaments/{tournamentId}/groups")
 class GroupController(
     private val groupService: GroupService,
-    private val groupMembershipService: GroupMembershipService,
+    private val groupMembershipService: MembershipService,
 ) {
 
     companion object {
@@ -88,11 +88,13 @@ class GroupController(
         @AuthenticationPrincipal principal: JwtUserPrincipal?,
         @PathVariable groupId: UUID,
         @PathVariable tournamentId: UUID,
+        @RequestParam(required = false) standings: Boolean?,
     ): ResponseEntity<GroupResponse> {
-        logger.info("GET /api/tournaments/{}/groups/{} - Fetching group", tournamentId, groupId)
+        val withStandings = standings ?: false
+        logger.info("GET /api/tournaments/{}/groups/{} - Fetching group (standings={})", tournamentId, groupId, withStandings)
 
         val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
-        val response = groupService.getGroupById(groupId)
+        val response = groupService.getGroupById(groupId, withStandings)
 
         if (!groupMembershipService.isMember(userId, groupId)) {
             throw ForbiddenException("User not allowed")

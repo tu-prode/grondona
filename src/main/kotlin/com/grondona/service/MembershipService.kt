@@ -4,9 +4,9 @@ import com.grondona.exception.BadRequestException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.GroupRole
 import com.grondona.model.GroupUser
-import com.grondona.model.dto.response.UserGroupResponse
+import com.grondona.model.dto.response.MembershipResponse
 import com.grondona.repository.GroupRepository
-import com.grondona.repository.GroupUserRepository
+import com.grondona.repository.MembershipRepository
 import com.grondona.repository.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -15,14 +15,14 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 @Service
-class GroupMembershipService(
+class MembershipService(
     private val groupRepository: GroupRepository,
     private val userRepository: UserRepository,
-    private val groupUserRepository: GroupUserRepository
+    private val membershipRepository: MembershipRepository,
 ) {
 
     companion object {
-        private val logger = LoggerFactory.getLogger(GroupMembershipService::class.java)
+        private val logger = LoggerFactory.getLogger(MembershipService::class.java)
     }
 
     @Transactional
@@ -39,19 +39,19 @@ class GroupMembershipService(
             NotFoundException("User not found")
         }
 
-        if (groupUserRepository.existsByUserIdAndGroupId(userId, groupId)) {
+        if (membershipRepository.existsByUserIdAndGroupId(userId, groupId)) {
             logger.warn("Join failed: user {} is already a member of group {}", userId, groupId)
             throw BadRequestException("You are already member of this group")
         }
 
-        val memberCount = groupUserRepository.countByGroupId(groupId)
+        val memberCount = membershipRepository.countByGroupId(groupId)
         if (memberCount >= group.maxMembers) {
             logger.warn("Join failed: group {} is full ({}/{})", groupId, memberCount, group.maxMembers)
             throw BadRequestException("Group is full")
         }
 
         val membership = GroupUser(user = user, group = group, role = role, joinedAt = LocalDateTime.now())
-        groupUserRepository.save(membership)
+        membershipRepository.save(membership)
 
         logger.info("User {} joined group '{}' successfully ({}/{} members)", userId, group.name, memberCount + 1, group.maxMembers)
     }
@@ -65,31 +65,41 @@ class GroupMembershipService(
             NotFoundException("Group not found")
         }
 
-        val membership = groupUserRepository.findByUserIdAndGroupId(userId, groupId).orElseThrow {
+        val membership = membershipRepository.findByUserIdAndGroupId(userId, groupId).orElseThrow {
             logger.warn("Leave failed: user {} is not a member of group {}", userId, groupId)
             NotFoundException("You are not member of this group")
         }
 
-        groupUserRepository.delete(membership)
+        membershipRepository.delete(membership)
         logger.info("User {} left group {} successfully", userId, groupId)
     }
 
     @Transactional(readOnly = true)
-    fun getMyGroups(userId: UUID): List<UserGroupResponse> {
+    fun getMyGroups(userId: UUID): List<MembershipResponse> {
         logger.info("Fetching groups for user {}", userId)
-        val memberships = groupUserRepository.findUserGroups(userId)
+        val memberships = membershipRepository.findUserGroups(userId)
         logger.info("User {} belongs to {} groups", userId, memberships.size)
-        return memberships
+
+        return memberships.map {
+            MembershipResponse(
+                groupId = it.group.id!!,
+                groupName = it.group.name,
+                memberCount = it.membersCount.toInt(),
+                points = it.points,
+                rank = it.rank,
+                role = it.role,
+            )
+        }
     }
 
     fun isAdmin(userId: UUID, groupId: UUID): Boolean {
         logger.info("Checking if user={} is admin of group={}", userId, groupId)
-        return groupUserRepository.findByUserIdAndGroupId(userId, groupId)
+        return membershipRepository.findByUserIdAndGroupId(userId, groupId)
             .map { it.role == GroupRole.ADMIN || it.role == GroupRole.OWNER }.orElse(false)
     }
 
     fun isMember(userId: UUID, groupId: UUID): Boolean {
         logger.info("Checking if user={} is admin of group={}", userId, groupId)
-        return groupUserRepository.findByUserIdAndGroupId(userId, groupId).isPresent
+        return membershipRepository.findByUserIdAndGroupId(userId, groupId).isPresent
     }
 }
