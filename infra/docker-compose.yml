@@ -42,11 +42,11 @@ services:
     networks:
       - prode-network
 
-  results-mocker:
+  scocker:
     build:
-      context: .
-      dockerfile: external/Dockerfile
-    container_name: results-mocker
+      context: ..
+      dockerfile: infra/scocker/Dockerfile
+    container_name: grondona-scocker
     ports:
       - "8085:8085"
     networks:

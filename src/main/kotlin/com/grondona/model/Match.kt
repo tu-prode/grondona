@@ -107,7 +107,9 @@ data class ExternalMatch(
     val home: String,
     val away: String,
     val homeGoals: Int,
+    val homePenalties: Int?,
     val awayGoals: Int,
+    val awayPenalties: Int?,
     val minutes: Int,
     val half: Int,
     val status: String,
@@ -125,6 +127,8 @@ data class ExternalMatch(
                     Status.IN_PLAY.name -> {
                         it.homeGoals = homeGoals
                         it.awayGoals = awayGoals
+                        it.homePenalties = awayPenalties
+                        it.awayPenalties = awayPenalties
                         it.status = MatchStatus.IN_PROGRESS
                         it.substatus = when {
                             half == 1 && minutes <= 45 -> "$minutes' PT"
@@ -141,6 +145,8 @@ data class ExternalMatch(
                         }
                         it.homeGoals = homeGoals
                         it.awayGoals = awayGoals
+                        it.homePenalties = homePenalties
+                        it.awayPenalties = awayPenalties
                         it.status = MatchStatus.FINISHED
                         it.substatus = "FINALIZADO"
                         it.finishedAt = it.finishedAt ?: LocalDateTime.now()

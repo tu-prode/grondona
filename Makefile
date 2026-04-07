@@ -87,6 +87,13 @@ db-only:
 	docker-compose -f $(COMPOSE_FILE) up -d db
 	@echo "PostgreSQL is running on localhost:5432"
 
+# Start only the scores mocker (useful for local development)
+scocker-only:
+	@echo "Starting Scocker..."
+	docker-compose -f $(COMPOSE_FILE) up -d scocker
+	@echo "Scocker is running on localhost:8005"
+	docker-compose -f $(COMPOSE_FILE) logs --follow scocker
+
 # Open shell in app container
 shell:
 	docker-compose -f $(COMPOSE_FILE) exec app /bin/sh
