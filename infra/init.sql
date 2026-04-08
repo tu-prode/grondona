@@ -280,7 +280,7 @@ CREATE TABLE IF NOT EXISTS matches (
 );
 
 -- Create indexes for uniqueness and better query performance
-CREATE UNIQUE INDEX IF NOT EXISTS idx_matches_tournament_key ON matches(tournament_id, tournament_key) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_matches_code ON matches(tournament_id, code) WHERE deleted_at IS NULL;
 
 -- Add comments to table and columns
 COMMENT ON TABLE matches IS 'Matches table';

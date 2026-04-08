@@ -20,7 +20,7 @@ logger.addHandler(handler)
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 stop = False
 active = True
@@ -138,7 +138,7 @@ def simulate_score(minute, match):
     progress = minute / 90
     average_goals = 2.7
     imbalance = abs(prob_home - prob_away)
-    goal_inflation = 1 + 1.5 * imbalance # for huge imbalance, more goals
+    goal_inflation = 1 + 0.5 * imbalance # for huge imbalance, more goals
     expected_total_goals = average_goals * goal_inflation * progress
 
     # set each team goal share
@@ -152,7 +152,7 @@ def simulate_score(minute, match):
     # calculating goals
     goals_a = poisson(lambda_a)
     goals_b = poisson(lambda_b)
-    return goals_a, goals_b
+    return int(goals_a), int(goals_b)
 
 
 def simulate_added(half):
@@ -165,14 +165,14 @@ def simulate_added(half):
 
     value = random.gauss(mean, std)
     value = max(0, min(value, 12))
-    return round(value)
+    return int(round(value))
 
 
 def diff_minutes(date1, date2):
-    return (date1 - date2).total_seconds() / 60
+    return int((date1 - date2).total_seconds() / 60)
 
 def diff_hours(date1, date2):
-    return diff_minutes(date1, date2) / 60
+    return int(diff_minutes(date1, date2) / 60)
 
 def or_zero(number):
     return number if number is not None else 0
@@ -199,28 +199,33 @@ def simulate_matches():
                 if current > match["started_at"]:
                     new_status = "IN_PLAY"
                     minutes = diff_minutes(current, match["started_at"])
+                    logger.debug(f'Updating match: {match["home"]}-{match["away"]}')
+                    logger.debug(f'Minutes from start timestamp: {minutes}\'')
 
                     new_half, new_minutes, new_ended_at = None, None, None
                     new_added_time1, new_added_time2 = match["first_half_added_time"], match["second_half_added_time"]
                     if minutes < 45:
                         new_half = 1
                         new_minutes = minutes
-                    elif minutes < 60:
-                        new_half = 1
-                        added_time = simulate_added(half=1)
-                        new_added_time1 = added_time
-                        new_minutes = minutes + added_time
                     else:
                         if not new_added_time1:
                             new_added_time1 = simulate_added(half=1)
-                        if minutes < 110 + new_added_time1:
+                            logger.debug(f'Added time for first half: {new_added_time1}\'')
+                        if minutes < 50 + new_added_time1:
+                            new_half = 1
+                            new_minutes = 45 + new_added_time1
+                        elif minutes < 65 + new_added_time1:
+                            new_half = 1
+                            new_minutes = 45 + new_added_time1
+                            new_status = "HALF_TIME"
+                        elif minutes < 110 + new_added_time1:
                             new_half = 2
                             new_minutes = minutes - (new_added_time1 + 20)
                         else:
                             new_half = 2
-                            added_time = simulate_added(half=2)
-                            new_added_time2 = added_time
-                            new_minutes = 90 + added_time
+                            new_added_time2 = simulate_added(half=2)
+                            logger.debug(f'Added time for second half: {new_added_time1}\'')
+                            new_minutes = 90 + new_added_time2
                             match_ended = True
                             new_status = "COMPLETED"
 
@@ -228,16 +233,17 @@ def simulate_matches():
                     new_home_goals = max(match["home_goals"], home_goals)
                     new_away_goals = max(match["away_goals"], away_goals)
 
+                    logger.debug(f'Updated match: ({new_status}) {match["home"]} {new_home_goals}-{new_away_goals} {match["away"]}, {new_minutes}\' ({new_half}H)')
                     if match_ended:
                         logger.info(f'Match ended: {match["home"]} {new_home_goals}-{new_away_goals} {match["away"]}')
                         new_ended_at = match["started_at"] + timedelta(minutes=(115 + new_added_time1 + new_added_time2))
 
                     MATCHES_LOCK.acquire()
                     match["status"] = new_status
-                    match["home_goals"] = new_home_goals
-                    match["away_goals"] = new_away_goals
-                    match["half"] = new_half
-                    match["minutes"] = new_minutes
+                    match["home_goals"] = int(new_home_goals)
+                    match["away_goals"] = int(new_away_goals)
+                    match["half"] = int(new_half)
+                    match["minutes"] = int(new_minutes)
                     match["first_half_added_time"] = new_added_time1
                     match["second_half_added_time"] = new_added_time2
                     match["ended_at"] = new_ended_at
@@ -253,6 +259,12 @@ def simulate_matches():
                         match["tie_odds"] = round(match["tie_odds"] + random.choice([-1, 0, 1]) * match["home_odds"] * 0.02, 2)
                         match["away_odds"] = round(match["away_odds"] + random.choice([-1, 0, 1]) * match["home_odds"] * 0.02, 2)
                         match["odds_calculated_at"] = current
+
+
+def json_serializer(obj):
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    raise TypeError(f"Type {type(obj)} not serializable")
 
 
 class ResultsMockerHandler(BaseHTTPRequestHandler):
@@ -336,7 +348,9 @@ class ResultsMockerHandler(BaseHTTPRequestHandler):
             return 400, {"error": "'matches' is required"}
         try:
             global MATCHES
+            MATCHES_LOCK.acquire()
             MATCHES += new_matches
+            MATCHES_LOCK.release()
             logger.info(f"New matches added: {len(new_matches)}")
             return 201, None
         except ValueError:
@@ -352,7 +366,7 @@ class ResultsMockerHandler(BaseHTTPRequestHandler):
         self.end_headers()
         TIME_LOCK.acquire()
         MATCHES_LOCK.acquire()
-        self.wfile.write(json.dumps({"current": current.isoformat(), "matches": MATCHES}, default=str).encode())
+        self.wfile.write(json.dumps({"current": current, "matches": MATCHES}, default=json_serializer).encode())
         MATCHES_LOCK.release()
         TIME_LOCK.release()
 

@@ -1,9 +1,11 @@
 package com.grondona.model
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.grondona.utils.WorldCupEngine
 import java.time.LocalDateTime
 
 // Data class for matches retrieved from LiveScoreAPI: https://live-score-api.com/documentation
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class ExternalMatch(
     val home: String,
     val away: String,
@@ -19,7 +21,7 @@ data class ExternalMatch(
     val awayOdds: Float = 1f,
     val endedAt: LocalDateTime? = null,
 ) {
-    private enum class Status { TO_START, IN_PLAY, COMPLETED }
+    private enum class Status { TO_START, IN_PLAY, HALF_TIME, COMPLETED }
 
     fun toMatchUpdated(matches: List<Match>): Pair<Match, Boolean>? {
         var changedToFinished = false
@@ -41,6 +43,15 @@ data class ExternalMatch(
                         }
                     }
 
+                    Status.IN_PLAY.name -> {
+                        it.homeGoals = homeGoals
+                        it.awayGoals = awayGoals
+                        it.homePenalties = awayPenalties
+                        it.awayPenalties = awayPenalties
+                        it.status = MatchStatus.IN_PROGRESS
+                        it.substatus = "ET"
+                    }
+
                     Status.COMPLETED.name -> {
                         if (it.status == MatchStatus.IN_PROGRESS) {
                             changedToFinished = true
@@ -50,7 +61,7 @@ data class ExternalMatch(
                         it.homePenalties = homePenalties
                         it.awayPenalties = awayPenalties
                         it.status = MatchStatus.FINISHED
-                        it.substatus = "FINALIZADO"
+                        it.substatus = "FT"
                         it.finishedAt = it.finishedAt ?: endedAt ?: LocalDateTime.now()
                     }
                 }
