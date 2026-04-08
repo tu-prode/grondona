@@ -1,6 +1,5 @@
 package com.grondona.model
 
-import com.grondona.utils.WorldCupEngine
 import jakarta.persistence.*
 import org.hibernate.annotations.OnDelete
 import org.hibernate.annotations.OnDeleteAction
@@ -100,72 +99,4 @@ data class Match(
     var deletedAt: LocalDateTime? = null
 ) {
     fun score(): Score? = homeGoals?.let { home -> awayGoals?.let { away -> Score(home, away) } }
-}
-
-// Data class for matches retrieved from LiveScoreAPI: https://live-score-api.com/documentation
-data class ExternalMatch(
-    val home: String,
-    val away: String,
-    val homeGoals: Int,
-    val homePenalties: Int?,
-    val awayGoals: Int,
-    val awayPenalties: Int?,
-    val minutes: Int,
-    val half: Int,
-    val status: String,
-    val homeOdds: Float = 1f,
-    val tieOdds: Float = 1f,
-    val awayOdds: Float = 1f,
-) {
-    private enum class Status { TO_START, IN_PLAY, COMPLETED }
-
-    fun toMatchUpdated(matches: List<Match>): Pair<Match, Boolean>? {
-        var changedToFinished = false
-        val match = matches.filter { it.status != MatchStatus.FINISHED }
-            .firstOrNull { it.homeTeam.name == home && it.awayTeam.name == away }?.also {
-                when (status) {
-                    Status.IN_PLAY.name -> {
-                        it.homeGoals = homeGoals
-                        it.awayGoals = awayGoals
-                        it.homePenalties = awayPenalties
-                        it.awayPenalties = awayPenalties
-                        it.status = MatchStatus.IN_PROGRESS
-                        it.substatus = when {
-                            half == 1 && minutes <= 45 -> "$minutes' PT"
-                            half == 1 && minutes > 45 -> "45+${minutes - 45}' PT"
-                            half == 2 && minutes <= 90 -> "${minutes - 45}' ST"
-                            half == 2 && minutes > 90 -> "45+${minutes - 90}' ST"
-                            else -> null
-                        }
-                    }
-
-                    Status.COMPLETED.name -> {
-                        if (it.status == MatchStatus.IN_PROGRESS) {
-                            changedToFinished = true
-                        }
-                        it.homeGoals = homeGoals
-                        it.awayGoals = awayGoals
-                        it.homePenalties = homePenalties
-                        it.awayPenalties = awayPenalties
-                        it.status = MatchStatus.FINISHED
-                        it.substatus = "FINALIZADO"
-                        it.finishedAt = it.finishedAt ?: LocalDateTime.now()
-                    }
-                }
-            }
-
-        return match?.let { Pair(it, changedToFinished) }
-    }
-
-    fun toQuotasUpdated(matches: List<Match>): Match? =
-        matches.filter { it.status == MatchStatus.NOT_STARTED && WorldCupEngine.isMatchUnlocked(it) }
-            .firstOrNull { it.homeTeam.name == home && it.awayTeam.name == away }?.also {
-                when (status) {
-                    Status.TO_START.name -> {
-                        it.homeQuota = homeOdds
-                        it.tieQuota = tieOdds
-                        it.awayQuota = awayOdds
-                    }
-                }
-            }
 }

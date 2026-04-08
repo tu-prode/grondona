@@ -44,7 +44,7 @@ class CronServiceTest {
     private lateinit var predictionRepository: PredictionRepository
 
     @InjectMockKs
-    private lateinit var cronService: CronService
+    private lateinit var cronService: MatchService
 
     private val testTournamentId = WorldCupEngine.SYSTEM_TOURNAMENT_ID
     private val testTournament: Tournament = Tournament(

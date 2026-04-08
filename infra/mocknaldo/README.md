@@ -1,4 +1,4 @@
-# Scocker: Scores Mocker
+# Mocknaldo: Goals Mocker
 
 A tiny Python HTTP server that will simulate results for the matches and expose them through different endpoints.
 
@@ -18,9 +18,9 @@ A tiny Python HTTP server that will simulate results for the matches and expose 
 
 ```bash
 # Start the server locally
-python3 scocker.py
+python3 mocknaldo.py
 
 # Start the server within a Docker container
-make scocker-only
+make mocknaldo-only
 ```
 

@@ -41,7 +41,6 @@ COMMENT ON COLUMN users.deleted_at IS 'Timestamp when the user was deleted';
 
 -- Seed default users
 INSERT INTO users (id, fullname, username, email, password_hash, permissions) VALUES
-    ('d8a1290d-6bee-4710-a5a4-5dd3f45c6c8c', 'CronJob', 'cron', 'cron@app.com', 'f03a08ce9005a2d659803a2958e4a3546c45010b2e4fc4f93f4cc477d86b15da', 'CRON'),
     ('c97ec073-c40c-4094-9f9e-b07074188936', 'Cristian Raña', 'cris', 'cris@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'SUPERUSER'),
     ('60635292-4a13-43d8-b976-b2e292020deb', 'Lautaro Chamorro', 'chas', 'chas@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
     ('4fc682de-233f-4b0f-b4c3-4ee0f5716675', 'Manuel Domínguez', 'manu', 'manu@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),

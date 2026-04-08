@@ -2,10 +2,10 @@ FROM python:3.12-alpine
 
 WORKDIR /app
 
-COPY infra/scocker/scocker.py .
+COPY infra/mocknaldo/mocknaldo.py .
 
 ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8085
 
-CMD ["python", "scocker.py"]
+CMD ["python", "mocknaldo.py"]

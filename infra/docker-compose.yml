@@ -11,7 +11,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - grondona_data:/var/lib/postgresql/data
+      - grondona-data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U grondona -d grondona" ]
@@ -42,19 +42,19 @@ services:
     networks:
       - prode-network
 
-  scocker:
+  mocknaldo:
     build:
       context: ..
-      dockerfile: infra/scocker/Dockerfile
-    container_name: grondona-scocker
+      dockerfile: infra/mocknaldo/Dockerfile
+    container_name: grondona-mocknaldo
     ports:
       - "8085:8085"
     networks:
       - prode-network
 
 volumes:
-  grondona_data:
-    name: grondona_data
+  grondona-data:
+    name: grondona-data
 
 networks:
   prode-network:

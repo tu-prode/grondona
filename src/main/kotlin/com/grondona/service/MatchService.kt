@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class CronService(
+class MatchService(
     private val matchClient: MatchClient,
     private val matchRepository: MatchRepository,
     private val membershipRepository: MembershipRepository,
@@ -25,13 +25,13 @@ class CronService(
 ) {
 
     companion object {
-        private val logger = LoggerFactory.getLogger(CronService::class.java)
+        private val logger = LoggerFactory.getLogger(MatchService::class.java)
     }
 
     @Transactional
     fun updateMatchesStatuses(tournamentId: UUID) {
         if (tournamentId != WorldCupEngine.SYSTEM_TOURNAMENT_ID) {
-            logger.debug("Currently the app only supports World Cup matches, with id={}", tournamentId)
+            logger.warn("Currently the app only supports World Cup matches, with id={}", tournamentId)
             throw BadRequestException("Tournament not supported")
         }
 
@@ -108,6 +108,8 @@ class CronService(
 
     @Transactional
     fun updateMatchesQuotas(tournamentId: UUID) {
+        logger.debug("Starting matches polling")
+
         if (tournamentId != WorldCupEngine.SYSTEM_TOURNAMENT_ID) {
             logger.debug("Currently the app only supports World Cup matches, with id={}", tournamentId)
             throw BadRequestException("Tournament not supported")
