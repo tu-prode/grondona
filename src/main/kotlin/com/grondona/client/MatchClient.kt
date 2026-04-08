@@ -1,5 +1,7 @@
 package com.grondona.client
 
+import com.fasterxml.jackson.databind.PropertyNamingStrategies
+import com.fasterxml.jackson.databind.annotation.JsonNaming
 import com.grondona.exception.ExternalServiceException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.ExternalMatch
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import reactor.core.publisher.Mono
+import java.time.LocalDateTime
 import java.util.UUID
 
 @Component
@@ -28,6 +31,12 @@ class MatchClient(
         private val tournamentIdsMapper: Map<UUID, String> =
             mapOf(WorldCupEngine.SYSTEM_TOURNAMENT_ID to WorldCupEngine.API_TOURNAMENT_ID)
     }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
+    private class MocknaldoResponse(
+        val current: LocalDateTime = LocalDateTime.now(),
+        val matches: List<ExternalMatch> = emptyList(),
+    )
 
     fun getMatches(tournamentId: UUID): List<ExternalMatch> {
         val competitionId = tournamentIdsMapper[tournamentId] ?: throw NotFoundException("Tournament $tournamentId not found")
@@ -55,13 +64,17 @@ class MatchClient(
                             Mono.error(ExternalServiceException("Error 5xx calling Matches API: $body"))
                         }
                 }
-                .bodyToFlux(ExternalMatch::class.java)
-                .collectList()
-                .block() ?: emptyList()
+                // .bodyToFlux(ExternalMatch::class.java).collectList()
+                // .block() ?: emptyList()
+                .bodyToMono(MocknaldoResponse::class.java)
+                .block().also {
+                    logger.debug("Set current-time at {}", it?.current)
+                    WorldCupEngine.now = it?.current ?: LocalDateTime.now()
+                }?.matches ?: emptyList()
         } catch (ex: WebClientResponseException) {
             throw ExternalServiceException("HTTP error calling matches service: ${ex.statusCode}", ex)
         } catch (ex: Exception) {
-            throw ExternalServiceException("Unexpected error calling matches service", ex)
+            throw ExternalServiceException("Unexpected error calling matches service: ${ex.message}", ex)
         }
     }
 }

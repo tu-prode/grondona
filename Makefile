@@ -37,7 +37,7 @@ system-up: build
 	@echo "  - API: http://localhost:8080"
 	@echo "  - PostgreSQL: localhost:5432"
 	@echo ""
-	docker-compose -f $(COMPOSE_FILE) logs --follow app
+	docker-compose -f $(COMPOSE_FILE) logs --follow app mocknaldo
 
 # Stop all services
 system-down:
@@ -86,6 +86,13 @@ db-only:
 	@echo "Starting PostgreSQL..."
 	docker-compose -f $(COMPOSE_FILE) up -d db
 	@echo "PostgreSQL is running on localhost:5432"
+
+# Start only the scores mocker (useful for local development)
+mocknaldo-only:
+	@echo "Starting Mocknaldo..."
+	docker-compose -f $(COMPOSE_FILE) up -d mocknaldo
+	@echo "Mocknaldo is running on localhost:8005"
+	docker-compose -f $(COMPOSE_FILE) logs --follow mocknaldo
 
 # Open shell in app container
 shell:
