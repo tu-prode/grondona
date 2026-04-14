@@ -1,14 +1,24 @@
 package com.grondona.model
 
 import jakarta.persistence.*
+import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.annotations.SQLDelete
 import org.hibernate.annotations.SQLRestriction
+import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
 import java.util.UUID
 
 enum class TournamentStatus {
     NOT_STARTED, IN_PROGRESS, FINISHED,
 }
+
+data class Awards(
+    val champions: List<UUID> = emptyList(),
+    val topScorers: List<UUID> = emptyList(),
+    val bestPlayers: List<UUID> = emptyList(),
+    val bestGoalkeepers: List<UUID> = emptyList(),
+    val bestYoungPlayers: List<UUID> = emptyList(),
+)
 
 @Entity
 @Table(name = "tournaments")
@@ -25,6 +35,10 @@ data class Tournament(
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     var status: TournamentStatus = TournamentStatus.NOT_STARTED,
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb", nullable = false)
+    var awards: Awards = Awards(),
 
     @Column(name = "created_at", nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),

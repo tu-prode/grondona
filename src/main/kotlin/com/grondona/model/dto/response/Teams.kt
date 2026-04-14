@@ -11,10 +11,20 @@ data class TeamResponse(
 ) {
     companion object {
         fun from(team: Team): TeamResponse = TeamResponse(
-            id  = team.id!!,
+            id = team.id!!,
             name = team.name,
             code = team.code,
             icon = team.icon,
+        )
+    }
+}
+
+data class TournamentTeamsResponse(
+    val teams: List<TeamResponse>,
+) {
+    companion object {
+        fun from(teams: List<Team>) = TournamentTeamsResponse(
+            teams = teams.map(TeamResponse::from)
         )
     }
 }

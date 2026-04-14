@@ -7,9 +7,14 @@ import com.grondona.model.TournamentStatus
 import com.grondona.model.dto.request.CreateTournamentRequest
 import com.grondona.model.dto.request.UpdateTournamentRequest
 import com.grondona.model.dto.response.TournamentMatchesResponse
+import com.grondona.model.dto.response.TournamentPlayersResponse
 import com.grondona.model.dto.response.TournamentResponse
+import com.grondona.model.dto.response.TournamentTeamsResponse
 import com.grondona.repository.MatchRepository
+import com.grondona.repository.PlayerRepository
+import com.grondona.repository.TeamRepository
 import com.grondona.repository.TournamentRepository
+import com.grondona.utils.WorldCupEngine
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -18,7 +23,9 @@ import java.util.UUID
 
 @Service
 class TournamentService(
+    private val teamRepository: TeamRepository,
     private val matchRepository: MatchRepository,
+    private val playerRepository: PlayerRepository,
     private val tournamentRepository: TournamentRepository,
 ) {
 
@@ -66,9 +73,9 @@ class TournamentService(
         request.status?.let { newStatus -> tournament.status = newStatus }
         tournament.updatedAt = LocalDateTime.now()
 
-        val savedGroup = tournamentRepository.save(tournament)
-        logger.info("Tournament updated successfully: id={}, name='{}'", savedGroup.id, savedGroup.name)
-        return TournamentResponse.from(savedGroup)
+        val savedTournament = tournamentRepository.save(tournament)
+        logger.info("Tournament updated successfully: id={}, name='{}'", savedTournament.id, savedTournament.name)
+        return TournamentResponse.from(savedTournament)
     }
 
     @Transactional
@@ -100,12 +107,40 @@ class TournamentService(
         logger.info("Fetching matches for tournament id={}", tournamentId)
 
         val tournament = tournamentRepository.findById(tournamentId).orElseThrow {
-            logger.warn("Tournament not found: id={}", tournamentId)
+            logger.warn("Tournament not found id={}", tournamentId)
             NotFoundException("Tournament not found")
         }
 
         val matches = matchRepository.findByTournamentIdOrderByStartedAt(tournamentId)
-        logger.info("Tournament matches fetched successfully: id={}, matches='{}'", tournamentId, matches.size)
+        logger.info("Tournament matches fetched successfully id={}, amount of matches={}", tournamentId, matches.size)
         return TournamentMatchesResponse.from(tournament, matches, past, next, live)
+    }
+
+    fun getTournamentTeams(tournamentId: UUID): TournamentTeamsResponse {
+        logger.info("Fetching teams for tournament id={}", tournamentId)
+
+        val tournament = tournamentRepository.findById(tournamentId).orElseThrow {
+            logger.warn("Tournament not found id={}", tournamentId)
+            NotFoundException("Tournament not found")
+        }
+
+        val teams = teamRepository.findByTournamentId(tournamentId)
+        logger.info("Tournament teams fetched successfully id={}, amount of teams={}", tournamentId, teams.size)
+        return TournamentTeamsResponse.from(teams)
+    }
+
+    fun getTournamentPlayers(tournamentId: UUID, country: String?, isGoalkeeper: Boolean?, isU21: Boolean?): TournamentPlayersResponse {
+        logger.info("Fetching players for tournament id={}", tournamentId)
+
+        val tournament = tournamentRepository.findById(tournamentId).orElseThrow {
+            logger.warn("Tournament not found id={}", tournamentId)
+            NotFoundException("Tournament not found")
+        }
+
+        val players = playerRepository.findTournamentPlayers(
+            tournamentId, country, isGoalkeeper, WorldCupEngine.BEST_YOUNG_PLAYER_DATE_LIMIT.takeIf { isU21 ?: false },
+        )
+        logger.info("Tournament players fetched successfully id={}, amount of players={}", tournamentId, players.size)
+        return TournamentPlayersResponse.from(players)
     }
 }

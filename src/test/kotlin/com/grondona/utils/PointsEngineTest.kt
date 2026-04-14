@@ -4,7 +4,7 @@ import com.grondona.model.Group
 import com.grondona.model.GroupUser
 import com.grondona.model.Match
 import com.grondona.model.MatchStatus
-import com.grondona.model.Prediction
+import com.grondona.model.MatchPrediction
 import com.grondona.model.PredictionStatus
 import com.grondona.model.Score
 import com.grondona.model.Team
@@ -52,7 +52,7 @@ class PointsEngineTest {
         finishedAt = LocalDateTime.now().minusHours(1),
     )
 
-    private fun testPrediction(match: Match, homeGoals: Int, awayGoals: Int): Prediction {
+    private fun testPrediction(match: Match, homeGoals: Int, awayGoals: Int): MatchPrediction {
         val predictionScore = Score(homeGoals, awayGoals)
         val status = when {
             match.score() == predictionScore && predictionScore.goals() >= 5 -> PredictionStatus.BONUS
@@ -61,7 +61,7 @@ class PointsEngineTest {
             else -> PredictionStatus.INCORRECT
         }
 
-        return Prediction(
+        return MatchPrediction(
             id = UUID.randomUUID(), user = anyUser, group = anyGroup,
             match = match, homeGoals = homeGoals, awayGoals = awayGoals, status = status,
         )

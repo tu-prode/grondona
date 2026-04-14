@@ -50,6 +50,7 @@ class GroupControllerTest {
         isPrivate = false,
         maxMembers = 20,
         tournamentId = testTournamentId,
+        hasStarted = true,
         standings = emptyList()
     )
 

@@ -23,6 +23,8 @@ tags:
     description: Group membership operations
   - name: Predictions
     description: Match predictions operations
+  - name: Awards
+    description: Awards predictions operations
 
 paths:
   /api/users:
@@ -446,6 +448,88 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/tournaments/{tournamentId}/teams:
+    get:
+      tags:
+        - Tournaments
+      summary: Get the tournament teams
+      description: |
+        Retrieve a list of all the teams associated to a specific tournament
+      operationId: getTournamentTeams
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Tournament retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentTeamsResponse"
+        "404":
+          description: Tournament not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/tournaments/{tournamentId}/players:
+    get:
+      tags:
+        - Tournaments
+      summary: Get the tournament players
+      description: |
+        Retrieve a list of all the players associated to a specific tournament
+      operationId: getTournamentPlayers
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
+        - name: country
+          in: query
+          required: false
+          description: Country of the player
+          schema:
+            type: string
+        - name: goalkeeper
+          in: query
+          required: false
+          description: Flag indicating if it should only return goalkeepers
+          schema:
+            type: boolean
+        - name: u21
+          in: query
+          required: false
+          description: Flag indicating if it should only return u21 players
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Tournament retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TournamentPlayersResponse"
+        "404":
+          description: Tournament not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/tournaments/{tournamentId}/matches:
     get:
       tags:
@@ -821,7 +905,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/tournaments/{tournamentId}/groups/{groupId}/predictions:
+  /api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches:
     get:
       tags:
         - Predictions
@@ -915,6 +999,100 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/tournaments/{tournamentId}/groups/{groupId}/predictions/awards:
+    get:
+      tags:
+        - Awards
+      summary: Get the list of my award predictions for a certain group and tournament.
+      description: |
+        Retrieve the list of my award predictions for a certain group and tournament.
+      operationId: getAwardPredictions
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: UUID of the group
+          schema:
+            type: string
+            format: uuid
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: User awards predictions for the group retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AwardPredictionsResponse"
+        "404":
+          description: Group or Tournament not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      tags:
+        - Awards
+      summary: Post the list award predictions for a certain group and tournament.
+      description: |
+        Publish the list of awards predicted by the user for a certain group and tournament.
+      operationId: postMyAwardPredictions
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: UUID of the group
+          schema:
+            type: string
+            format: uuid
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitAwardPredictionsRequest"
+      responses:
+        "201":
+          description: Predictions created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AwardPredictionsResponse"
+        "400":
+          description: Some parameters are wrong, or the match is already blocked because of the time.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: The user doesn't belong to the group and cannot perform this action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Group or Tournament not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches/{matchId}:
     post:
       tags:
@@ -981,7 +1159,7 @@ paths:
     get:
       tags:
         - Predictions
-      summary: Get the list of my predictions for a certain match.
+      summary: Get the list of predictions for a certain match.
       description: |
         Retrieve the list of past or live predictions for a certain match within a group and tournament.
       operationId: getGroupMatchPredictions
@@ -1342,6 +1520,7 @@ components:
         - name
         - private
         - max_members
+        - has_started
       properties:
         id:
           type: string
@@ -1366,6 +1545,9 @@ components:
           format: int16
           description: Maximum number of members allowed
           example: 50
+        has_started:
+          type: boolean
+          description: Flag indicating if the tournament has started.
         standings:
           type: array
           items:
@@ -1452,6 +1634,63 @@ components:
           type: string
           description: URL of the team icon
           example: https://flagicons.lipis.dev/flags/4x3/xx.svg
+
+    TournamentTeamsResponse:
+      type: object
+      required:
+        - teams
+      properties:
+        teams:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamResponse'
+
+    PlayerPosition:
+      description: The position of the player
+      type: string
+      enum:
+        - GOALKEEPER
+        - DEFENDER
+        - MIDFIELDER
+        - FORWARD
+
+    PlayerResponse:
+      type: object
+      required:
+        - id
+        - name
+        - team
+        - position
+        - birthdate
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique player identifier
+          example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+        name:
+          type: string
+          description: Player name
+          example: Lionel Messi
+        team:
+          $ref: '#/components/schemas/TeamResponse'
+        position:
+          $ref: '#/components/schemas/PlayerPosition'
+        birthdate:
+          type: string
+          format: date-time
+          description: Birthdate of the player
+          example: '1994-04-09 16:12:55 +03:00'
+
+    TournamentPlayersResponse:
+      type: object
+      required:
+        - players
+      properties:
+        players:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlayerResponse'
 
     MatchStatus:
       description: The status of a match
@@ -1694,3 +1933,84 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SubmittedPredictionResponse'
+
+    SubmitAwardPredictionsRequest:
+      description: List of user predictions to save for a group and tournament
+      type: object
+      required:
+        - champions
+        - top_scorers
+        - best_players
+        - best_goalkeepers
+        - best_young_players
+      properties:
+        champions:
+          type: array
+          items:
+            type: string
+            format: uuid
+        top_scorers:
+          type: array
+          items:
+            type: string
+            format: uuid
+        best_players:
+          type: array
+          items:
+            type: string
+            format: uuid
+        best_goalkeepers:
+          type: array
+          items:
+            type: string
+            format: uuid
+        best_young_players:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    AwardPredictionsResponse:
+      description: List of user predictions to save for a group and tournament
+      type: object
+      required:
+        - champions
+        - top_scorers
+        - best_players
+        - best_goalkeepers
+        - best_young_players
+      properties:
+        champions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamResponse'
+        top_scorers:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlayerResponse'
+        best_players:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlayerResponse'
+        best_goalkeepers:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlayerResponse'
+        best_young_players:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlayerResponse'
+
+    GroupAwardPredictionsResponse:
+      description: List of user predictions to save for a group and tournament
+      type: object
+      required:
+        - me
+        - others
+      properties:
+        me:
+          $ref: '#/components/schemas/AwardPredictionsResponse'
+        others:
+          type: array
+          items:
+            $ref: '#/components/schemas/AwardPredictionsResponse'

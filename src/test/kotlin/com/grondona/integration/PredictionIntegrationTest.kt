@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.grondona.createTestingTournamentRequest
 import com.grondona.createTestingUserRequest
 import com.grondona.model.UserPermissions
-import com.grondona.model.dto.request.SubmitBulkPredictionsRequest
-import com.grondona.model.dto.request.SubmitPredictionRequest
+import com.grondona.model.dto.request.SubmitBulkMatchPredictionsRequest
+import com.grondona.model.dto.request.SubmitMatchPredictionRequest
 import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
 import com.grondona.model.dto.response.GroupResponse
@@ -114,7 +114,7 @@ class PredictionIntegrationTest {
     inner class SubmitPredictionAuthTests {
 
         private val matchId = UUID.randomUUID()
-        private val validRequest = SubmitPredictionRequest(matchId = matchId, homeGoals = 1, awayGoals = 0)
+        private val validRequest = SubmitMatchPredictionRequest(matchId = matchId, homeGoals = 1, awayGoals = 0)
 
         @Test
         fun `should return 401 when submitting prediction without authentication`() {
@@ -157,7 +157,7 @@ class PredictionIntegrationTest {
         @Test
         fun `should return 404 when match does not exist`() {
             val nonExistentMatchId = UUID.randomUUID()
-            val request = SubmitPredictionRequest(matchId = nonExistentMatchId, homeGoals = 1, awayGoals = 0)
+            val request = SubmitMatchPredictionRequest(matchId = nonExistentMatchId, homeGoals = 1, awayGoals = 0)
             mockMvc.perform(
                 post("/api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches/{matchId}",
                     tournamentId, groupId, nonExistentMatchId)
@@ -171,7 +171,7 @@ class PredictionIntegrationTest {
 
         @Test
         fun `should return 400 when homeGoals is negative`() {
-            val invalidRequest = SubmitPredictionRequest(matchId = matchId, homeGoals = -1, awayGoals = 0)
+            val invalidRequest = SubmitMatchPredictionRequest(matchId = matchId, homeGoals = -1, awayGoals = 0)
             mockMvc.perform(
                 post("/api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches/{matchId}",
                     tournamentId, groupId, matchId)
@@ -186,8 +186,8 @@ class PredictionIntegrationTest {
     @Nested
     inner class SubmitBulkPredictionsAuthTests {
 
-        private val validRequest = SubmitBulkPredictionsRequest(
-            predictions = listOf(SubmitPredictionRequest(matchId = UUID.randomUUID(), homeGoals = 1, awayGoals = 0))
+        private val validRequest = SubmitBulkMatchPredictionsRequest(
+            predictions = listOf(SubmitMatchPredictionRequest(matchId = UUID.randomUUID(), homeGoals = 1, awayGoals = 0))
         )
 
         @Test
@@ -227,7 +227,7 @@ class PredictionIntegrationTest {
 
         @Test
         fun `should return 400 when bulk predictions list is empty`() {
-            val emptyRequest = SubmitBulkPredictionsRequest(predictions = emptyList())
+            val emptyRequest = SubmitBulkMatchPredictionsRequest(predictions = emptyList())
             mockMvc.perform(
                 post("/api/tournaments/{tournamentId}/groups/{groupId}/predictions", tournamentId, groupId)
                     .header("Authorization", "Bearer $memberToken")

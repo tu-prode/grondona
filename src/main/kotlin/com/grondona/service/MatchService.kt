@@ -4,11 +4,11 @@ import com.grondona.client.MatchClient
 import com.grondona.exception.BadRequestException
 import com.grondona.model.Match
 import com.grondona.model.MatchStatus
-import com.grondona.model.Prediction
+import com.grondona.model.MatchPrediction
 import com.grondona.model.PredictionStatus
 import com.grondona.repository.MatchRepository
 import com.grondona.repository.MembershipRepository
-import com.grondona.repository.PredictionRepository
+import com.grondona.repository.MatchPredictionRepository
 import com.grondona.utils.PointsEngine
 import com.grondona.utils.WorldCupEngine
 import java.util.UUID
@@ -21,7 +21,7 @@ class MatchService(
     private val matchClient: MatchClient,
     private val matchRepository: MatchRepository,
     private val membershipRepository: MembershipRepository,
-    private val predictionRepository: PredictionRepository,
+    private val predictionRepository: MatchPredictionRepository,
 ) {
 
     companion object {
@@ -35,13 +35,13 @@ class MatchService(
             throw BadRequestException("Tournament not supported")
         }
 
-        logger.debug("Fetching matches to update for tournament={}", tournamentId)
+        logger.trace("Fetching matches to update for tournament={}", tournamentId)
         val apiMatches = matchClient.getMatches(tournamentId)
-        logger.debug("API matches retrieved={}", apiMatches.size)
+        logger.trace("API matches retrieved={}", apiMatches.size)
         val systemMatches = matchRepository.findAllByTournamentIdAndStatusIn(
             tournamentId, listOf(MatchStatus.NOT_STARTED, MatchStatus.IN_PROGRESS),
         )
-        logger.debug("System matches retrieved={}", systemMatches.size)
+        logger.trace("System matches retrieved={}", systemMatches.size)
 
         val (matchesToUpdate, anyJustFinished) = apiMatches.mapNotNull { it.toMatchUpdated(systemMatches) }.let {
             val updatedMatches = it.map { (match, _) -> match }
@@ -81,7 +81,7 @@ class MatchService(
         }
     }
 
-    fun checkCompletedPredictions(predictions: List<Prediction>): List<Prediction> =
+    fun checkCompletedPredictions(predictions: List<MatchPrediction>): List<MatchPrediction> =
         predictions.toMutableList().map { prediction ->
             if (prediction.status == PredictionStatus.PENDING && prediction.match.status == MatchStatus.FINISHED) {
                 val matchScore = prediction.match.score()
@@ -108,20 +108,20 @@ class MatchService(
 
     @Transactional
     fun updateMatchesQuotas(tournamentId: UUID) {
-        logger.debug("Starting matches polling")
+        logger.trace("Starting matches polling")
 
         if (tournamentId != WorldCupEngine.SYSTEM_TOURNAMENT_ID) {
-            logger.debug("Currently the app only supports World Cup matches, with id={}", tournamentId)
+            logger.error("Currently the app only supports World Cup matches, with id={}", tournamentId)
             throw BadRequestException("Tournament not supported")
         }
 
-        logger.debug("Fetching matches to update quota for tournament={}", tournamentId)
+        logger.trace("Fetching matches to update quota for tournament={}", tournamentId)
         val apiMatches = matchClient.getMatches(tournamentId)
-        logger.debug("API matches retrieved={}", apiMatches.size)
+        logger.trace("API matches retrieved={}", apiMatches.size)
         val systemMatches = matchRepository.findAllByTournamentIdAndStatusIn(
             tournamentId, listOf(MatchStatus.NOT_STARTED),
         )
-        logger.debug("System matches retrieved={}", systemMatches.size)
+        logger.trace("System matches retrieved={}", systemMatches.size)
 
         val matchesToUpdate = apiMatches.mapNotNull { it.toQuotasUpdated(systemMatches) }
         if (matchesToUpdate.isNotEmpty()) {

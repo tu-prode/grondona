@@ -1,11 +1,14 @@
 -- Initialize database schema for Grondona application
 
 -- Remove existing tables
+drop table if exists match_predictions;
 drop table if exists predictions;
 drop table if exists matches;
-drop table if exists teams;
 drop table if exists group_users;
 drop table if exists groups;
+drop table if exists teams;
+drop table if exists award_predictions;
+drop table if exists players;
 drop table if exists tournaments;
 drop table if exists users;
 
@@ -19,8 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
     permissions VARCHAR(20) NOT NULL DEFAULT 'USER',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP DEFAULT NULL,
-    CONSTRAINT uq_users UNIQUE (id)
+    deleted_at TIMESTAMP DEFAULT NULL
 );
 
 -- Create indexes for uniqueness and better query performance
@@ -57,10 +59,10 @@ CREATE TABLE IF NOT EXISTS tournaments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(256) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'NOT_STARTED',
+    awards JSONB NOT NULL DEFAULT '{}',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP DEFAULT NULL,
-    CONSTRAINT uq_tournaments UNIQUE (id)
+    deleted_at TIMESTAMP DEFAULT NULL
 );
 
 -- Create indexes for uniqueness and better query performance
@@ -71,6 +73,7 @@ COMMENT ON TABLE tournaments IS 'Tournaments table';
 COMMENT ON COLUMN tournaments.id IS 'Unique identifier for the tournament';
 COMMENT ON COLUMN tournaments.name IS 'Name of the tournament';
 COMMENT ON COLUMN tournaments.status IS 'Status of the tournament (can be either NOT_STARTED, IN_PROGRESS or FINISHED)';
+COMMENT ON COLUMN tournaments.awards IS 'Awards of the tournament (populated at the end of it)';
 COMMENT ON COLUMN tournaments.created_at IS 'Timestamp when the tournament was created';
 COMMENT ON COLUMN tournaments.updated_at IS 'Timestamp when the tournament was last updated';
 COMMENT ON COLUMN tournaments.deleted_at IS 'Timestamp when the tournament was deleted';
@@ -89,8 +92,7 @@ CREATE TABLE IF NOT EXISTS groups (
     max_members INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP DEFAULT NULL,
-    CONSTRAINT uq_groups UNIQUE (id)
+    deleted_at TIMESTAMP DEFAULT NULL
 );
 
 -- Create indexes for uniqueness and better query performance
@@ -128,8 +130,8 @@ CREATE TABLE IF NOT EXISTS group_users (
     amount_correct INTEGER DEFAULT 0,
     amount_partial INTEGER DEFAULT 0,
     last_predictions VARCHAR(20)[] NOT NULL DEFAULT '{}',
-    deleted_at TIMESTAMP DEFAULT NULL,
-    CONSTRAINT uq_group_users UNIQUE (id)
+    predicted_awards JSONB NOT NULL DEFAULT '{}',
+    deleted_at TIMESTAMP DEFAULT NULL
 );
 
 -- Create indexes for uniqueness and better query performance
@@ -150,6 +152,7 @@ COMMENT ON COLUMN group_users.amount_bonus IS 'Amount of BONUS predictions';
 COMMENT ON COLUMN group_users.amount_correct IS 'Amount of CORRECT predictions';
 COMMENT ON COLUMN group_users.amount_partial IS 'Amount of PARTIAL predictions';
 COMMENT ON COLUMN group_users.last_predictions IS 'Status of the last 5 predictions';
+COMMENT ON COLUMN group_users.predicted_awards IS 'Awards predicted for the tournament';
 COMMENT ON COLUMN group_users.deleted_at IS 'Timestamp when the user left the group';
 
 -- Seed default members
@@ -185,8 +188,7 @@ CREATE TABLE IF NOT EXISTS teams (
     icon TEXT DEFAULT 'https://flagicons.lipis.dev/flags/4x3/xx.svg',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP DEFAULT NULL,
-    CONSTRAINT uq_teams UNIQUE (id)
+    deleted_at TIMESTAMP DEFAULT NULL
 );
 
 -- Create indexes for uniqueness and better query performance
@@ -247,7 +249,7 @@ INSERT INTO teams (id, tournament_id, name, code, icon) VALUES
     ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', '28652183-a2d6-4f33-a624-0d24645ce3cd','Túnez', 'TUN', 'https://flagcdn.com/w40/tn.png'),
     ('c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41', '28652183-a2d6-4f33-a624-0d24645ce3cd','Uruguay', 'URU', 'https://flagcdn.com/w40/uy.png'),
     ('d9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42', '28652183-a2d6-4f33-a624-0d24645ce3cd','Uzbekistán', 'UZB', 'https://flagcdn.com/w40/uz.png'),
-    ('8f251495-81ba-4724-b575-f7ebecf213c4', '28652183-a2d6-4f33-a624-0d24645ce3cd','República Democrática del Congo', 'COD', 'https://flagcdn.com/w40/cd.png'),
+    ('8f251495-81ba-4724-b575-f7ebecf213c4', '28652183-a2d6-4f33-a624-0d24645ce3cd','R.D. del Congo', 'COD', 'https://flagcdn.com/w40/cd.png'),
     ('da0e5c75-ba1c-4090-bbba-ad57d0e3b153', '28652183-a2d6-4f33-a624-0d24645ce3cd','Irak', 'IRQ', 'https://flagcdn.com/w40/iq.png'),
     ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', '28652183-a2d6-4f33-a624-0d24645ce3cd','Bosnia-Herzegovina', 'BIH', 'https://flagcdn.com/w40/ba.png'),
     ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', '28652183-a2d6-4f33-a624-0d24645ce3cd','Suecia', 'SWE', 'https://flagcdn.com/w40/se.png'),
@@ -260,12 +262,11 @@ CREATE TABLE IF NOT EXISTS players (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
-    is_goalkeeper BOOLEAN NOT NULL DEFAULT FALSE,
-    birth DATE NOT NULL,
+    position VARCHAR(20) NOT NULL,
+    birthdate DATE NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP DEFAULT NULL,
-    CONSTRAINT uq_teams UNIQUE (id)
+    deleted_at TIMESTAMP DEFAULT NULL
 );
 
 -- Create indexes for uniqueness and better query performance
@@ -276,167 +277,169 @@ COMMENT ON TABLE players IS 'Teams table';
 COMMENT ON COLUMN players.id IS 'Unique identifier for the player';
 COMMENT ON COLUMN players.team_id IS 'Reference to the team';
 COMMENT ON COLUMN players.name IS 'Name of the player';
+COMMENT ON COLUMN players.position IS 'Position of the player';
+COMMENT ON COLUMN players.birthdate IS 'Birthdate of the player';
 COMMENT ON COLUMN players.created_at IS 'Timestamp when the player was created';
 COMMENT ON COLUMN players.updated_at IS 'Timestamp when the player was last updated';
 COMMENT ON COLUMN players.deleted_at IS 'Timestamp when the player was deleted';
 
-INSERT INTO players (team_id, name, is_goalkeeper, birth) VALUES
-    ('6f1c5f6e-9c9e-4f3b-8d8e-2b5e2a6a1c01','Joshua Kimmich', FALSE, '1995-02-08'),
-    ('6f1c5f6e-9c9e-4f3b-8d8e-2b5e2a6a1c01','Florian Wirtz', FALSE, '2003-05-03'),
-    ('6f1c5f6e-9c9e-4f3b-8d8e-2b5e2a6a1c01','Manuel Newer', TRUE, '1986-03-27'),
-    ('b2c9c3e7-7f7e-4a5a-9f2b-3c1d9a4e8b02','Salem Al-Dawsari', FALSE, '1991-08-19'),
-    ('b2c9c3e7-7f7e-4a5a-9f2b-3c1d9a4e8b02','Ali Lajami', TRUE, '1996-24-04'),
-    ('b2c9c3e7-7f7e-4a5a-9f2b-3c1d9a4e8b02','Mohammed Al-Owais', FALSE, '1991-10-10'),
-    ('1a4d2b6c-5e7f-4c8a-9d1e-6b3f2a7c9d03','Riyad Mahrez', FALSE, '1991-02-25'),
-    ('1a4d2b6c-5e7f-4c8a-9d1e-6b3f2a7c9d03','Anis Hadj Moussa', FALSE, '2002-02-11'),
-    ('1a4d2b6c-5e7f-4c8a-9d1e-6b3f2a7c9d03','Anthony Mandréa', TRUE, '1996-12-25'),
-    ('9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04','Lionel Messi', FALSE, '1987-06-21'),
-    ('9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04','Julián Álvarez', FALSE, '2000-01-31'),
-    ('9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04','Alexi Mac Allister', FALSE, '1998-12-24'),
-    ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07','Franco Mastantuono', FALSE, '2007-08-14'),
-    ('9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04','Emiliano Martínez', TRUE, '1992-09-02'),
-    ('9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04','Juan Musso', TRUE, '1994-05-06'),
-    ('3e7b1c9d-6f2a-4d8c-8b1e-5c9a2f7d3b05','Riley McGree', FALSE, '1998-11-02'),
-    ('3e7b1c9d-6f2a-4d8c-8b1e-5c9a2f7d3b05','Ajdin Hrustic', FALSE, '1996-07-05'),
-    ('3e7b1c9d-6f2a-4d8c-8b1e-5c9a2f7d3b05','Mathew Ryan', TRUE, '1992-04-08'),
-    ('7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06','David Alaba', FALSE, '1992-06-24'),
-    ('7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06','Konrad Laimer', FALSE, '1997-05-27'),
-    ('7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06','Alexander Schlager', TRUE, '1996-02-01'),
-    ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07','Vinicius Jr', FALSE, '2000-07-12'),
-    ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07','Raphinha', FALSE, '1996-12-14'),
-    ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07','Endrick', FALSE, '2006-07-11'),
-    ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07','Estevão', FALSE, '2007-04-24'),
-    ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07','Alisson Becker', TRUE, '1992-10-02'),
-    ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07','Ederson', TRUE, '1993-08-17'),
-    ('8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08','Kevin de Bruyne', FALSE, '1991-06-28'),
-    ('8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08','Jeremy Doku', FALSE, '2002-05-27'),
-    ('8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08','Thibaut Courtois', TRUE, '1992-05-11'),
-    ('4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09','Ryan Mendes', FALSE, '1990-01-08'),
-    ('4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09','Jovane Cabral', FALSE, '1998-06-14'),
-    ('4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09','Vozinha', TRUE, '1986-06-03'),
-    ('5a1c9e3b-7d2f-4a6c-8b9e-2f3d7a1c4b10','Alphonso Davies', FALSE, '2000-11-02'),
-    ('5a1c9e3b-7d2f-4a6c-8b9e-2f3d7a1c4b10','Jonathan David', FALSE, '2000-01-14'),
-    ('5a1c9e3b-7d2f-4a6c-8b9e-2f3d7a1c4b10','Maxime Crépeau', TRUE, '1994-05-11'),
-    ('c3e7b1a9-5f2d-4c8a-9e6b-1a2f3d7c5b11','Akram Afif', FALSE, '1996-11-18'),
-    ('c3e7b1a9-5f2d-4c8a-9e6b-1a2f3d7c5b11','Almoez Ali', FALSE, '1996-08019'),
-    ('c3e7b1a9-5f2d-4c8a-9e6b-1a2f3d7c5b11','Meshaal Barsham', TRUE, '1998-02-14'),
-    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12','Luis Díaz', FALSE, '1997-01-13'),
-    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12','James Rodríguez', FALSE, '1991-07-12'),
-    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12','David Ospina', TRUE, '1988-08-31'),
-    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13','Son Heung-Min', FALSE, '1992-07-08'),
-    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13','Lee Kang-in', FALSE, '2001-02-19'),
-    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13','Jo Hyeon-woo', TRUE, '1991-09-25'),
-    ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14','Amad Diallo', FALSE, '2002-07-11'),
-    ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14','Franck Kessié', FALSE, '1996-12-19'),
-    ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14','Yahia Fofana', TRUE, '2000-08-21'),
-    ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15','Luka Modrić', FALSE, '1985-09-09'),
-    ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15','Joško Gvardiol', FALSE, '2002-01-21'),
-    ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15','Dominik Livaković', TRUE, '1995-01-09'),
-    ('b7e3c1a5-2f9d-4a6c-8e1b-3d7a5c2f9e16','Tahith Chong', FALSE, '1999-12-04'),
-    ('b7e3c1a5-2f9d-4a6c-8e1b-3d7a5c2f9e16','Leandro Bacuna', FALSE, '1991-08-21'),
-    ('b7e3c1a5-2f9d-4a6c-8e1b-3d7a5c2f9e16','Eloy Room', TRUE, '1989-02-06'),
-    ('c1a5e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b17','Moisés Caicedo', FALSE, '2001-11-02'),
-    ('c1a5e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b17','Willian Pacho', FALSE, '2001-11-16'),
-    ('c1a5e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b17','Hernán Galíndez', TRUE, '1987-03-30'),
-    ('d5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18','Mohamed Salah', FALSE, '1992-06-15'),
-    ('d5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18','Omar Marmoush', FALSE, '1999-02-07'),
-    ('d5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18','Mohamed El-Shenawy', TRUE, '1988-12-18'),
-    ('e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19','Scott McTominay', FALSE, '1992-12-08'),
-    ('e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19','Andrew Robertson', FALSE, '1994-03-11'),
-    ('e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19','Angus Gunn', TRUE, '1996-01-22'),
-    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20','Lamine Yamal', FALSE, '2007-07-13'),
-    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20','Pedri', FALSE, '2002-11-25'),
-    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20','Pau Cubarsí', FALSE, '2007-01-22'),
-    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20','David Raya', TRUE, '1995-09-15'),
-    ('a9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b21','Christian Pulisic', FALSE, '1998-09-18'),
-    ('a9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b21','Weston McKennie', FALSE, '1998-08-28'),
-    ('a9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b21','Matt Turner', TRUE, '1994-06-24'),
-    ('b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22','Kylian Mbappé', FALSE, '1998-12-20'),
-    ('b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22','Désiré Doué', FALSE, '2005-06-03'),
-    ('b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22','Ousmane Dembelé', FALSE, '1997-05-15'),
-    ('b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22','Warren Zaïre-Emery', FALSE, '2006-03-08'),
-    ('b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22','Mike Maignan', TRUE, '1995-07-03'),
-    ('c9e3a1b5-5f2d-4c8a-9e6b-1a2f3d7c5b23','Antoine Semenyo', FALSE, '2000-01-07'),
-    ('c9e3a1b5-5f2d-4c8a-9e6b-1a2f3d7c5b23','Iñaki Williams', FALSE, '1994-06-15'),
-    ('c9e3a1b5-5f2d-4c8a-9e6b-1a2f3d7c5b23','Benjamin Asare', TRUE, '1992-07-13'),
-    ('d1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24','Duckens Nazon', FALSE, '1994-04-07'),
-    ('d1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24','Wilson Isidor', FALSE, '2000-08-27'),
-    ('d1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24','Johnny Placide', TRUE, '1988-01-29'),
-    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25','Harry Kane', FALSE, '1993-07-28'),
-    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25','Jude Bellingham', FALSE, '2003-06-29'),
-    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25','Kobbie Mainoo', FALSE, '2005-04-19'),
-    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25','Jordan Pickford', TRUE, '1994-03-07'),
-    ('f3a1c5e7-2f9d-4a6c-8e1b-3d7a5c2f9e26','Mehdi Taremi', FALSE, '1992-07-18'),
-    ('f3a1c5e7-2f9d-4a6c-8e1b-3d7a5c2f9e26','Sardar Azmoun', FALSE, '1995-01-01'),
-    ('f3a1c5e7-2f9d-4a6c-8e1b-3d7a5c2f9e26','Alireza Beiranvand', TRUE, '1992-09-21'),
-    ('a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27','Kaoru Mitoma', FALSE, '1997-05-20'),
-    ('a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27','Ayase Ueda', FALSE, '1998-08-28'),
-    ('a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27','Zion Suzuki', TRUE, '2002-08-21'),
-    ('b5e1c7a3-2f9d-4a6c-8e1b-3d7a5c2f9e28','Yazan Al-Naimat', FALSE, '1999-06-04'),
-    ('b5e1c7a3-2f9d-4a6c-8e1b-3d7a5c2f9e28','Ali Olwan', FALSE, '2000-03-26'),
-    ('b5e1c7a3-2f9d-4a6c-8e1b-3d7a5c2f9e28','Yazeed Abdulaila', TRUE, '1993-01-08'),
-    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29','Achraf Hakimi', FALSE, '1998-11-04'),
-    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29','Brahim Díaz', FALSE, '1999-08-03'),
-    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29','Yassine Bounou', TRUE, '1991-04-05'),
-    ('d3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30','Gilberto Mora', FALSE, '2008-10-14'),
-    ('d3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30','Raúl Giménez', FALSE, '1991-05-05'),
-    ('d3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30','Guillermo Ochoa', TRUE, '1985-07-13'),
-    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31','Erling Haaland', FALSE, '2000-07-21'),
-    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31','Martin Ødegaard', FALSE, '1998-12-17'),
-    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31','Alexander Sørloth', FALSE, '1995-12-05'),
-    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31','Ørjan Nyland', TRUE, '1990-09-10'),
-    ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32','Chris Wood', FALSE, '1991-12-07'),
-    ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32','Sarpreet Singh', FALSE, '1999-02-20'),
-    ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32','Alex Paulsen', TRUE, '2002-07-04'),
-    ('a1e7c3b5-9d2f-4c8a-9e6b-2f3a1c7d5b33','Virgin van Dijk', FALSE, '1991-07-08'),
-    ('a1e7c3b5-9d2f-4c8a-9e6b-2f3a1c7d5b33','Memphis Depay', FALSE, '1994-02-13'),
-    ('a1e7c3b5-9d2f-4c8a-9e6b-2f3a1c7d5b33','Jeremie Frimpong', FALSE, '2000-12-10'),
-    ('a1e7c3b5-9d2f-4c8a-9e6b-2f3a1c7d5b33','Bart Verbruggen', TRUE, '2002-08-18'),
-    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34','Fidel Escobar', FALSE, '1995-01-09'),
-    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34','Michael Murillo', FALSE, '1996-02-11'),
-    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34','Orlando Mosquera', TRUE, '1994-12-25'),
-    ('c5e1a7b3-9d2f-4c8a-9e6b-2f3a1c7d5b35','Julio Enciso', FALSE, '2004-01-23'),
-    ('c5e1a7b3-9d2f-4c8a-9e6b-2f3a1c7d5b35','Miguel Almirón', FALSE, '1994-02-10'),
-    ('c5e1a7b3-9d2f-4c8a-9e6b-2f3a1c7d5b35','Orlando Gill', TRUE, '2000-06-11'),
-    ('d7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36','Cristiano Ronaldo', FALSE, '1985-02-05'),
-    ('d7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36','Vitinha', FALSE, '2000-02-13'),
-    ('d7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36','Diogo Costa', TRUE, '1999-09-19'),
-    ('e3c1a7b5-9d2f-4c8a-9e6b-2f3a1c7d5b37','Sadio Mané', FALSE, '1992-04-10'),
-    ('e3c1a7b5-9d2f-4c8a-9e6b-2f3a1c7d5b37','Pape Gueye', FALSE, '1999-01-24'),
-    ('e3c1a7b5-9d2f-4c8a-9e6b-2f3a1c7d5b37','Édouard Mendy', TRUE, '1992-03-01'),
-    ('f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38','Lyle Foster', FALSE, '2000-09-03'),
-    ('f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38','Mbekezeli Mbokazi', FALSE, '2005-09-19'),
-    ('f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38','Ronwen Williams', TRUE, '1992-01-21'),
-    ('a3c1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b39','Granit Xhaka', FALSE, '1992-09-27'),
-    ('a3c1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b39','Breel Embolo', FALSE, '1997-02-14'),
-    ('a3c1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b39','Gregor Kobel', TRUE, '1997-12-06'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40','Hannibal Mejbri', FALSE, '2003-01-21'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40','Ismaël Gharbi', FALSE, '2004-04-10'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40','Noureddine Farhati', TRUE, '2000-09-14'),
-    ('c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41','Federico Valverde', FALSE, '1998-07-22'),
-    ('c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41','Ronald Araújo', FALSE, '1999-03-07'),
-    ('c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41','Sergio Rochet', TRUE, '1993-03-23'),
-    ('d9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42','Eldor Shomurodov', FALSE, '1995-06-29'),
-    ('d9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42','Rustam Ashurmatov', FALSE, '1996-07-07'),
-    ('d9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42','Botirali Ergashev', TRUE, '1988-03-19'),
-    ('8f251495-81ba-4724-b575-f7ebecf213c4','Chancel Mbemba', FALSE, '1994-08-08'),
-    ('8f251495-81ba-4724-b575-f7ebecf213c4','Cédric Bakambu', FALSE, '1991-04-11'),
-    ('8f251495-81ba-4724-b575-f7ebecf213c4','Lionel Mpasi-Nzau', TRUE, '1994-08-01'),
-    ('da0e5c75-ba1c-4090-bbba-ad57d0e3b153','Aymen Hussein', FALSE, '1996-03-22'),
-    ('da0e5c75-ba1c-4090-bbba-ad57d0e3b153','Zidane Iqbal', FALSE, '2003-04-27'),
-    ('da0e5c75-ba1c-4090-bbba-ad57d0e3b153','Jalal Hassan', TRUE, '1991-05-18'),
-    ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1','Edin Džeko', FALSE, '1986-03-17'),
-    ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1','Esmir Bajraktarevic', FALSE, '2005-03-10'),
-    ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1','Nikola Vasilj', TRUE, '1995-12-02'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac','Viktor Gyökeres', FALSE, '1998-06-04'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac','Roony Bardghji', FALSE, '2005-11-15'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac','Kristoffer Nordfeldt', TRUE, '1989-06-23'),
-    ('07782a28-4f6d-4037-86b8-ccff4c2de218','Arda Güler', FALSE, '2005-02-25'),
-    ('07782a28-4f6d-4037-86b8-ccff4c2de218','Kenan Yıldız', FALSE, '2005-05-04'),
-    ('07782a28-4f6d-4037-86b8-ccff4c2de218','Uğurcan Çakır', TRUE, '1996-04-05'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4','Patrik Schick', FALSE, '1996-01-24'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4','Tomáš Souček', FALSE, '1995-02-27'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4','Vítězslav Jaroš', TRUE, '2001-07-23')
+INSERT INTO players (team_id, name, position, birthdate) VALUES
+    ('6f1c5f6e-9c9e-4f3b-8d8e-2b5e2a6a1c01','Joshua Kimmich', 'FORWARD', '1995-02-08'),
+    ('6f1c5f6e-9c9e-4f3b-8d8e-2b5e2a6a1c01','Florian Wirtz', 'FORWARD', '2003-05-03'),
+    ('6f1c5f6e-9c9e-4f3b-8d8e-2b5e2a6a1c01','Manuel Newer', 'GOALKEEPER', '1986-03-27'),
+    ('b2c9c3e7-7f7e-4a5a-9f2b-3c1d9a4e8b02','Salem Al-Dawsari', 'FORWARD', '1991-08-19'),
+    ('b2c9c3e7-7f7e-4a5a-9f2b-3c1d9a4e8b02','Ali Lajami', 'GOALKEEPER', '1996-04-24'),
+    ('b2c9c3e7-7f7e-4a5a-9f2b-3c1d9a4e8b02','Mohammed Al-Owais', 'FORWARD', '1991-10-10'),
+    ('1a4d2b6c-5e7f-4c8a-9d1e-6b3f2a7c9d03','Riyad Mahrez', 'FORWARD', '1991-02-25'),
+    ('1a4d2b6c-5e7f-4c8a-9d1e-6b3f2a7c9d03','Anis Hadj Moussa', 'FORWARD', '2002-02-11'),
+    ('1a4d2b6c-5e7f-4c8a-9d1e-6b3f2a7c9d03','Anthony Mandréa', 'GOALKEEPER', '1996-12-25'),
+    ('9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04','Lionel Messi', 'FORWARD', '1987-06-21'),
+    ('9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04','Julián Álvarez', 'FORWARD', '2000-01-31'),
+    ('9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04','Alexis Mac Allister', 'FORWARD', '1998-12-24'),
+    ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07','Franco Mastantuono', 'FORWARD', '2007-08-14'),
+    ('9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04','Emiliano Martínez', 'GOALKEEPER', '1992-09-02'),
+    ('9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04','Juan Musso', 'GOALKEEPER', '1994-05-06'),
+    ('3e7b1c9d-6f2a-4d8c-8b1e-5c9a2f7d3b05','Riley McGree', 'FORWARD', '1998-11-02'),
+    ('3e7b1c9d-6f2a-4d8c-8b1e-5c9a2f7d3b05','Ajdin Hrustic', 'FORWARD', '1996-07-05'),
+    ('3e7b1c9d-6f2a-4d8c-8b1e-5c9a2f7d3b05','Mathew Ryan', 'GOALKEEPER', '1992-04-08'),
+    ('7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06','David Alaba', 'FORWARD', '1992-06-24'),
+    ('7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06','Konrad Laimer', 'FORWARD', '1997-05-27'),
+    ('7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06','Alexander Schlager', 'GOALKEEPER', '1996-02-01'),
+    ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07','Vinicius Jr', 'FORWARD', '2000-07-12'),
+    ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07','Raphinha', 'FORWARD', '1996-12-14'),
+    ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07','Endrick', 'FORWARD', '2006-07-11'),
+    ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07','Estevão', 'FORWARD', '2007-04-24'),
+    ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07','Alisson Becker', 'GOALKEEPER', '1992-10-02'),
+    ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07','Ederson', 'GOALKEEPER', '1993-08-17'),
+    ('8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08','Kevin de Bruyne', 'FORWARD', '1991-06-28'),
+    ('8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08','Jeremy Doku', 'FORWARD', '2002-05-27'),
+    ('8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08','Thibaut Courtois', 'GOALKEEPER', '1992-05-11'),
+    ('4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09','Ryan Mendes', 'FORWARD', '1990-01-08'),
+    ('4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09','Jovane Cabral', 'FORWARD', '1998-06-14'),
+    ('4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09','Vozinha', 'GOALKEEPER', '1986-06-03'),
+    ('5a1c9e3b-7d2f-4a6c-8b9e-2f3d7a1c4b10','Alphonso Davies', 'FORWARD', '2000-11-02'),
+    ('5a1c9e3b-7d2f-4a6c-8b9e-2f3d7a1c4b10','Jonathan David', 'FORWARD', '2000-01-14'),
+    ('5a1c9e3b-7d2f-4a6c-8b9e-2f3d7a1c4b10','Maxime Crépeau', 'GOALKEEPER', '1994-05-11'),
+    ('c3e7b1a9-5f2d-4c8a-9e6b-1a2f3d7c5b11','Akram Afif', 'FORWARD', '1996-11-18'),
+    ('c3e7b1a9-5f2d-4c8a-9e6b-1a2f3d7c5b11','Almoez Ali', 'FORWARD', '1996-08-19'),
+    ('c3e7b1a9-5f2d-4c8a-9e6b-1a2f3d7c5b11','Meshaal Barsham', 'GOALKEEPER', '1998-02-14'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12','Luis Díaz', 'FORWARD', '1997-01-13'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12','James Rodríguez', 'FORWARD', '1991-07-12'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12','David Ospina', 'GOALKEEPER', '1988-08-31'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13','Son Heung-Min', 'FORWARD', '1992-07-08'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13','Lee Kang-in', 'FORWARD', '2001-02-19'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13','Jo Hyeon-woo', 'GOALKEEPER', '1991-09-25'),
+    ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14','Amad Diallo', 'FORWARD', '2002-07-11'),
+    ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14','Franck Kessié', 'FORWARD', '1996-12-19'),
+    ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14','Yahia Fofana', 'GOALKEEPER', '2000-08-21'),
+    ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15','Luka Modrić', 'FORWARD', '1985-09-09'),
+    ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15','Joško Gvardiol', 'FORWARD', '2002-01-21'),
+    ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15','Dominik Livaković', 'GOALKEEPER', '1995-01-09'),
+    ('b7e3c1a5-2f9d-4a6c-8e1b-3d7a5c2f9e16','Tahith Chong', 'FORWARD', '1999-12-04'),
+    ('b7e3c1a5-2f9d-4a6c-8e1b-3d7a5c2f9e16','Leandro Bacuna', 'FORWARD', '1991-08-21'),
+    ('b7e3c1a5-2f9d-4a6c-8e1b-3d7a5c2f9e16','Eloy Room', 'GOALKEEPER', '1989-02-06'),
+    ('c1a5e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b17','Moisés Caicedo', 'FORWARD', '2001-11-02'),
+    ('c1a5e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b17','Willian Pacho', 'FORWARD', '2001-11-16'),
+    ('c1a5e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b17','Hernán Galíndez', 'GOALKEEPER', '1987-03-30'),
+    ('d5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18','Mohamed Salah', 'FORWARD', '1992-06-15'),
+    ('d5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18','Omar Marmoush', 'FORWARD', '1999-02-07'),
+    ('d5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18','Mohamed El-Shenawy', 'GOALKEEPER', '1988-12-18'),
+    ('e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19','Scott McTominay', 'FORWARD', '1992-12-08'),
+    ('e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19','Andrew Robertson', 'FORWARD', '1994-03-11'),
+    ('e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19','Angus Gunn', 'GOALKEEPER', '1996-01-22'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20','Lamine Yamal', 'FORWARD', '2007-07-13'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20','Pedri', 'FORWARD', '2002-11-25'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20','Pau Cubarsí', 'FORWARD', '2007-01-22'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20','David Raya', 'GOALKEEPER', '1995-09-15'),
+    ('a9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b21','Christian Pulisic', 'FORWARD', '1998-09-18'),
+    ('a9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b21','Weston McKennie', 'FORWARD', '1998-08-28'),
+    ('a9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b21','Matt Turner', 'GOALKEEPER', '1994-06-24'),
+    ('b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22','Kylian Mbappé', 'FORWARD', '1998-12-20'),
+    ('b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22','Désiré Doué', 'FORWARD', '2005-06-03'),
+    ('b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22','Ousmane Dembelé', 'FORWARD', '1997-05-15'),
+    ('b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22','Warren Zaïre-Emery', 'FORWARD', '2006-03-08'),
+    ('b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22','Mike Maignan', 'GOALKEEPER', '1995-07-03'),
+    ('c9e3a1b5-5f2d-4c8a-9e6b-1a2f3d7c5b23','Antoine Semenyo', 'FORWARD', '2000-01-07'),
+    ('c9e3a1b5-5f2d-4c8a-9e6b-1a2f3d7c5b23','Iñaki Williams', 'FORWARD', '1994-06-15'),
+    ('c9e3a1b5-5f2d-4c8a-9e6b-1a2f3d7c5b23','Benjamin Asare', 'GOALKEEPER', '1992-07-13'),
+    ('d1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24','Duckens Nazon', 'FORWARD', '1994-04-07'),
+    ('d1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24','Wilson Isidor', 'FORWARD', '2000-08-27'),
+    ('d1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24','Johnny Placide', 'GOALKEEPER', '1988-01-29'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25','Harry Kane', 'FORWARD', '1993-07-28'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25','Jude Bellingham', 'FORWARD', '2003-06-29'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25','Kobbie Mainoo', 'FORWARD', '2005-04-19'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25','Jordan Pickford', 'GOALKEEPER', '1994-03-07'),
+    ('f3a1c5e7-2f9d-4a6c-8e1b-3d7a5c2f9e26','Mehdi Taremi', 'FORWARD', '1992-07-18'),
+    ('f3a1c5e7-2f9d-4a6c-8e1b-3d7a5c2f9e26','Sardar Azmoun', 'FORWARD', '1995-01-01'),
+    ('f3a1c5e7-2f9d-4a6c-8e1b-3d7a5c2f9e26','Alireza Beiranvand', 'GOALKEEPER', '1992-09-21'),
+    ('a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27','Kaoru Mitoma', 'FORWARD', '1997-05-20'),
+    ('a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27','Ayase Ueda', 'FORWARD', '1998-08-28'),
+    ('a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27','Zion Suzuki', 'GOALKEEPER', '2002-08-21'),
+    ('b5e1c7a3-2f9d-4a6c-8e1b-3d7a5c2f9e28','Yazan Al-Naimat', 'FORWARD', '1999-06-04'),
+    ('b5e1c7a3-2f9d-4a6c-8e1b-3d7a5c2f9e28','Ali Olwan', 'FORWARD', '2000-03-26'),
+    ('b5e1c7a3-2f9d-4a6c-8e1b-3d7a5c2f9e28','Yazeed Abdulaila', 'GOALKEEPER', '1993-01-08'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29','Achraf Hakimi', 'FORWARD', '1998-11-04'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29','Brahim Díaz', 'FORWARD', '1999-08-03'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29','Yassine Bounou', 'GOALKEEPER', '1991-04-05'),
+    ('d3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30','Gilberto Mora', 'FORWARD', '2008-10-14'),
+    ('d3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30','Raúl Giménez', 'FORWARD', '1991-05-05'),
+    ('d3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30','Guillermo Ochoa', 'GOALKEEPER', '1985-07-13'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31','Erling Haaland', 'FORWARD', '2000-07-21'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31','Martin Ødegaard', 'FORWARD', '1998-12-17'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31','Alexander Sørloth', 'FORWARD', '1995-12-05'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31','Ørjan Nyland', 'GOALKEEPER', '1990-09-10'),
+    ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32','Chris Wood', 'FORWARD', '1991-12-07'),
+    ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32','Sarpreet Singh', 'FORWARD', '1999-02-20'),
+    ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32','Alex Paulsen', 'GOALKEEPER', '2002-07-04'),
+    ('a1e7c3b5-9d2f-4c8a-9e6b-2f3a1c7d5b33','Virgin van Dijk', 'FORWARD', '1991-07-08'),
+    ('a1e7c3b5-9d2f-4c8a-9e6b-2f3a1c7d5b33','Memphis Depay', 'FORWARD', '1994-02-13'),
+    ('a1e7c3b5-9d2f-4c8a-9e6b-2f3a1c7d5b33','Jeremie Frimpong', 'FORWARD', '2000-12-10'),
+    ('a1e7c3b5-9d2f-4c8a-9e6b-2f3a1c7d5b33','Bart Verbruggen', 'GOALKEEPER', '2002-08-18'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34','Fidel Escobar', 'FORWARD', '1995-01-09'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34','Michael Murillo', 'FORWARD', '1996-02-11'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34','Orlando Mosquera', 'GOALKEEPER', '1994-12-25'),
+    ('c5e1a7b3-9d2f-4c8a-9e6b-2f3a1c7d5b35','Julio Enciso', 'FORWARD', '2004-01-23'),
+    ('c5e1a7b3-9d2f-4c8a-9e6b-2f3a1c7d5b35','Miguel Almirón', 'FORWARD', '1994-02-10'),
+    ('c5e1a7b3-9d2f-4c8a-9e6b-2f3a1c7d5b35','Orlando Gill', 'GOALKEEPER', '2000-06-11'),
+    ('d7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36','Cristiano Ronaldo', 'FORWARD', '1985-02-05'),
+    ('d7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36','Vitinha', 'FORWARD', '2000-02-13'),
+    ('d7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36','Diogo Costa', 'GOALKEEPER', '1999-09-19'),
+    ('e3c1a7b5-9d2f-4c8a-9e6b-2f3a1c7d5b37','Sadio Mané', 'FORWARD', '1992-04-10'),
+    ('e3c1a7b5-9d2f-4c8a-9e6b-2f3a1c7d5b37','Pape Gueye', 'FORWARD', '1999-01-24'),
+    ('e3c1a7b5-9d2f-4c8a-9e6b-2f3a1c7d5b37','Édouard Mendy', 'GOALKEEPER', '1992-03-01'),
+    ('f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38','Lyle Foster', 'FORWARD', '2000-09-03'),
+    ('f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38','Mbekezeli Mbokazi', 'FORWARD', '2005-09-19'),
+    ('f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38','Ronwen Williams', 'GOALKEEPER', '1992-01-21'),
+    ('a3c1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b39','Granit Xhaka', 'FORWARD', '1992-09-27'),
+    ('a3c1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b39','Breel Embolo', 'FORWARD', '1997-02-14'),
+    ('a3c1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b39','Gregor Kobel', 'GOALKEEPER', '1997-12-06'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40','Hannibal Mejbri', 'FORWARD', '2003-01-21'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40','Ismaël Gharbi', 'FORWARD', '2004-04-10'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40','Noureddine Farhati', 'GOALKEEPER', '2000-09-14'),
+    ('c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41','Federico Valverde', 'FORWARD', '1998-07-22'),
+    ('c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41','Ronald Araújo', 'FORWARD', '1999-03-07'),
+    ('c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41','Sergio Rochet', 'GOALKEEPER', '1993-03-23'),
+    ('d9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42','Eldor Shomurodov', 'FORWARD', '1995-06-29'),
+    ('d9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42','Rustam Ashurmatov', 'FORWARD', '1996-07-07'),
+    ('d9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42','Botirali Ergashev', 'GOALKEEPER', '1988-03-19'),
+    ('8f251495-81ba-4724-b575-f7ebecf213c4','Chancel Mbemba', 'FORWARD', '1994-08-08'),
+    ('8f251495-81ba-4724-b575-f7ebecf213c4','Cédric Bakambu', 'FORWARD', '1991-04-11'),
+    ('8f251495-81ba-4724-b575-f7ebecf213c4','Lionel Mpasi-Nzau', 'GOALKEEPER', '1994-08-01'),
+    ('da0e5c75-ba1c-4090-bbba-ad57d0e3b153','Aymen Hussein', 'FORWARD', '1996-03-22'),
+    ('da0e5c75-ba1c-4090-bbba-ad57d0e3b153','Zidane Iqbal', 'FORWARD', '2003-04-27'),
+    ('da0e5c75-ba1c-4090-bbba-ad57d0e3b153','Jalal Hassan', 'GOALKEEPER', '1991-05-18'),
+    ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1','Edin Džeko', 'FORWARD', '1986-03-17'),
+    ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1','Esmir Bajraktarevic', 'FORWARD', '2005-03-10'),
+    ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1','Nikola Vasilj', 'GOALKEEPER', '1995-12-02'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac','Viktor Gyökeres', 'FORWARD', '1998-06-04'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac','Roony Bardghji', 'FORWARD', '2005-11-15'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac','Kristoffer Nordfeldt', 'GOALKEEPER', '1989-06-23'),
+    ('07782a28-4f6d-4037-86b8-ccff4c2de218','Arda Güler', 'FORWARD', '2005-02-25'),
+    ('07782a28-4f6d-4037-86b8-ccff4c2de218','Kenan Yıldız', 'FORWARD', '2005-05-04'),
+    ('07782a28-4f6d-4037-86b8-ccff4c2de218','Uğurcan Çakır', 'GOALKEEPER', '1996-04-05'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4','Patrik Schick', 'FORWARD', '1996-01-24'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4','Tomáš Souček', 'FORWARD', '1995-02-27'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4','Vítězslav Jaroš', 'GOALKEEPER', '2001-07-23')
 ON CONFLICT (id) DO NOTHING;
 
 -- Create matches table
@@ -459,8 +462,7 @@ CREATE TABLE IF NOT EXISTS matches (
     away_penalties INT DEFAULT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP DEFAULT NULL,
-    CONSTRAINT uq_matches UNIQUE (id)
+    deleted_at TIMESTAMP DEFAULT NULL
 );
 
 -- Create indexes for uniqueness and better query performance
@@ -578,8 +580,8 @@ ON CONFLICT (id) DO NOTHING;
 -- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '3 days 0 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='10';
 -- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '3 days 2 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='12';
 
--- Create predictions table
-CREATE TABLE IF NOT EXISTS predictions (
+-- Create matches-predictions table
+CREATE TABLE IF NOT EXISTS match_predictions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
@@ -589,42 +591,41 @@ CREATE TABLE IF NOT EXISTS predictions (
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP DEFAULT NULL,
-    CONSTRAINT uq_predictions UNIQUE (id)
+    deleted_at TIMESTAMP DEFAULT NULL
 );
 
 -- Create indexes for uniqueness and better query performance
-CREATE UNIQUE INDEX IF NOT EXISTS idx_predictions_uniqueness ON predictions(user_id, group_id, match_id) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_match_predictions_uniqueness ON match_predictions(user_id, group_id, match_id) WHERE deleted_at IS NULL;
 
 -- Add comments to table and columns
-COMMENT ON TABLE predictions IS 'Matches predictions table';
-COMMENT ON COLUMN predictions.id IS 'Unique identifier for the match';
-COMMENT ON COLUMN predictions.user_id IS 'Reference to the user';
-COMMENT ON COLUMN predictions.group_id IS 'Reference to the group';
-COMMENT ON COLUMN predictions.match_id IS 'Reference to the match';
-COMMENT ON COLUMN predictions.home_goals IS 'The home goals predicted';
-COMMENT ON COLUMN predictions.away_goals IS 'The away goals predicted';
-COMMENT ON COLUMN predictions.status IS 'Status of the prediction (can be either CORRECT, PARTIAL, INCORRECT or PENDING)';
-COMMENT ON COLUMN predictions.created_at IS 'Timestamp when the prediction was created';
-COMMENT ON COLUMN predictions.updated_at IS 'Timestamp when the prediction was updated';
-COMMENT ON COLUMN predictions.deleted_at IS 'Timestamp when the prediction was deleted';
+COMMENT ON TABLE match_predictions IS 'Matches predictions table';
+COMMENT ON COLUMN match_predictions.id IS 'Unique identifier for the match';
+COMMENT ON COLUMN match_predictions.user_id IS 'Reference to the user';
+COMMENT ON COLUMN match_predictions.group_id IS 'Reference to the group';
+COMMENT ON COLUMN match_predictions.match_id IS 'Reference to the match';
+COMMENT ON COLUMN match_predictions.home_goals IS 'The home goals predicted';
+COMMENT ON COLUMN match_predictions.away_goals IS 'The away goals predicted';
+COMMENT ON COLUMN match_predictions.status IS 'Status of the prediction (can be either CORRECT, PARTIAL, INCORRECT or PENDING)';
+COMMENT ON COLUMN match_predictions.created_at IS 'Timestamp when the prediction was created';
+COMMENT ON COLUMN match_predictions.updated_at IS 'Timestamp when the prediction was updated';
+COMMENT ON COLUMN match_predictions.deleted_at IS 'Timestamp when the prediction was deleted';
 
 -- Adding testing predictions
-INSERT INTO predictions (user_id, group_id, match_id, home_goals, away_goals, status)
+INSERT INTO match_predictions (user_id, group_id, match_id, home_goals, away_goals, status)
 SELECT gu.user_id, gu.group_id, m.id, floor(random()*5)::int, floor(random()*5)::int, 'PENDING'
 FROM group_users gu
 JOIN matches m ON m.code::int BETWEEN 1 AND 12;
 
-UPDATE predictions
+UPDATE match_predictions
 SET home_goals=2, away_goals=1
 WHERE user_id='c97ec073-c40c-4094-9f9e-b07074188936' AND match_id='6a7c9c74-9a3d-4b9e-9a45-0a5dce3a8f3a';
 
-UPDATE predictions
+UPDATE match_predictions
 SET home_goals=5, away_goals=0
 WHERE user_id='c97ec073-c40c-4094-9f9e-b07074188936' AND match_id='0c3d4b9f-cc8b-4c6f-8a54-0c1d9f3c3c41';
 
--- Set testing predictions' status.
--- UPDATE predictions p
+-- Set testing match predictions' status.
+-- UPDATE match_predictions p
 -- SET status = CASE
 --     WHEN m.status <> 'FINISHED' THEN 'PENDING'
 --     WHEN m.home_goals = p.home_goals AND m.away_goals = p.away_goals THEN 'CORRECT'
@@ -635,3 +636,30 @@ WHERE user_id='c97ec073-c40c-4094-9f9e-b07074188936' AND match_id='0c3d4b9f-cc8b
 -- END
 -- FROM matches m
 -- WHERE m.id = p.match_id;
+
+-- Create awards-predictions table
+CREATE TABLE IF NOT EXISTS award_predictions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+    award_type VARCHAR(20) NOT NULL,
+    awarded_team_id UUID NULL REFERENCES teams(id) ON DELETE CASCADE,
+    awarded_player_id UUID NULL REFERENCES players(id) ON DELETE CASCADE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP DEFAULT NULL
+);
+
+-- Create indexes for uniqueness and better query performance
+CREATE UNIQUE INDEX IF NOT EXISTS idx_award_predictions_uniqueness ON award_predictions(user_id, award_type, awarded_team_id, awarded_player_id) WHERE deleted_at IS NULL;
+
+-- Add comments to table and columns
+COMMENT ON TABLE award_predictions IS 'Awards predictions table';
+COMMENT ON COLUMN award_predictions.id IS 'Unique identifier for the match';
+COMMENT ON COLUMN award_predictions.user_id IS 'Reference to the user';
+COMMENT ON COLUMN award_predictions.award_type IS 'Type of the award, depending on the tournament';
+COMMENT ON COLUMN award_predictions.awarded_team_id IS 'Reference to the team awarded (optional)';
+COMMENT ON COLUMN award_predictions.awarded_player_id IS 'Reference to the player awarded (optional)';
+COMMENT ON COLUMN award_predictions.created_at IS 'Timestamp when the prediction was created';
+COMMENT ON COLUMN award_predictions.updated_at IS 'Timestamp when the prediction was updated';
+COMMENT ON COLUMN award_predictions.deleted_at IS 'Timestamp when the prediction was deleted';

@@ -13,10 +13,10 @@ enum class PredictionStatus {
 }
 
 @Entity
-@Table(name = "predictions")
-@SQLDelete(sql = "UPDATE predictions SET deleted_at = CURRENT_TIMESTAMP WHERE id=?")
+@Table(name = "match_predictions")
+@SQLDelete(sql = "UPDATE match_predictions SET deleted_at = CURRENT_TIMESTAMP WHERE id=?")
 @SQLRestriction("deleted_at is null")
-data class Prediction(
+data class MatchPrediction(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     val id: UUID? = null,
@@ -63,5 +63,43 @@ data class PredictionView(
     val user: User,
     val rank: Int?,
     val match: Match,
-    val prediction: Prediction?,
+    val prediction: MatchPrediction?,
+)
+
+enum class AwardType {
+    CHAMPION, TOP_SCORER, BEST_PLAYER, BEST_GOALKEEPER, BEST_YOUNG_PLAYER
+}
+
+@Entity
+@Table(name = "award_predictions")
+@SQLDelete(sql = "UPDATE award_predictions SET deleted_at = CURRENT_TIMESTAMP WHERE id=?")
+@SQLRestriction("deleted_at is null")
+data class AwardPrediction(
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    val id: UUID? = null,
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "user_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    val user: User,
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "group_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    val group: Group,
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    val awardType: AwardType,
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "awarded_team_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    val team: Team? = null,
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "awarded_player_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    val player: Player? = null,
 )

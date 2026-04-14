@@ -4,24 +4,20 @@ import com.grondona.exception.BadRequestException
 import com.grondona.exception.ForbiddenException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.Group
-import com.grondona.model.GroupRole
-import com.grondona.model.GroupUser
 import com.grondona.model.Match
 import com.grondona.model.MatchStatus
-import com.grondona.model.Prediction
-import com.grondona.model.PredictionStatus
+import com.grondona.model.MatchPrediction
 import com.grondona.model.PredictionView
-import com.grondona.model.Standing
 import com.grondona.model.Team
 import com.grondona.model.Tournament
 import com.grondona.model.TournamentStatus
 import com.grondona.model.User
-import com.grondona.model.dto.request.SubmitBulkPredictionsRequest
-import com.grondona.model.dto.request.SubmitPredictionRequest
+import com.grondona.model.dto.request.SubmitBulkMatchPredictionsRequest
+import com.grondona.model.dto.request.SubmitMatchPredictionRequest
 import com.grondona.repository.GroupRepository
 import com.grondona.repository.MatchRepository
 import com.grondona.repository.MembershipRepository
-import com.grondona.repository.PredictionRepository
+import com.grondona.repository.MatchPredictionRepository
 import com.grondona.repository.UserRepository
 import com.grondona.utils.WorldCupEngine
 import io.mockk.*
@@ -50,7 +46,7 @@ class PredictionServiceTest {
     private lateinit var membershipRepository: MembershipRepository
 
     @MockK
-    private lateinit var predictionRepository: PredictionRepository
+    private lateinit var predictionRepository: MatchPredictionRepository
 
     @InjectMockKs
     private lateinit var predictionService: PredictionService
@@ -117,7 +113,7 @@ class PredictionServiceTest {
         startedAt = LocalDateTime.now().minusHours(2)
     )
 
-    private val testPrediction = Prediction(
+    private val testPrediction = MatchPrediction(
         id = UUID.randomUUID(),
         user = testUser,
         group = testGroup,
@@ -167,7 +163,7 @@ class PredictionServiceTest {
     @Nested
     inner class SubmitPredictionTests {
 
-        private val request = SubmitPredictionRequest(matchId = testMatchId, homeGoals = 2, awayGoals = 1)
+        private val request = SubmitMatchPredictionRequest(matchId = testMatchId, homeGoals = 2, awayGoals = 1)
 
         @Test
         fun `submitPrediction should succeed for an open match`() {
@@ -256,10 +252,10 @@ class PredictionServiceTest {
 
         @Test
         fun `submitBulkPredictions should submit all open matches`() {
-            val request = SubmitBulkPredictionsRequest(
+            val request = SubmitBulkMatchPredictionsRequest(
                 predictions = listOf(
-                    SubmitPredictionRequest(matchId = testMatchId, homeGoals = 1, awayGoals = 0),
-                    SubmitPredictionRequest(matchId = matchId2, homeGoals = 2, awayGoals = 2)
+                    SubmitMatchPredictionRequest(matchId = testMatchId, homeGoals = 1, awayGoals = 0),
+                    SubmitMatchPredictionRequest(matchId = matchId2, homeGoals = 2, awayGoals = 2)
                 )
             )
             val savedPredictions = listOf(testPrediction, testPrediction.copy(match = openMatch2))
@@ -280,10 +276,10 @@ class PredictionServiceTest {
 
         @Test
         fun `submitBulkPredictions should silently skip locked matches`() {
-            val request = SubmitBulkPredictionsRequest(
+            val request = SubmitBulkMatchPredictionsRequest(
                 predictions = listOf(
-                    SubmitPredictionRequest(matchId = testMatchId, homeGoals = 1, awayGoals = 0),
-                    SubmitPredictionRequest(matchId = matchId2, homeGoals = 0, awayGoals = 0)
+                    SubmitMatchPredictionRequest(matchId = testMatchId, homeGoals = 1, awayGoals = 0),
+                    SubmitMatchPredictionRequest(matchId = matchId2, homeGoals = 0, awayGoals = 0)
                 )
             )
 
@@ -302,8 +298,8 @@ class PredictionServiceTest {
 
         @Test
         fun `submitBulkPredictions should return empty when all matches are locked`() {
-            val request = SubmitBulkPredictionsRequest(
-                predictions = listOf(SubmitPredictionRequest(matchId = testMatchId, homeGoals = 1, awayGoals = 0))
+            val request = SubmitBulkMatchPredictionsRequest(
+                predictions = listOf(SubmitMatchPredictionRequest(matchId = testMatchId, homeGoals = 1, awayGoals = 0))
             )
 
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
@@ -319,8 +315,8 @@ class PredictionServiceTest {
 
         @Test
         fun `submitBulkPredictions should throw ForbiddenException when user is not a member`() {
-            val request = SubmitBulkPredictionsRequest(
-                predictions = listOf(SubmitPredictionRequest(matchId = testMatchId, homeGoals = 1, awayGoals = 0))
+            val request = SubmitBulkMatchPredictionsRequest(
+                predictions = listOf(SubmitMatchPredictionRequest(matchId = testMatchId, homeGoals = 1, awayGoals = 0))
             )
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
@@ -334,8 +330,8 @@ class PredictionServiceTest {
 
         @Test
         fun `submitBulkPredictions should throw NotFoundException when group not found`() {
-            val request = SubmitBulkPredictionsRequest(
-                predictions = listOf(SubmitPredictionRequest(matchId = testMatchId, homeGoals = 1, awayGoals = 0))
+            val request = SubmitBulkMatchPredictionsRequest(
+                predictions = listOf(SubmitMatchPredictionRequest(matchId = testMatchId, homeGoals = 1, awayGoals = 0))
             )
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
             every { groupRepository.findById(testGroupId) } returns Optional.empty()

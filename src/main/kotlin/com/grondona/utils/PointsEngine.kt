@@ -2,7 +2,7 @@ package com.grondona.utils
 
 import com.grondona.model.GroupUser
 import com.grondona.model.MatchOutcome
-import com.grondona.model.Prediction
+import com.grondona.model.MatchPrediction
 import com.grondona.model.PredictionStatus
 import org.slf4j.LoggerFactory
 import java.util.UUID
@@ -14,7 +14,7 @@ object PointsEngine {
     private const val POINTS_BONUS = 5
     private val logger = LoggerFactory.getLogger(PointsEngine::class.java)
 
-    fun updateStandings(members: List<GroupUser>, newPredictions: Map<UUID, List<Prediction?>>): List<GroupUser> =
+    fun updateStandings(members: List<GroupUser>, newPredictions: Map<UUID, List<MatchPrediction?>>): List<GroupUser> =
         members.map { member ->
             val matchesApplied: MutableSet<UUID> = mutableSetOf()
             newPredictions[member.user.id].orEmpty().also {
@@ -50,7 +50,7 @@ object PointsEngine {
                 .thenBy { it.joinedAt }
         ).mapIndexed { index, member -> member.rank = index + 1; member }
 
-    internal fun points(prediction: Prediction): Float {
+    internal fun points(prediction: MatchPrediction): Float {
         var points = 0f
         val matchScore = prediction.match.score()
         if (matchScore == null) {
