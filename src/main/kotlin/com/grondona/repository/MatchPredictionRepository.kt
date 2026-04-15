@@ -4,7 +4,7 @@ import com.grondona.model.Group
 import com.grondona.model.Match
 import com.grondona.model.MatchPrediction
 import com.grondona.model.PredictionStatus
-import com.grondona.model.PredictionView
+import com.grondona.model.MatchPredictionView
 import com.grondona.model.User
 import jakarta.persistence.EntityManager
 import org.springframework.data.jpa.repository.JpaRepository
@@ -35,7 +35,22 @@ interface MatchPredictionRepository : JpaRepository<MatchPrediction, UUID>, JpaS
 
     @Query(
         """
-        SELECT new com.grondona.model.PredictionView(p.id, gu.user, gu.rank, m, p)
+        SELECT new com.grondona.model.MatchPredictionView(p.id, gu.user, gu.rank, m, p)
+        FROM GroupUser gu
+        JOIN Match m ON m.tournament.id = gu.group.tournament.id
+        LEFT JOIN MatchPrediction p
+            ON p.user.id = gu.user.id
+            AND p.group.id = gu.group.id
+            AND p.match.id = m.id
+        WHERE gu.group.id = :groupId
+        ORDER BY CASE WHEN m.startedAt IS NULL THEN 1 ELSE 0 END, m.startedAt ASC
+    """
+    )
+    fun findGroupPredictions(groupId: UUID): List<MatchPredictionView>
+
+    @Query(
+        """
+        SELECT new com.grondona.model.MatchPredictionView(p.id, gu.user, gu.rank, m, p)
         FROM GroupUser gu
         JOIN Match m ON m.tournament.id = gu.group.tournament.id
         LEFT JOIN MatchPrediction p
@@ -46,11 +61,11 @@ interface MatchPredictionRepository : JpaRepository<MatchPrediction, UUID>, JpaS
         ORDER BY CASE WHEN m.startedAt IS NULL THEN 1 ELSE 0 END, m.startedAt ASC
     """
     )
-    fun findGroupPredictionsForUser(groupId: UUID, userId: UUID): List<PredictionView>
+    fun findGroupPredictionsForUser(groupId: UUID, userId: UUID): List<MatchPredictionView>
 
     @Query(
         """
-        SELECT new com.grondona.model.PredictionView(p.id, gu.user, gu.rank, m, p)
+        SELECT new com.grondona.model.MatchPredictionView(p.id, gu.user, gu.rank, m, p)
         FROM GroupUser gu
         JOIN Match m ON m.id = :matchId
         LEFT JOIN MatchPrediction p
@@ -61,7 +76,7 @@ interface MatchPredictionRepository : JpaRepository<MatchPrediction, UUID>, JpaS
         ORDER BY CASE WHEN gu.rank IS NULL THEN 1 ELSE 0 END, gu.rank ASC
     """
     )
-    fun findGroupPredictionsForMatch(groupId: UUID, matchId: UUID): List<PredictionView>
+    fun findGroupPredictionsForMatch(groupId: UUID, matchId: UUID): List<MatchPredictionView>
 
     fun findByStatusAndMatchIdIn(status: PredictionStatus, matchIds: List<UUID>): List<MatchPrediction>
 }

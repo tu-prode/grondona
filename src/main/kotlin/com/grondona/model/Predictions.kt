@@ -58,7 +58,7 @@ data class MatchPrediction(
     fun score() = Score(homeGoals, awayGoals)
 }
 
-data class PredictionView(
+data class MatchPredictionView(
     val id: UUID?,
     val user: User,
     val rank: Int?,
@@ -102,4 +102,10 @@ data class AwardPrediction(
     @JoinColumn(name = "awarded_player_id")
     @OnDelete(action = OnDeleteAction.CASCADE)
     val player: Player? = null,
+)
+
+data class AwardPredictionView(
+    val id: UUID?,
+    val user: User,
+    val awardPrediction: AwardPrediction?,
 )

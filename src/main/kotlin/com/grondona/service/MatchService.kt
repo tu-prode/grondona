@@ -6,9 +6,11 @@ import com.grondona.model.Match
 import com.grondona.model.MatchStatus
 import com.grondona.model.MatchPrediction
 import com.grondona.model.PredictionStatus
+import com.grondona.model.TournamentStatus
 import com.grondona.repository.MatchRepository
 import com.grondona.repository.MembershipRepository
 import com.grondona.repository.MatchPredictionRepository
+import com.grondona.repository.TournamentRepository
 import com.grondona.utils.PointsEngine
 import com.grondona.utils.WorldCupEngine
 import java.util.UUID
@@ -21,6 +23,7 @@ class MatchService(
     private val matchClient: MatchClient,
     private val matchRepository: MatchRepository,
     private val membershipRepository: MembershipRepository,
+    private val tournamentRepository: TournamentRepository,
     private val predictionRepository: MatchPredictionRepository,
 ) {
 
@@ -49,6 +52,19 @@ class MatchService(
             updatedMatches to statusUpdate
         }
         if (matchesToUpdate.isNotEmpty()) {
+            // TODO: Extract all this behavior to the WorldCupEngine
+            val tournament = tournamentRepository.findById(tournamentId).orElseThrow {
+                logger.error("Tournament={} not found in DB", tournamentId)
+                BadRequestException("Tournament not found")
+            }
+
+            // TODO: Use the WorldCupEngine.updateTournament()
+            if (tournament.status == TournamentStatus.NOT_STARTED) {
+                logger.info("Setting tournament={} as STARTED", tournamentId)
+                tournament.status = TournamentStatus.IN_PROGRESS
+                tournamentRepository.save(tournament)
+            }
+
             logger.debug("Matches to update in DB={}", matchesToUpdate.size)
             matchRepository.saveAll(matchesToUpdate)
         }

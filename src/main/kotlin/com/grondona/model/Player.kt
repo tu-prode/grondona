@@ -31,9 +31,6 @@ data class Player(
     @Column(nullable = false)
     val name: String,
 
-    @Column(name = "is_goalkeeper", nullable = false)
-    var isGoalkeeper: Boolean = false,
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     val position: PlayerPosition,

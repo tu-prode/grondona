@@ -1,6 +1,8 @@
 package com.grondona.repository
 
 import com.grondona.model.AwardPrediction
+import com.grondona.model.AwardPredictionView
+import com.grondona.model.MatchPredictionView
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.jpa.repository.Modifying
@@ -13,9 +15,20 @@ import java.util.UUID
 @Repository
 interface AwardPredictionRepository : JpaRepository<AwardPrediction, UUID>, JpaSpecificationExecutor<AwardPrediction> {
 
-    fun findByUserId(userId: UUID): List<AwardPrediction>
+    fun findByUserIdAndGroupId(userId: UUID, groupId: UUID): List<AwardPrediction>
 
-    fun findByGroupId(groupId: UUID): List<AwardPrediction>
+    @Query(
+        """
+        SELECT new com.grondona.model.AwardPredictionView(p.id, gu.user, p)
+        FROM GroupUser gu
+        LEFT JOIN AwardPrediction p
+            ON p.user.id = gu.user.id
+            AND p.group.id = gu.group.id
+        WHERE gu.group.id = :groupId
+        ORDER BY CASE WHEN gu.rank IS NULL THEN 1 ELSE 0 END, gu.rank ASC
+    """
+    )
+    fun findGroupAwardPredictions(groupId: UUID): List<AwardPredictionView>
 
     @Modifying
     @Transactional

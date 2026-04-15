@@ -25,8 +25,9 @@ data class ExternalMatch(
 
     fun toMatchUpdated(matches: List<Match>): Pair<Match, Boolean>? {
         var changedToFinished = false
-        val match = matches.filter { it.status != MatchStatus.FINISHED }
-            .firstOrNull { it.homeTeam.code == home && it.awayTeam.code == away }?.also {
+        val match = matches.takeIf { status != Status.TO_START.name }
+            ?.filter { it.status != MatchStatus.FINISHED }
+            ?.firstOrNull { it.homeTeam.code == home && it.awayTeam.code == away }?.also {
                 when (status) {
                     Status.IN_PLAY.name -> {
                         it.homeGoals = homeGoals
@@ -43,13 +44,13 @@ data class ExternalMatch(
                         }
                     }
 
-                    Status.IN_PLAY.name -> {
+                    Status.HALF_TIME.name -> {
                         it.homeGoals = homeGoals
                         it.awayGoals = awayGoals
                         it.homePenalties = awayPenalties
                         it.awayPenalties = awayPenalties
                         it.status = MatchStatus.IN_PROGRESS
-                        it.substatus = "ET"
+                        it.substatus = "ENTRETIEMPO"
                     }
 
                     Status.COMPLETED.name -> {
@@ -61,7 +62,7 @@ data class ExternalMatch(
                         it.homePenalties = homePenalties
                         it.awayPenalties = awayPenalties
                         it.status = MatchStatus.FINISHED
-                        it.substatus = "FT"
+                        it.substatus = "FINALIZADO"
                         it.finishedAt = it.finishedAt ?: endedAt ?: LocalDateTime.now()
                     }
                 }

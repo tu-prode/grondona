@@ -25,7 +25,7 @@ from datetime import date, datetime, timedelta
 stop = False
 active = True
 
-WORLD_CUP_COMPETITION_ID = "107"
+WORLD_CUP_COMPETITION_ID = "2173492"
 HOST = "0.0.0.0"
 PORT = 8085
 
@@ -33,6 +33,16 @@ TIME_LOCK = threading.Lock()
 current = datetime.now()
 checkpoint = None
 delta = 15 * 60
+
+import signal
+def handle_shutdown(signum):
+    global stop
+    print(f"Received signal {signum}, shutting down gracefully...")
+    stop = True
+
+# Handle Docker stop signals
+signal.signal(signal.SIGTERM, handle_shutdown)
+signal.signal(signal.SIGINT, handle_shutdown)
 
 MATCHES_LOCK = threading.Lock()
 MATCHES = [

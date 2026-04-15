@@ -7,7 +7,7 @@ import com.grondona.model.Group
 import com.grondona.model.Match
 import com.grondona.model.MatchStatus
 import com.grondona.model.MatchPrediction
-import com.grondona.model.PredictionView
+import com.grondona.model.MatchPredictionView
 import com.grondona.model.Team
 import com.grondona.model.Tournament
 import com.grondona.model.TournamentStatus
@@ -173,7 +173,7 @@ class PredictionServiceTest {
             every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchOpen)
             every { predictionRepository.upsert(any()) } returns testPrediction
 
-            val result = predictionService.submitPrediction(testUserId, testGroupId, request)
+            val result = predictionService.submitSingleMatchPrediction(testUserId, testGroupId, request)
 
             assertEquals(testUserId, result.user.id)
             assertEquals(testMatchId, result.match.id)
@@ -185,7 +185,7 @@ class PredictionServiceTest {
             every { userRepository.findById(testUserId) } returns Optional.empty()
 
             assertThrows<NotFoundException> {
-                predictionService.submitPrediction(testUserId, testGroupId, request)
+                predictionService.submitSingleMatchPrediction(testUserId, testGroupId, request)
             }
             verify(exactly = 0) { predictionRepository.upsert(any()) }
         }
@@ -196,7 +196,7 @@ class PredictionServiceTest {
             every { groupRepository.findById(testGroupId) } returns Optional.empty()
 
             assertThrows<NotFoundException> {
-                predictionService.submitPrediction(testUserId, testGroupId, request)
+                predictionService.submitSingleMatchPrediction(testUserId, testGroupId, request)
             }
             verify(exactly = 0) { predictionRepository.upsert(any()) }
         }
@@ -208,7 +208,7 @@ class PredictionServiceTest {
             every { membershipRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns false
 
             val exception = assertThrows<ForbiddenException> {
-                predictionService.submitPrediction(testUserId, testGroupId, request)
+                predictionService.submitSingleMatchPrediction(testUserId, testGroupId, request)
             }
             assertEquals("User doesn't belong to the group", exception.message)
             verify(exactly = 0) { predictionRepository.upsert(any()) }
@@ -222,7 +222,7 @@ class PredictionServiceTest {
             every { matchRepository.findById(testMatchId) } returns Optional.empty()
 
             assertThrows<NotFoundException> {
-                predictionService.submitPrediction(testUserId, testGroupId, request)
+                predictionService.submitSingleMatchPrediction(testUserId, testGroupId, request)
             }
             verify(exactly = 0) { predictionRepository.upsert(any()) }
         }
@@ -235,7 +235,7 @@ class PredictionServiceTest {
             every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchLocked)
 
             val exception = assertThrows<BadRequestException> {
-                predictionService.submitPrediction(testUserId, testGroupId, request)
+                predictionService.submitSingleMatchPrediction(testUserId, testGroupId, request)
             }
             assertEquals("Cannot submit predictions for this match", exception.message)
             verify(exactly = 0) { predictionRepository.upsert(any()) }
@@ -267,7 +267,7 @@ class PredictionServiceTest {
             every { matchRepository.findById(matchId2) } returns Optional.of(openMatch2)
             every { predictionRepository.upsertAll(any()) } returns savedPredictions
 
-            val result = predictionService.submitBulkPredictions(testUserId, testGroupId, request)
+            val result = predictionService.submitMatchPredictions(testUserId, testGroupId, request)
 
             assertEquals(testGroupId, result.groupId)
             assertEquals(2, result.predictions.size)
@@ -290,7 +290,7 @@ class PredictionServiceTest {
             every { matchRepository.findById(matchId2) } returns Optional.of(lockedMatch2)
             every { predictionRepository.upsertAll(any()) } returns listOf(testPrediction)
 
-            val result = predictionService.submitBulkPredictions(testUserId, testGroupId, request)
+            val result = predictionService.submitMatchPredictions(testUserId, testGroupId, request)
 
             assertEquals(1, result.predictions.size)
             verify { predictionRepository.upsertAll(match { it.size == 1 }) }
@@ -308,7 +308,7 @@ class PredictionServiceTest {
             every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchLocked)
             every { predictionRepository.upsertAll(emptyList()) } returns emptyList()
 
-            val result = predictionService.submitBulkPredictions(testUserId, testGroupId, request)
+            val result = predictionService.submitMatchPredictions(testUserId, testGroupId, request)
 
             assertEquals(0, result.predictions.size)
         }
@@ -323,7 +323,7 @@ class PredictionServiceTest {
             every { membershipRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns false
 
             val exception = assertThrows<ForbiddenException> {
-                predictionService.submitBulkPredictions(testUserId, testGroupId, request)
+                predictionService.submitMatchPredictions(testUserId, testGroupId, request)
             }
             assertEquals("User doesn't belong to the group", exception.message)
         }
@@ -337,7 +337,7 @@ class PredictionServiceTest {
             every { groupRepository.findById(testGroupId) } returns Optional.empty()
 
             assertThrows<NotFoundException> {
-                predictionService.submitBulkPredictions(testUserId, testGroupId, request)
+                predictionService.submitMatchPredictions(testUserId, testGroupId, request)
             }
         }
     }
@@ -347,7 +347,7 @@ class PredictionServiceTest {
 
         @Test
         fun `getGroupUserPredictions should return predictions for member`() {
-            val predictionView = PredictionView(
+            val predictionView = MatchPredictionView(
                 id = UUID.randomUUID(), user = testUser, rank = 1, match = testMatchOpen, prediction = testPrediction
             )
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
@@ -357,7 +357,7 @@ class PredictionServiceTest {
                 predictionView
             )
 
-            val result = predictionService.getGroupUserPredictions(testUserId, testGroupId)
+            val result = predictionService.getUserMatchPredictionsForGroup(testUserId, testGroupId)
 
             assertEquals(testGroupId, result.groupId)
             assertEquals(1, result.predictions.size)
@@ -370,7 +370,7 @@ class PredictionServiceTest {
             every { membershipRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns false
 
             val exception = assertThrows<ForbiddenException> {
-                predictionService.getGroupUserPredictions(testUserId, testGroupId)
+                predictionService.getUserMatchPredictionsForGroup(testUserId, testGroupId)
             }
             assertEquals("User doesn't belong to the group", exception.message)
         }
@@ -381,7 +381,7 @@ class PredictionServiceTest {
             every { groupRepository.findById(testGroupId) } returns Optional.empty()
 
             assertThrows<NotFoundException> {
-                predictionService.getGroupUserPredictions(testUserId, testGroupId)
+                predictionService.getUserMatchPredictionsForGroup(testUserId, testGroupId)
             }
         }
 
@@ -390,7 +390,7 @@ class PredictionServiceTest {
             every { userRepository.findById(testUserId) } returns Optional.empty()
 
             assertThrows<NotFoundException> {
-                predictionService.getGroupUserPredictions(testUserId, testGroupId)
+                predictionService.getUserMatchPredictionsForGroup(testUserId, testGroupId)
             }
         }
     }
@@ -400,7 +400,7 @@ class PredictionServiceTest {
 
         @Test
         fun `getGroupMatchPredictions should return predictions for locked match`() {
-            val predictionView = PredictionView(
+            val predictionView = MatchPredictionView(
                 id = UUID.randomUUID(), user = testUser, rank = 1, match = testMatchLocked, prediction = testPrediction
             )
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
@@ -410,7 +410,7 @@ class PredictionServiceTest {
                 predictionView
             )
 
-            val result = predictionService.getGroupMatchPredictions(testUserId, testGroupId, testMatchId)
+            val result = predictionService.getSingleMatchPredictionsForGroup(testUserId, testGroupId, testMatchId)
 
             assertEquals(testGroupId, result.groupId)
             assertEquals(1, result.predictions.size)
@@ -423,7 +423,7 @@ class PredictionServiceTest {
             every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchOpen)
 
             val exception = assertThrows<BadRequestException> {
-                predictionService.getGroupMatchPredictions(testUserId, testGroupId, testMatchId)
+                predictionService.getSingleMatchPredictionsForGroup(testUserId, testGroupId, testMatchId)
             }
             assertEquals("Match is still open", exception.message)
         }
@@ -434,7 +434,7 @@ class PredictionServiceTest {
             every { membershipRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns false
 
             val exception = assertThrows<ForbiddenException> {
-                predictionService.getGroupMatchPredictions(testUserId, testGroupId, testMatchId)
+                predictionService.getSingleMatchPredictionsForGroup(testUserId, testGroupId, testMatchId)
             }
             assertEquals("User doesn't belong to the group", exception.message)
         }
@@ -444,7 +444,7 @@ class PredictionServiceTest {
             every { groupRepository.findById(testGroupId) } returns Optional.empty()
 
             assertThrows<NotFoundException> {
-                predictionService.getGroupMatchPredictions(testUserId, testGroupId, testMatchId)
+                predictionService.getSingleMatchPredictionsForGroup(testUserId, testGroupId, testMatchId)
             }
         }
 
@@ -455,7 +455,7 @@ class PredictionServiceTest {
             every { matchRepository.findById(testMatchId) } returns Optional.empty()
 
             assertThrows<NotFoundException> {
-                predictionService.getGroupMatchPredictions(testUserId, testGroupId, testMatchId)
+                predictionService.getSingleMatchPredictionsForGroup(testUserId, testGroupId, testMatchId)
             }
         }
     }

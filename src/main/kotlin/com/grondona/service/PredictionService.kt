@@ -68,7 +68,11 @@ class PredictionService(
     }
 
     @Transactional
-    fun submitPrediction(userId: UUID, groupId: UUID, request: SubmitMatchPredictionRequest): MatchPredictionResponse {
+    fun submitSingleMatchPrediction(
+        userId: UUID,
+        groupId: UUID,
+        request: SubmitMatchPredictionRequest
+    ): MatchPredictionResponse {
         logger.info("Submitting prediction for user={}, match={} at group={}", userId, request.matchId, groupId)
 
         val (user, group) = checkMembership(userId, groupId)
@@ -83,12 +87,7 @@ class PredictionService(
         )
 
         if (!canSubmit(prediction.match)) {
-            logger.warn(
-                "Trying to submit a prediction for a match that is locked, user={}, match={} at group={}",
-                userId,
-                request.matchId,
-                groupId
-            )
+            logger.warn("Trying to submit a prediction for a match that is locked, user={}, match={} at group={}", userId, request.matchId, groupId)
             throw BadRequestException(message = "Cannot submit predictions for this match")
         }
 
@@ -97,7 +96,7 @@ class PredictionService(
     }
 
     @Transactional
-    fun submitBulkPredictions(
+    fun submitMatchPredictions(
         userId: UUID,
         groupId: UUID,
         request: SubmitBulkMatchPredictionsRequest
@@ -120,20 +119,27 @@ class PredictionService(
             }
         }
 
-
         predictions = matchPredictionRepository.upsertAll(predictions)
-        return GroupMatchPredictionsResponse.fromPrediction(group, predictions)
+        return GroupMatchPredictionsResponse.fromPredictions(group, predictions)
     }
 
-    fun getGroupUserPredictions(userId: UUID, groupId: UUID): GroupMatchPredictionsResponse {
+    fun getMatchPredictionsForGroup(userId: UUID, groupId: UUID): GroupMatchPredictionsResponse {
+        logger.info("Fetching predictions for user={} at group={}", userId, groupId)
+
+        val (_, group) = checkMembership(userId, groupId)
+        val predictions = matchPredictionRepository.findGroupPredictions(groupId)
+        return GroupMatchPredictionsResponse.fromMatchPredictionViews(group, predictions)
+    }
+
+    fun getUserMatchPredictionsForGroup(userId: UUID, groupId: UUID): GroupMatchPredictionsResponse {
         logger.info("Fetching predictions for user={} at group={}", userId, groupId)
 
         val (_, group) = checkMembership(userId, groupId)
         val predictions = matchPredictionRepository.findGroupPredictionsForUser(groupId, userId)
-        return GroupMatchPredictionsResponse.fromPredictionView(group, predictions)
+        return GroupMatchPredictionsResponse.fromMatchPredictionViews(group, predictions)
     }
 
-    fun getGroupMatchPredictions(userId: UUID, groupId: UUID, matchId: UUID): GroupMatchPredictionsResponse {
+    fun getSingleMatchPredictionsForGroup(userId: UUID, groupId: UUID, matchId: UUID): GroupMatchPredictionsResponse {
         logger.info("Fetching predictions for match={} at group={}, by user={}", matchId, groupId, userId)
 
         val (_, group) = checkMembership(userId, groupId)
@@ -144,7 +150,7 @@ class PredictionService(
         }
 
         val predictionViews = matchPredictionRepository.findGroupPredictionsForMatch(groupId, matchId)
-        return GroupMatchPredictionsResponse.fromPredictionView(group, predictionViews)
+        return GroupMatchPredictionsResponse.fromMatchPredictionViews(group, predictionViews)
     }
 
     @Transactional
@@ -170,20 +176,29 @@ class PredictionService(
         val deletedAwards = awardPredictionRepository.deleteByUserId(userId)
         logger.debug("Deleted {} previous awards from user={}", deletedAwards, userId)
         predictions = awardPredictionRepository.saveAll(predictions)
-        return AwardPredictionsResponse.fromAwardPredictions(predictions)
+        return AwardPredictionsResponse.fromAwardPredictions(user, predictions)
     }
 
-    fun getAwardPredictions(userId: UUID, tournamentId: UUID, groupId: UUID): GroupAwardPredictionsResponse {
+    fun getAwardPredictionsForGroup(userId: UUID, groupId: UUID, tournamentId: UUID): GroupAwardPredictionsResponse {
+        logger.info("Fetching award predictions for group={}, by user={}", groupId, userId)
+
+        val (_, group) = checkMembership(userId, groupId)
+        val tournament = tournamentRepository.findById(tournamentId).orElseThrow { NotFoundException("Tournament not found") }
+        if (tournament.status == TournamentStatus.NOT_STARTED) {
+            logger.warn("User={} trying fetch award predictions for the tournament={} at group={}, but it hasn't started yet", userId, tournamentId, groupId)
+            throw BadRequestException("Tournament hasn't started yet")
+        }
+
+        val predictions = awardPredictionRepository.findGroupAwardPredictions(group.id!!)
+        return GroupAwardPredictionsResponse.fromAwardPredictionsViews(group, predictions)
+    }
+
+    fun getUserAwardPredictionsForGroup(userId: UUID, groupId: UUID): AwardPredictionsResponse {
         logger.info("Fetching award predictions for group={}, by user={}", groupId, userId)
 
         val (user, group) = checkMembership(userId, groupId)
-        val tournament = tournamentRepository.findById(tournamentId).orElseThrow { NotFoundException("Tournament not found") }
-        val predictions = if (tournament.status == TournamentStatus.NOT_STARTED) {
-            awardPredictionRepository.findByUserId(user.id!!)
-        } else {
-            awardPredictionRepository.findByGroupId(group.id!!)
-        }
+        val predictions = awardPredictionRepository.findByUserIdAndGroupId(user.id!!, group.id!!)
 
-        return GroupAwardPredictionsResponse.fromAwardPredictions(user.id!!, predictions)
+        return AwardPredictionsResponse.fromAwardPredictions(user, predictions)
     }
 }
