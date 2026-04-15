@@ -4,10 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.grondona.exception.ConflictException
 import com.grondona.exception.GlobalExceptionHandler
 import com.grondona.exception.NotFoundException
+import com.grondona.model.Group
+import com.grondona.model.Tournament
 import com.grondona.model.dto.request.CreateUserRequest
 import com.grondona.model.dto.request.LoginUserRequest
 import com.grondona.model.dto.request.UpdateUserRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
+import com.grondona.model.dto.response.GroupResponse
 import com.grondona.model.dto.response.MembershipResponse
 import com.grondona.model.dto.response.UserResponse
 import com.grondona.security.JwtUserPrincipal
@@ -248,21 +251,15 @@ class UserControllerTest {
         @Test
         fun `GET api users me groups should return 200 with list of groups`() {
             setAuthenticatedUser(testUserId, "testuser")
-            val groupId = UUID.randomUUID()
-            val groups = listOf(
-                MembershipResponse(
-                    groupId = groupId,
-                    groupName = "My Group",
-                    memberCount = 5,
-                )
-            )
+            val group = Group(id = UUID.randomUUID(), name = "My Group", tournament = Tournament(name = "My Tournament"))
+            val groups = listOf(MembershipResponse(group = GroupResponse.from(group), memberCount = 5))
             every { groupMembershipService.getMyGroups(testUserId) } returns groups
 
             mockMvc.perform(get("/api/users/me/groups"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].groupId").value(groupId.toString()))
-                .andExpect(jsonPath("$[0].groupName").value("My Group"))
+                .andExpect(jsonPath("$[0].group.id").value(group.id.toString()))
+                .andExpect(jsonPath("$[0].group.name").value("My Group"))
                 .andExpect(jsonPath("$[0].memberCount").value(5))
 
             clearAuthentication()

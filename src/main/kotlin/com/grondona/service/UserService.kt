@@ -38,11 +38,7 @@ class UserService(
 
         if (userRepository.existsByUsername(request.username)) {
             logger.warn("User creation failed: username '{}' already exists", request.username)
-            throw ConflictException(
-                message = "Username already exists",
-                field = "username",
-                rejectedValue = request.username
-            )
+            throw ConflictException(message = "Username already exists", field = "username", rejectedValue = request.username)
         }
 
         if (userRepository.existsByEmail(request.email)) {
@@ -114,11 +110,7 @@ class UserService(
         request.username?.let { newUsername ->
             if (newUsername != user.username && userRepository.existsByUsername(newUsername)) {
                 logger.warn("User update failed: username '{}' already exists", newUsername)
-                throw ConflictException(
-                    message = "Username already exists",
-                    field = "username",
-                    rejectedValue = newUsername
-                )
+                throw ConflictException(message = "Username already exists", field = "username", rejectedValue = newUsername)
             }
             user.username = newUsername
         }

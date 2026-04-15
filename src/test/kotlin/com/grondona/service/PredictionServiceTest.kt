@@ -269,7 +269,7 @@ class PredictionServiceTest {
 
             val result = predictionService.submitMatchPredictions(testUserId, testGroupId, request)
 
-            assertEquals(testGroupId, result.groupId)
+            assertEquals(testGroupId, result.group.id)
             assertEquals(2, result.predictions.size)
             verify { predictionRepository.upsertAll(match { it.size == 2 }) }
         }
@@ -359,7 +359,7 @@ class PredictionServiceTest {
 
             val result = predictionService.getUserMatchPredictionsForGroup(testUserId, testGroupId)
 
-            assertEquals(testGroupId, result.groupId)
+            assertEquals(testGroupId, result.group.id)
             assertEquals(1, result.predictions.size)
         }
 
@@ -412,7 +412,7 @@ class PredictionServiceTest {
 
             val result = predictionService.getSingleMatchPredictionsForGroup(testUserId, testGroupId, testMatchId)
 
-            assertEquals(testGroupId, result.groupId)
+            assertEquals(testGroupId, result.group.id)
             assertEquals(1, result.predictions.size)
         }
 

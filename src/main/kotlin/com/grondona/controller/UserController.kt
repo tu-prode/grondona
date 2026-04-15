@@ -31,6 +31,7 @@ class UserController(
 
     @PostMapping
     fun createUser(@Valid @RequestBody request: CreateUserRequest): ResponseEntity<AuthenticatedUserResponse> {
+        val request = request.sanitized()
         logger.info("POST /api/users - Creating user: username='{}', email='{}'", request.username, request.email)
         val response = userService.createUser(request)
         logger.info("POST /api/users - User created: id={}, username='{}'", response.userId, response.username)
@@ -39,6 +40,7 @@ class UserController(
 
     @PostMapping("/login")
     fun login(@Valid @RequestBody request: LoginUserRequest): ResponseEntity<AuthenticatedUserResponse> {
+        val request = request.sanitized()
         logger.info("POST /api/users/login - Login attempt: user='{}'", request.user)
         val response = userService.login(request)
         logger.info("POST /api/users/login - Login successful: userId={}", response.userId)
@@ -52,6 +54,7 @@ class UserController(
     ): ResponseEntity<UserResponse> {
         val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
 
+        val request = request.sanitized()
         logger.info("PATCH /api/users - Updating user: userId={}", userId)
         val response = userService.updateUser(userId, request)
         logger.info("PATCH /api/users - User updated: userId={}", userId)

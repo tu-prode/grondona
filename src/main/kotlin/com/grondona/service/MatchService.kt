@@ -6,6 +6,7 @@ import com.grondona.model.Match
 import com.grondona.model.MatchStatus
 import com.grondona.model.MatchPrediction
 import com.grondona.model.PredictionStatus
+import com.grondona.model.SchedulerData
 import com.grondona.model.TournamentStatus
 import com.grondona.repository.MatchRepository
 import com.grondona.repository.MembershipRepository
@@ -17,6 +18,10 @@ import java.util.UUID
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
+import java.time.chrono.ChronoLocalDateTime
+import java.time.temporal.ChronoUnit
+import kotlin.time.Duration
 
 @Service
 class MatchService(
@@ -32,7 +37,7 @@ class MatchService(
     }
 
     @Transactional
-    fun updateMatchesStatuses(tournamentId: UUID) {
+    fun updateMatchesStatuses(tournamentId: UUID): SchedulerData {
         if (tournamentId != WorldCupEngine.SYSTEM_TOURNAMENT_ID) {
             logger.warn("Currently the app only supports World Cup matches, with id={}", tournamentId)
             throw BadRequestException("Tournament not supported")
@@ -72,6 +77,18 @@ class MatchService(
         if (anyJustFinished) {
             updateStandings(matchesToUpdate)
         }
+
+        if (matchesToUpdate.any { it.status == MatchStatus.IN_PROGRESS }) {
+            return SchedulerData.wait()
+        }
+
+        val nextMatches = systemMatches.filter { it.status == MatchStatus.NOT_STARTED }
+        if (nextMatches.isNotEmpty()) {
+            val nextRunAt = nextMatches.sortedBy { it.startedAt }.first().startedAt ?: LocalDateTime.now().plus(1, ChronoUnit.DAYS)
+            return SchedulerData.sleep(nextRunAt).takeIf { nextRunAt.isAfter(LocalDateTime.now()) } ?: SchedulerData.wait()
+        }
+
+        return SchedulerData.stop()
     }
 
     fun updateStandings(matchesToUpdate: List<Match>) {
