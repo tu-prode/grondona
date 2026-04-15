@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.grondona.model.Group
 import com.grondona.model.PredictionStatus
 import com.grondona.model.Standing
+import com.grondona.model.TournamentStatus
 import java.util.UUID
 
 data class StandingResponse(
@@ -21,6 +22,7 @@ data class GroupResponse(
     @get:JsonProperty("private")
     val isPrivate: Boolean,
     val maxMembers: Int,
+    val hasStarted: Boolean,
     val standings: List<StandingResponse> = emptyList()
 ) {
     companion object {
@@ -30,6 +32,7 @@ data class GroupResponse(
             name = group.name,
             isPrivate = group.isPrivate,
             maxMembers = group.maxMembers,
+            hasStarted = group.tournament.status != TournamentStatus.NOT_STARTED,
             standings = emptyList(),
         )
 
@@ -39,6 +42,7 @@ data class GroupResponse(
             name = group.name,
             isPrivate = group.isPrivate,
             maxMembers = group.maxMembers,
+            hasStarted = group.tournament.status != TournamentStatus.NOT_STARTED,
             standings = standings.map { standing ->
                 StandingResponse(
                     userId = standing.user.id!!,

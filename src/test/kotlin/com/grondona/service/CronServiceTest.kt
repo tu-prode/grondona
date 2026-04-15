@@ -7,7 +7,7 @@ import com.grondona.model.Group
 import com.grondona.model.GroupUser
 import com.grondona.model.Match
 import com.grondona.model.MatchStatus
-import com.grondona.model.Prediction
+import com.grondona.model.MatchPrediction
 import com.grondona.model.PredictionStatus
 import com.grondona.model.Team
 import com.grondona.model.Tournament
@@ -15,7 +15,7 @@ import com.grondona.model.TournamentStatus
 import com.grondona.model.User
 import com.grondona.repository.MatchRepository
 import com.grondona.repository.MembershipRepository
-import com.grondona.repository.PredictionRepository
+import com.grondona.repository.MatchPredictionRepository
 import com.grondona.utils.WorldCupEngine
 import io.mockk.*
 import io.mockk.impl.annotations.InjectMockKs
@@ -41,7 +41,7 @@ class CronServiceTest {
     private lateinit var membershipRepository: MembershipRepository
 
     @MockK
-    private lateinit var predictionRepository: PredictionRepository
+    private lateinit var predictionRepository: MatchPredictionRepository
 
     @InjectMockKs
     private lateinit var cronService: MatchService
@@ -96,7 +96,7 @@ class CronServiceTest {
     private fun predictionFromDB(
         match: Match, user: User = testUser, group: Group = testGroup,
         status: PredictionStatus = PredictionStatus.PENDING, homeGoals: Int = 0, awayGoals: Int = 0
-    ) = Prediction(
+    ) = MatchPrediction(
         user = user, group = group, match = match, homeGoals = homeGoals, awayGoals = awayGoals, status = status,
     )
 
@@ -154,7 +154,7 @@ class CronServiceTest {
             assertEquals(1f, savedMatches[0].awayQuota)
 
             verify(exactly = 0) { predictionRepository.findByStatusAndMatchIdIn(any(), any()) }
-            verify(exactly = 0) { predictionRepository.saveAll<Prediction>(any()) }
+            verify(exactly = 0) { predictionRepository.saveAll<MatchPrediction>(any()) }
             verify(exactly = 0) { membershipRepository.findByGroupId(any()) }
             verify(exactly = 0) { membershipRepository.saveAll<GroupUser>(any()) }
         }
@@ -192,7 +192,7 @@ class CronServiceTest {
             assertEquals("19' PT", savedMatches[0].substatus)
 
             verify(exactly = 0) { predictionRepository.findByStatusAndMatchIdIn(any(), any()) }
-            verify(exactly = 0) { predictionRepository.saveAll<Prediction>(any()) }
+            verify(exactly = 0) { predictionRepository.saveAll<MatchPrediction>(any()) }
             verify(exactly = 0) { membershipRepository.findByGroupId(any()) }
             verify(exactly = 0) { membershipRepository.saveAll<GroupUser>(any()) }
         }
@@ -230,7 +230,7 @@ class CronServiceTest {
             assertEquals("45+4' PT", savedMatches[0].substatus)
 
             verify(exactly = 0) { predictionRepository.findByStatusAndMatchIdIn(any(), any()) }
-            verify(exactly = 0) { predictionRepository.saveAll<Prediction>(any()) }
+            verify(exactly = 0) { predictionRepository.saveAll<MatchPrediction>(any()) }
             verify(exactly = 0) { membershipRepository.findByGroupId(any()) }
             verify(exactly = 0) { membershipRepository.saveAll<GroupUser>(any()) }
         }
@@ -268,7 +268,7 @@ class CronServiceTest {
             assertEquals("27' ST", savedMatches[0].substatus)
 
             verify(exactly = 0) { predictionRepository.findByStatusAndMatchIdIn(any(), any()) }
-            verify(exactly = 0) { predictionRepository.saveAll<Prediction>(any()) }
+            verify(exactly = 0) { predictionRepository.saveAll<MatchPrediction>(any()) }
             verify(exactly = 0) { membershipRepository.findByGroupId(any()) }
             verify(exactly = 0) { membershipRepository.saveAll<GroupUser>(any()) }
         }
@@ -306,7 +306,7 @@ class CronServiceTest {
             assertEquals("45+4' ST", savedMatches[0].substatus)
 
             verify(exactly = 0) { predictionRepository.findByStatusAndMatchIdIn(any(), any()) }
-            verify(exactly = 0) { predictionRepository.saveAll<Prediction>(any()) }
+            verify(exactly = 0) { predictionRepository.saveAll<MatchPrediction>(any()) }
             verify(exactly = 0) { membershipRepository.findByGroupId(any()) }
             verify(exactly = 0) { membershipRepository.saveAll<GroupUser>(any()) }
         }
@@ -339,7 +339,7 @@ class CronServiceTest {
                     PredictionStatus.PENDING, listOf(dbMatch1.id!!)
                 )
             } returns listOf(dbPrediction1, dbPrediction2)
-            every { predictionRepository.saveAll(any<List<Prediction>>()) } answers { firstArg() }
+            every { predictionRepository.saveAll(any<List<MatchPrediction>>()) } answers { firstArg() }
 
             val member1 = testMember.copy(user = user1)
             val member2 = testMember.copy(user = user2)
@@ -361,7 +361,7 @@ class CronServiceTest {
             assertEquals(MatchStatus.FINISHED, savedMatches[0].status)
             assertEquals("FINALIZADO", savedMatches[0].substatus)
 
-            val slot2 = slot<List<Prediction>>()
+            val slot2 = slot<List<MatchPrediction>>()
             verify(exactly = 1) { predictionRepository.saveAll(capture(slot2)) }
             val savedPredictions = slot2.captured
             assertEquals(2, savedPredictions.size)
@@ -426,7 +426,7 @@ class CronServiceTest {
             assertEquals( "22' ST", savedMatches[1].substatus)
 
             verify(exactly = 0) { predictionRepository.findByStatusAndMatchIdIn(any(), any()) }
-            verify(exactly = 0) { predictionRepository.saveAll<Prediction>(any()) }
+            verify(exactly = 0) { predictionRepository.saveAll<MatchPrediction>(any()) }
             verify(exactly = 0) { membershipRepository.findByGroupId(any()) }
             verify(exactly = 0) { membershipRepository.saveAll<GroupUser>(any()) }
         }
@@ -452,7 +452,7 @@ class CronServiceTest {
 
             verify(exactly = 0) { matchRepository.saveAll<Match>(any()) }
             verify(exactly = 0) { predictionRepository.findByStatusAndMatchIdIn(any(), any()) }
-            verify(exactly = 0) { predictionRepository.saveAll<Prediction>(any()) }
+            verify(exactly = 0) { predictionRepository.saveAll<MatchPrediction>(any()) }
             verify(exactly = 0) { membershipRepository.findByGroupId(any()) }
             verify(exactly = 0) { membershipRepository.saveAll<GroupUser>(any()) }
         }

@@ -5,7 +5,9 @@ import com.grondona.exception.UnauthorizedException
 import com.grondona.model.dto.request.CreateTournamentRequest
 import com.grondona.model.dto.request.UpdateTournamentRequest
 import com.grondona.model.dto.response.TournamentMatchesResponse
+import com.grondona.model.dto.response.TournamentPlayersResponse
 import com.grondona.model.dto.response.TournamentResponse
+import com.grondona.model.dto.response.TournamentTeamsResponse
 import com.grondona.security.JwtUserPrincipal
 import com.grondona.service.TournamentService
 import com.grondona.service.UserService
@@ -94,8 +96,29 @@ class TournamentController(
         @RequestParam(required = false) live: Int?,
         @RequestParam(required = false) next: Int?
     ): ResponseEntity<TournamentMatchesResponse> {
-        logger.info("GET /api/tournaments/{}/matches - Fetching tournament matches", tournamentId)
+        logger.info("GET /api/tournaments/{}/matches - Fetching tournament matches, past={}, live={}, next={}", tournamentId, past, live, next)
         val response = tournamentService.getTournamentMatches(tournamentId, past, next, live)
+        return ResponseEntity.ok(response)
+    }
+
+    @GetMapping("/{tournamentId}/teams")
+    fun getTournamentTeams(
+        @PathVariable tournamentId: UUID
+    ): ResponseEntity<TournamentTeamsResponse> {
+        logger.info("GET /api/tournaments/{}/teams - Fetching tournament teams", tournamentId)
+        val response = tournamentService.getTournamentTeams(tournamentId)
+        return ResponseEntity.ok(response)
+    }
+
+    @GetMapping("/{tournamentId}/players")
+    fun getTournamentPlayers(
+        @PathVariable tournamentId: UUID,
+        @RequestParam(required = false) country: String?,
+        @RequestParam(required = false) goalkeeper: Boolean?,
+        @RequestParam(required = false) u21: Boolean?,
+    ): ResponseEntity<TournamentPlayersResponse> {
+        logger.info("GET /api/tournaments/{}/players - Fetching tournament players, country={}, goalkeeper={}, u21={}", tournamentId, country, goalkeeper, u21)
+        val response = tournamentService.getTournamentPlayers(tournamentId, country, goalkeeper, u21)
         return ResponseEntity.ok(response)
     }
 }

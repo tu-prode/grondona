@@ -91,7 +91,7 @@ class GroupController(
         @RequestParam(required = false) standings: Boolean?,
     ): ResponseEntity<GroupResponse> {
         val withStandings = standings ?: false
-        logger.info("GET /api/tournaments/{}/groups/{} - Fetching group (standings={})", tournamentId, groupId, withStandings)
+        logger.info("GET /api/tournaments/{}/groups/{} - Fetching group, standings={}", tournamentId, groupId, withStandings)
 
         val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
         val response = groupService.getGroupById(groupId, withStandings)

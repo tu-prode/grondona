@@ -1,10 +1,13 @@
 package com.grondona.controller
 
 import com.grondona.exception.UnauthorizedException
-import com.grondona.model.dto.request.SubmitBulkPredictionsRequest
-import com.grondona.model.dto.request.SubmitPredictionRequest
-import com.grondona.model.dto.response.GroupPredictionsResponse
-import com.grondona.model.dto.response.PredictionResponse
+import com.grondona.model.dto.request.SubmitAwardPredictionRequest
+import com.grondona.model.dto.request.SubmitBulkMatchPredictionsRequest
+import com.grondona.model.dto.request.SubmitMatchPredictionRequest
+import com.grondona.model.dto.response.AwardPredictionsResponse
+import com.grondona.model.dto.response.GroupAwardPredictionsResponse
+import com.grondona.model.dto.response.GroupMatchPredictionsResponse
+import com.grondona.model.dto.response.MatchPredictionResponse
 import com.grondona.security.JwtUserPrincipal
 import com.grondona.service.PredictionService
 import jakarta.validation.Valid
@@ -26,61 +29,118 @@ class PredictionController(
     }
 
     @PostMapping("/matches/{matchId}")
-    fun submitPredictions(
+    fun submitSingleGroupMatchPredictions(
         @AuthenticationPrincipal principal: JwtUserPrincipal?,
         @PathVariable groupId: UUID, @PathVariable tournamentId: UUID, @PathVariable matchId: UUID,
-        @Valid @RequestBody request: SubmitPredictionRequest
-    ): ResponseEntity<PredictionResponse> {
+        @Valid @RequestBody request: SubmitMatchPredictionRequest
+    ): ResponseEntity<MatchPredictionResponse> {
         val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
 
-        logger.info("POST /api/groups/{}/tournaments/{}/predictions/matches/{} - userId={}", groupId, tournamentId, userId, matchId)
-        val response = predictionsService.submitPrediction(userId, groupId, request)
-        logger.info("POST /api/groups/{}/tournaments/{}/predictions/matches/{} - userId={} - Prediction stored successfully", groupId, tournamentId, userId, matchId)
+        logger.info("POST /api/{}/tournaments/groups/{}/predictions/matches/{} - userId={}", tournamentId, groupId, userId, matchId)
+        val response = predictionsService.submitSingleMatchPrediction(userId, groupId, request)
+        logger.info("POST /api/{}/tournaments/groups/{}/predictions/matches/{} - userId={} - Prediction stored successfully", tournamentId, groupId, userId, matchId)
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 
     @GetMapping("/matches/{matchId}")
-    fun getGroupMatchPredictions(
+    fun getSingleGroupMatchPredictions(
         @AuthenticationPrincipal principal: JwtUserPrincipal?,
         @PathVariable groupId: UUID, @PathVariable tournamentId: UUID, @PathVariable matchId: UUID,
-    ): ResponseEntity<GroupPredictionsResponse> {
+    ): ResponseEntity<GroupMatchPredictionsResponse> {
         val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
 
-        logger.info("GET /api/groups/{}/tournaments/{}/predictions/matches/{} - userId={}", groupId, tournamentId, userId, matchId)
-        val response = predictionsService.getGroupMatchPredictions(userId, groupId, matchId)
-        logger.info("GET /api/groups/{}/tournaments/{}/predictions/matches/{} - userId={} - Predictions retrieved: {}", groupId, tournamentId, userId, matchId, response.predictions.size)
+        logger.info("GET /api/{}/tournaments/groups/{}/predictions/matches/{} - userId={}", tournamentId, groupId, userId, matchId)
+        val response = predictionsService.getSingleMatchPredictionsForGroup(userId, groupId, matchId)
+        logger.info("GET /api/{}/tournaments/groups/{}/predictions/matches/{} - userId={} - Predictions retrieved: {}", tournamentId, groupId, userId, matchId, response.predictions.size)
+
+        return ResponseEntity.status(HttpStatus.OK).body(response)
+    }
+
+    @PostMapping("/matches")
+    fun submitGroupBulkMatchPredictions(
+        @AuthenticationPrincipal principal: JwtUserPrincipal?,
+        @PathVariable groupId: UUID, @PathVariable tournamentId: UUID,
+        @Valid @RequestBody request: SubmitBulkMatchPredictionsRequest
+    ): ResponseEntity<GroupMatchPredictionsResponse> {
+        val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
+
+        logger.info("POST /api/{}/tournaments/groups/{}/predictions - userId={}", tournamentId, groupId, userId)
+        val response = predictionsService.submitMatchPredictions(userId, groupId, request)
+        logger.info("POST /api/{}/tournaments/groups/{}/predictions - userId={} - Predictions stored successfully: {}", tournamentId, groupId, userId, response.predictions.size)
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 
-    @PostMapping
-    fun submitBulkPredictions(
+    @GetMapping("/matches")
+    fun getGroupMatchPredictions(
         @AuthenticationPrincipal principal: JwtUserPrincipal?,
         @PathVariable groupId: UUID, @PathVariable tournamentId: UUID,
-        @Valid @RequestBody request: SubmitBulkPredictionsRequest
-    ): ResponseEntity<GroupPredictionsResponse> {
+    ): ResponseEntity<GroupMatchPredictionsResponse> {
         val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
 
-        logger.info("POST /api/groups/{}/tournaments/{}/predictions - userId={}", groupId, tournamentId, userId)
-        val response = predictionsService.submitBulkPredictions(userId, groupId, request)
-        logger.info("POST /api/groups/{}/tournaments/{}/predictions - userId={} - Predictions stored successfully: {}", groupId, tournamentId, userId, response.predictions.size)
+        logger.info("GET /api/{}/tournaments/groups/{}/predictions/matches - userId={}", tournamentId, groupId, userId)
+        val response = predictionsService.getMatchPredictionsForGroup(userId, groupId)
+        logger.info("GET /api/{}/tournaments/groups/{}/predictions/matches - userId={} - Predictions retrieved: {}", tournamentId, groupId, userId, response.predictions.size)
+
+        return ResponseEntity.status(HttpStatus.OK).body(response)
+    }
+
+    @GetMapping("/matches/me")
+    fun getMyGroupMatchPredictions(
+        @AuthenticationPrincipal principal: JwtUserPrincipal?,
+        @PathVariable groupId: UUID, @PathVariable tournamentId: UUID,
+    ): ResponseEntity<GroupMatchPredictionsResponse> {
+        val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
+
+        logger.info("GET /api/tournaments/{}/groups/{}/predictions/matches/me - userId={}", tournamentId, groupId, userId)
+        val response = predictionsService.getUserMatchPredictionsForGroup(userId, groupId)
+        logger.info("GET /api/tournaments/{}/groups/{}/predictions/matches/me - userId={} - Predictions retrieved: {}", tournamentId, groupId, userId, response.predictions.size)
+
+        return ResponseEntity.status(HttpStatus.OK).body(response)
+    }
+
+    @PostMapping("/awards")
+    fun submitGroupAwardPredictions(
+        @AuthenticationPrincipal principal: JwtUserPrincipal?,
+        @PathVariable groupId: UUID, @PathVariable tournamentId: UUID,
+        @Valid @RequestBody request: SubmitAwardPredictionRequest
+    ): ResponseEntity<AwardPredictionsResponse> {
+        val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
+
+        logger.info("POST /api/{}/tournaments/groups/{}/predictions/awards - userId={}", tournamentId, groupId, userId)
+        val response = predictionsService.submitAwardPredictions(userId, groupId, request)
+        logger.info("POST /api/{}/tournaments/groups/{}/predictions/awards - userId={} - Award predictions stored successfully", tournamentId, groupId, userId)
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 
-    @GetMapping
-    fun getGroupUserPredictions(
+    @GetMapping("/awards")
+    fun getGroupAwardPredictions(
         @AuthenticationPrincipal principal: JwtUserPrincipal?,
         @PathVariable groupId: UUID, @PathVariable tournamentId: UUID,
-    ): ResponseEntity<GroupPredictionsResponse> {
+    ): ResponseEntity<GroupAwardPredictionsResponse> {
         val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
 
-        logger.info("GET /api/groups/{}/tournaments/{}/predictions - userId={}", groupId, tournamentId, userId)
-        val response = predictionsService.getGroupUserPredictions(userId, groupId)
-        logger.info("GET /api/groups/{}/tournaments/{}/predictions - userId={} - Predictions stored successfully: {}", groupId, tournamentId, userId, response.predictions.size)
+        logger.info("GET /api/{}/tournaments/groups/{}/predictions/awards - userId={}", tournamentId, groupId, userId)
+        val response = predictionsService.getAwardPredictionsForGroup(userId, groupId, tournamentId)
+        logger.info("GET /api/{}/tournaments/groups/{}/predictions/awards - userId={} - Award predictions retrieved: {}", tournamentId, groupId, userId, response.predictions.size)
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(response)
+        return ResponseEntity.status(HttpStatus.OK).body(response)
+    }
+
+    @GetMapping("/awards/me")
+    fun getMyGroupAwardPredictions(
+        @AuthenticationPrincipal principal: JwtUserPrincipal?,
+        @PathVariable groupId: UUID, @PathVariable tournamentId: UUID,
+    ): ResponseEntity<AwardPredictionsResponse> {
+        val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
+
+        logger.info("GET /api/{}/tournaments/groups/{}/predictions/awards/me - userId={}", tournamentId, groupId, userId)
+        val response = predictionsService.getUserAwardPredictionsForGroup(userId, groupId)
+        logger.info("GET /api/{}/tournaments/groups/{}/predictions/awards/me - userId={} - Award predictions retrieved", tournamentId, groupId, userId)
+
+        return ResponseEntity.status(HttpStatus.OK).body(response)
     }
 
 }

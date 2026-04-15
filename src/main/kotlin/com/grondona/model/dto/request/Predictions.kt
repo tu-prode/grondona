@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.PositiveOrZero
 
-data class SubmitPredictionRequest(
+data class SubmitMatchPredictionRequest(
     @field:NotNull(message = "Match ID is required")
     val matchId: UUID,
 
@@ -16,7 +16,15 @@ data class SubmitPredictionRequest(
     val awayGoals: Int
 )
 
-data class SubmitBulkPredictionsRequest(
+data class SubmitBulkMatchPredictionsRequest(
     @field:NotEmpty(message = "Expected at least one prediction")
-    val predictions: List<SubmitPredictionRequest> = emptyList()
+    val predictions: List<SubmitMatchPredictionRequest> = emptyList()
+)
+
+data class SubmitAwardPredictionRequest(
+    val champions: List<UUID>,
+    val topScorers: List<UUID>,
+    val bestPlayers: List<UUID>,
+    val bestGoalkeepers: List<UUID>,
+    val bestYoungPlayers: List<UUID>,
 )
