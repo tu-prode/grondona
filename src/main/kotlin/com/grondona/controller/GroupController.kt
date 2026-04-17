@@ -88,15 +88,13 @@ class GroupController(
         @AuthenticationPrincipal principal: JwtUserPrincipal?,
         @PathVariable groupId: UUID,
         @PathVariable tournamentId: UUID,
-        @RequestParam(required = false) standings: Boolean?,
         @RequestParam(required = false) live: Boolean?,
     ): ResponseEntity<GroupResponse> {
-        val withStandings = standings ?: false
-        val liveStandings = live ?: false
-        logger.info("GET /api/tournaments/{}/groups/{} - Fetching group, standings={}, live={}", tournamentId, groupId, withStandings, live)
+        logger.info("GET /api/tournaments/{}/groups/{} - Fetching group, live={}", tournamentId, groupId, live)
 
+        val liveStandings = live ?: false
         val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
-        val response = groupService.getGroupById(groupId, withStandings, liveStandings)
+        val response = groupService.getGroupById(groupId, liveStandings)
 
         if (!groupMembershipService.isMember(userId, groupId)) {
             throw ForbiddenException("User not allowed")

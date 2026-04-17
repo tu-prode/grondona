@@ -5,7 +5,6 @@ import com.grondona.exception.NotFoundException
 import com.grondona.model.Group
 import com.grondona.model.GroupUser
 import com.grondona.model.MatchStatus
-import com.grondona.model.PredictionStatus
 import com.grondona.model.Standing
 import com.grondona.model.Tournament
 import com.grondona.model.User
@@ -16,7 +15,7 @@ import com.grondona.repository.GroupRepository
 import com.grondona.repository.MatchPredictionRepository
 import com.grondona.repository.MembershipRepository
 import com.grondona.repository.TournamentRepository
-import com.grondona.utils.PointsEngine
+import com.grondona.utils.PredictionsEngine
 import jakarta.persistence.criteria.JoinType
 import jakarta.persistence.criteria.Predicate
 import org.slf4j.LoggerFactory
@@ -110,7 +109,7 @@ class GroupService(
         logger.info("Group deleted successfully: id={}, name='{}'", groupId, group.name)
     }
 
-    fun getGroupById(groupId: UUID, withStandings: Boolean = false, liveStandings: Boolean = false): GroupResponse {
+    fun getGroupById(groupId: UUID, liveStandings: Boolean = false): GroupResponse {
         logger.info("Fetching group id={}", groupId)
 
         val group = groupRepository.findById(groupId).orElseThrow {
@@ -120,38 +119,34 @@ class GroupService(
 
         logger.info("Group fetched successfully: id={}, name='{}'", group.id, group.name)
 
-        if (withStandings) {
-            val members = membershipRepository.findByGroupId(groupId)
+        val members = membershipRepository.findByGroupId(groupId)
+        val standings = when {
+            // Hasn't started
+            members.all { it.rank == null } ->
+                members.sortedBy { it.joinedAt }.mapIndexed { index, member ->
+                    Standing(rank = index + 1, user = member.user, points = 0f, lastPredictions = emptyList())
+                }
 
-            val standings = when {
-                // Hasn't started
-                members.all { it.rank == null } ->
-                    members.sortedBy { it.joinedAt }.mapIndexed { index, member ->
-                        Standing(rank = index + 1, user = member.user, points = 0f, lastPredictions = emptyList())
-                    }
-
-                // Live standings
-                liveStandings -> matchPredictionRepository.findGroupPredictions(groupId)
-                    .mapNotNull { it.prediction }
-                    .filter { it.match.status == MatchStatus.IN_PROGRESS }
-                    .groupBy { it.user.id!! }
-                    .let { PointsEngine.updateStandings(members, it) }
-                    .mapIndexed { index, member ->
-                        Standing(rank = member.rank ?: index, user = member.user, points = member.points, lastPredictions = member.lastPredictions)
-                    }
-
-                // Saved standings
-                else -> members.sortedWith(
-                    compareBy<GroupUser> { it.rank == null }.thenBy { it.rank }.thenBy { it.joinedAt }
-                ).mapIndexed { index, member ->
+            // Live standings
+            liveStandings -> matchPredictionRepository.findGroupPredictions(groupId)
+                .filter { it.match.status == MatchStatus.IN_PROGRESS }
+                .mapNotNull { it.prediction }
+                .let { PredictionsEngine.checkPredictions(it) }
+                .groupBy { it.user.id!! }
+                .let { PredictionsEngine.updateStandings(members, it) }
+                .mapIndexed { index, member ->
                     Standing(rank = member.rank ?: index, user = member.user, points = member.points, lastPredictions = member.lastPredictions)
                 }
-            }
 
-            return GroupResponse.from(group, standings)
+            // Saved standings
+            else -> members.sortedWith(
+                compareBy<GroupUser> { it.rank == null }.thenBy { it.rank }.thenBy { it.joinedAt }
+            ).mapIndexed { index, member ->
+                Standing(rank = member.rank ?: index, user = member.user, points = member.points, lastPredictions = member.lastPredictions)
+            }
         }
 
-        return GroupResponse.from(group)
+        return GroupResponse.from(group, standings)
     }
 
     fun findOtherGroups(userId: UUID, tournamentId: UUID, search: String?, joined: Boolean?): List<GroupResponse> {

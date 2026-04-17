@@ -1,14 +1,13 @@
 package com.grondona
 
+import com.grondona.model.Group
+import com.grondona.model.Team
 import com.grondona.model.Tournament
 import com.grondona.model.User
-import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.CreateTournamentRequest
 import com.grondona.model.dto.request.CreateUserRequest
-import com.grondona.utils.WorldCupEngine
-import com.grondona.utils.hashSHA256
+import java.time.LocalDateTime
 import java.util.UUID
-import kotlin.math.min
 
 fun randomString(str: String = "", maxSize: Int = 50): String {
     val uuid = UUID.randomUUID().toString().replace("-", "")
@@ -39,13 +38,33 @@ fun createTestingTournamentRequest(
         name = randomString("$name "),
     )
 }
-fun createCronTestingUser(apiKey: String): User {
-    return User(
-        id = UUID.randomUUID(),
-        username = randomString("CronUser-"),
-        fullname = randomString("CronUser-"),
-        email = "cron@${randomString()}",
-        passwordHash = hashSHA256(apiKey),
-        permissions = UserPermissions.CRON,
-    )
-}
+
+val testTournament = Tournament(
+    id = UUID.randomUUID(),
+    name = "Test Tournament",
+)
+
+val testTeam = Team(
+    id = UUID.randomUUID(),
+    code = "TEST",
+    name = "Test Team",
+    tournament = testTournament,
+)
+
+val testGroup = Group(
+    id = UUID.randomUUID(),
+    tournament = testTournament,
+    name = "Test Group",
+    isPrivate = false,
+    maxMembers = 20,
+    createdAt = LocalDateTime.now(),
+    updatedAt = LocalDateTime.now()
+)
+
+val testUser: User = User(
+    id = UUID.randomUUID(),
+    fullname = "tester",
+    username = "tester",
+    email = "test@gmail.com",
+    passwordHash = "password",
+)

@@ -7,12 +7,31 @@ import com.grondona.model.PredictionStatus
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
-object PointsEngine {
+object PredictionsEngine {
 
     private const val POINTS_PARTIAL = 1
     private const val POINTS_CORRECT = 3
     private const val POINTS_BONUS = 5
-    private val logger = LoggerFactory.getLogger(PointsEngine::class.java)
+    private val logger = LoggerFactory.getLogger(PredictionsEngine::class.java)
+
+    fun checkPredictions(predictions: List<MatchPrediction>): List<MatchPrediction> =
+        predictions.toMutableList().map { prediction ->
+            val matchScore = prediction.match.score()
+            if (matchScore == null) {
+                logger.error("Trying to calculate the PredictionStatus of match with id={}, but has no goals submitted", prediction.match.id)
+            } else {
+                val predictionScore = prediction.score()
+
+                when {
+                    matchScore == predictionScore && matchScore.goals() >= 5 -> prediction.status = PredictionStatus.BONUS
+                    matchScore == predictionScore -> prediction.status = PredictionStatus.CORRECT
+                    matchScore.outcome() == predictionScore.outcome() -> prediction.status = PredictionStatus.PARTIAL
+                    else -> prediction.status = PredictionStatus.INCORRECT
+                }
+            }
+
+            prediction
+        }
 
     fun updateStandings(members: List<GroupUser>, newPredictions: Map<UUID, List<MatchPrediction?>>): List<GroupUser> =
         members.map { member ->

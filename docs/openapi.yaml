@@ -789,7 +789,7 @@ paths:
       summary: Get a group by ID
       description: |
         Retrieve a specific group by its UUID.
-      operationId: getGroup
+      operationId: getGroupById
       security:
         - bearerAuth: [ ]
       parameters:
@@ -800,10 +800,10 @@ paths:
           schema:
             type: string
             format: uuid
-        - name: standings
-          in: path
+        - name: live
+          in: query
           required: false
-          description: Flag to indicate if the response should return the group standings
+          description: Flag to indicate if the standings in the response should be live or not
           schema:
             type: boolean
       responses:
@@ -1583,6 +1583,7 @@ components:
         - private
         - max_members
         - has_started
+        - standings
       properties:
         id:
           type: string
