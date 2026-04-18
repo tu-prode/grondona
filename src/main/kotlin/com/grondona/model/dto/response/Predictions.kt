@@ -3,6 +3,7 @@ package com.grondona.model.dto.response
 import com.grondona.model.AwardPrediction
 import com.grondona.model.AwardPredictionView
 import com.grondona.model.AwardType
+import com.grondona.model.ExtendedAwards
 import com.grondona.model.Group
 import com.grondona.model.MatchPrediction
 import com.grondona.model.PredictionStatus
@@ -103,12 +104,23 @@ data class AwardPredictionsResponse(
 
 data class GroupAwardPredictionsResponse(
     val group: GroupResponse,
+    val winners: AwardsResponse? = null,
     val predictions: List<AwardPredictionsResponse>
 ) {
     companion object {
-        fun fromAwardPredictionsViews(group: Group, awardPredictions: List<AwardPredictionView>): GroupAwardPredictionsResponse =
+        fun fromAwardPredictionsViews(
+            group: Group,
+            awardPredictions: List<AwardPredictionView>,
+            awards: ExtendedAwards?
+        ): GroupAwardPredictionsResponse =
             awardPredictions.groupBy { it.user }
                 .mapValues { AwardPredictionsResponse.fromAwardPredictionsViews(it.key, it.value) }
-                .let { GroupAwardPredictionsResponse(group = GroupResponse.from(group), predictions = it.values.toList()) }
+                .let {
+                    GroupAwardPredictionsResponse(
+                        group = GroupResponse.from(group),
+                        predictions = it.values.toList(),
+                        winners = awards?.let(AwardsResponse::from)
+                    )
+                }
     }
 }

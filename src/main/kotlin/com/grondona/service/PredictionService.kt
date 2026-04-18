@@ -5,6 +5,7 @@ import com.grondona.exception.ForbiddenException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.AwardPrediction
 import com.grondona.model.AwardType
+import com.grondona.model.ExtendedAwards
 import com.grondona.model.Group
 import com.grondona.model.Match
 import com.grondona.model.MatchPrediction
@@ -218,8 +219,18 @@ class PredictionService(
             throw BadRequestException("Tournament hasn't started yet")
         }
 
+        val awards = tournament.awards?.let {
+            ExtendedAwards(
+                champion = teamRepository.findById(it.champion).orElseThrow { NotFoundException("Champion not found") },
+                topScorer = playerRepository.findById(it.topScorer).orElseThrow { NotFoundException("Top scorer not found") },
+                bestPlayer = playerRepository.findById(it.bestPlayer).orElseThrow { NotFoundException("Best player not found") },
+                bestGoalkeeper = playerRepository.findById(it.bestGoalkeeper).orElseThrow { NotFoundException("Best goalkeeper not found") },
+                bestYoungPlayer = playerRepository.findById(it.bestYoungPlayer).orElseThrow { NotFoundException("Best young player not found") },
+            )
+        }.takeIf { tournament.status == TournamentStatus.FINISHED }
+
         val predictions = awardPredictionRepository.findGroupAwardPredictions(group.id!!)
-        return GroupAwardPredictionsResponse.fromAwardPredictionsViews(group, predictions)
+        return GroupAwardPredictionsResponse.fromAwardPredictionsViews(group, predictions, awards)
     }
 
     fun getUserAwardPredictionsForGroup(userId: UUID, groupId: UUID): AwardPredictionsResponse {

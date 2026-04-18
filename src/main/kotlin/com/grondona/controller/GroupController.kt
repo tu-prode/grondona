@@ -72,7 +72,7 @@ class GroupController(
         logger.info("DELETE /api/tournaments/{}/groups/{} - Deleting group", tournamentId, groupId)
 
         val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
-        groupService.getGroupById(groupId)
+        groupService.getGroupById(groupId, omitStandings = true)
 
         if (!groupMembershipService.isAdmin(userId, groupId)) {
             throw ForbiddenException("User not allowed")

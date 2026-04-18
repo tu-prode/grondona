@@ -2083,7 +2083,30 @@ components:
       properties:
         group:
           $ref: '#/components/schemas/GroupResponse'
+        winners:
+          $ref: '#/components/schemas/AwardsResponse'
         predictions:
           type: array
           items:
             $ref: '#/components/schemas/AwardPredictionsResponse'
+
+    AwardsResponse:
+      description: Awards winners four a certain tournament
+      type: object
+      required:
+        - champion
+        - top_scorer
+        - best_player
+        - best_goalkeeper
+        - best_young_player
+      properties:
+        champion:
+          $ref: '#/components/schemas/TeamResponse'
+        top_scorer:
+          $ref: '#/components/schemas/PlayerResponse'
+        best_player:
+          $ref: '#/components/schemas/PlayerResponse'
+        best_goalkeeper:
+          $ref: '#/components/schemas/PlayerResponse'
+        best_young_player:
+          $ref: '#/components/schemas/PlayerResponse'

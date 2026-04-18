@@ -109,7 +109,7 @@ class GroupService(
         logger.info("Group deleted successfully: id={}, name='{}'", groupId, group.name)
     }
 
-    fun getGroupById(groupId: UUID, liveStandings: Boolean = false): GroupResponse {
+    fun getGroupById(groupId: UUID, liveStandings: Boolean = false, omitStandings: Boolean = false): GroupResponse {
         logger.info("Fetching group id={}", groupId)
 
         val group = groupRepository.findById(groupId).orElseThrow {
@@ -118,6 +118,10 @@ class GroupService(
         }
 
         logger.info("Group fetched successfully: id={}, name='{}'", group.id, group.name)
+
+        if (omitStandings) {
+            return GroupResponse.from(group)
+        }
 
         val members = membershipRepository.findByGroupId(groupId)
         val standings = when {
@@ -165,7 +169,7 @@ class GroupService(
 
             // joined filter [optional]
             if (joined != null) {
-                val join = root.join<Group, GroupUser>("groupUsers", JoinType.LEFT)
+                val join = root.join<Group, GroupUser>("members", JoinType.LEFT)
 
                 join.on(
                     builder.equal(
