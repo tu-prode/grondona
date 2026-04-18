@@ -109,7 +109,7 @@ class PredictionController(
         val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
 
         logger.info("POST /api/{}/tournaments/groups/{}/predictions/awards - userId={}", tournamentId, groupId, userId)
-        val response = predictionsService.submitAwardPredictions(userId, groupId, request)
+        val response = predictionsService.submitAwardPredictions(userId, groupId, tournamentId, request)
         logger.info("POST /api/{}/tournaments/groups/{}/predictions/awards - userId={} - Award predictions stored successfully", tournamentId, groupId, userId)
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response)

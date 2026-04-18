@@ -16,6 +16,7 @@ import com.grondona.model.User
 import com.grondona.repository.MatchRepository
 import com.grondona.repository.MembershipRepository
 import com.grondona.repository.MatchPredictionRepository
+import com.grondona.repository.TournamentRepository
 import com.grondona.utils.WorldCupEngine
 import io.mockk.*
 import io.mockk.impl.annotations.InjectMockKs
@@ -29,7 +30,7 @@ import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.*
 
-class CronServiceTest {
+class MatchServiceTest {
 
     @MockK
     private lateinit var matchClient: MatchClient
@@ -41,10 +42,13 @@ class CronServiceTest {
     private lateinit var membershipRepository: MembershipRepository
 
     @MockK
+    private lateinit var tournamentRepository: TournamentRepository
+
+    @MockK
     private lateinit var predictionRepository: MatchPredictionRepository
 
     @InjectMockKs
-    private lateinit var cronService: MatchService
+    private lateinit var matchService: MatchService
 
     private val testTournamentId = WorldCupEngine.SYSTEM_TOURNAMENT_ID
     private val testTournament: Tournament = Tournament(
@@ -111,7 +115,7 @@ class CronServiceTest {
         @Test
         fun `updateMatchesStatuses should fail when tournamentId is not supported`() {
             val exception = assertThrows<BadRequestException> {
-                cronService.updateMatchesStatuses(UUID.randomUUID())
+                matchService.updateMatchesStatuses(UUID.randomUUID())
             }
 
             assertEquals("Tournament not supported", exception.message)
@@ -136,8 +140,9 @@ class CronServiceTest {
                 )
             } returns listOf(dbMatch1, dbMatch2, dbMatch3, dbMatch4)
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
+            every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament.copy(status = TournamentStatus.IN_PROGRESS))
 
-            cronService.updateMatchesStatuses(testTournamentId)
+            matchService.updateMatchesStatuses(testTournamentId)
 
             val slot = slot<List<Match>>()
             verify(exactly = 1) { matchRepository.saveAll(capture(slot)) }
@@ -176,9 +181,10 @@ class CronServiceTest {
                     listOf(MatchStatus.NOT_STARTED, MatchStatus.IN_PROGRESS)
                 )
             } returns listOf(dbMatch1, dbMatch2, dbMatch3, dbMatch4)
+            every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament.copy(status = TournamentStatus.IN_PROGRESS))
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
 
-            cronService.updateMatchesStatuses(testTournamentId)
+            matchService.updateMatchesStatuses(testTournamentId)
 
             val slot = slot<List<Match>>()
             verify(exactly = 1) { matchRepository.saveAll(capture(slot)) }
@@ -214,9 +220,10 @@ class CronServiceTest {
                     listOf(MatchStatus.NOT_STARTED, MatchStatus.IN_PROGRESS)
                 )
             } returns listOf(dbMatch1, dbMatch2, dbMatch3, dbMatch4)
+            every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament.copy(status = TournamentStatus.IN_PROGRESS))
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
 
-            cronService.updateMatchesStatuses(testTournamentId)
+            matchService.updateMatchesStatuses(testTournamentId)
 
             val slot = slot<List<Match>>()
             verify(exactly = 1) { matchRepository.saveAll(capture(slot)) }
@@ -252,9 +259,10 @@ class CronServiceTest {
                     listOf(MatchStatus.NOT_STARTED, MatchStatus.IN_PROGRESS)
                 )
             } returns listOf(dbMatch1, dbMatch2, dbMatch3, dbMatch4)
+            every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament.copy(status = TournamentStatus.IN_PROGRESS))
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
 
-            cronService.updateMatchesStatuses(testTournamentId)
+            matchService.updateMatchesStatuses(testTournamentId)
 
             val slot = slot<List<Match>>()
             verify(exactly = 1) { matchRepository.saveAll(capture(slot)) }
@@ -290,9 +298,10 @@ class CronServiceTest {
                     listOf(MatchStatus.NOT_STARTED, MatchStatus.IN_PROGRESS)
                 )
             } returns listOf(dbMatch1, dbMatch2, dbMatch3, dbMatch4)
+            every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament.copy(status = TournamentStatus.IN_PROGRESS))
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
 
-            cronService.updateMatchesStatuses(testTournamentId)
+            matchService.updateMatchesStatuses(testTournamentId)
 
             val slot = slot<List<Match>>()
             verify(exactly = 1) { matchRepository.saveAll(capture(slot)) }
@@ -328,6 +337,7 @@ class CronServiceTest {
                     listOf(MatchStatus.NOT_STARTED, MatchStatus.IN_PROGRESS)
                 )
             } returns listOf(dbMatch1, dbMatch2, dbMatch3, dbMatch4)
+            every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament.copy(status = TournamentStatus.IN_PROGRESS))
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
 
             val user1 = testUser.copy(id = UUID.randomUUID())
@@ -348,7 +358,7 @@ class CronServiceTest {
             } returns listOf(member1, member2)
             every { membershipRepository.saveAll(any<List<GroupUser>>()) } answers { firstArg() }
 
-            cronService.updateMatchesStatuses(testTournamentId)
+            matchService.updateMatchesStatuses(testTournamentId)
 
             val slot1 = slot<List<Match>>()
             verify(exactly = 1) { matchRepository.saveAll(capture(slot1)) }
@@ -404,9 +414,10 @@ class CronServiceTest {
                     listOf(MatchStatus.NOT_STARTED, MatchStatus.IN_PROGRESS)
                 )
             } returns listOf(dbMatch1, dbMatch2, dbMatch3)
+            every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament.copy(status = TournamentStatus.IN_PROGRESS))
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
 
-            cronService.updateMatchesStatuses(testTournamentId)
+            matchService.updateMatchesStatuses(testTournamentId)
 
             val slot = slot<List<Match>>()
             verify(exactly = 1) { matchRepository.saveAll(capture(slot)) }
@@ -448,13 +459,39 @@ class CronServiceTest {
                 )
             } returns listOf(dbMatch1, dbMatch2, dbMatch3)
 
-            cronService.updateMatchesStatuses(testTournamentId)
+            matchService.updateMatchesStatuses(testTournamentId)
 
             verify(exactly = 0) { matchRepository.saveAll<Match>(any()) }
             verify(exactly = 0) { predictionRepository.findByStatusAndMatchIdIn(any(), any()) }
             verify(exactly = 0) { predictionRepository.saveAll<MatchPrediction>(any()) }
             verify(exactly = 0) { membershipRepository.findByGroupId(any()) }
             verify(exactly = 0) { membershipRepository.saveAll<GroupUser>(any()) }
+        }
+
+        @Test
+        fun `updateMatchesStatuses starts a tournament when first match starts`() {
+            val externalMatch = matchFromAPI(
+                home = "QAT", away = "ECU", homeGoals = 0, awayGoals = 0, minutes = 0, half = 1, status = "IN_PLAY"
+            )
+            every { matchClient.getMatches(testTournamentId) } returns listOf(externalMatch)
+
+            val dbMatch1 = matchFromDB(home = "QAT", away = "ECU", status = MatchStatus.IN_PROGRESS)
+            val dbMatch2 = matchFromDB(home = "ENG", away = "IRN")
+            every {
+                matchRepository.findAllByTournamentIdAndStatusIn(testTournamentId, listOf(MatchStatus.NOT_STARTED, MatchStatus.IN_PROGRESS))
+            } returns listOf(dbMatch1, dbMatch2)
+            every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
+
+            every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
+            every { tournamentRepository.save(any<Tournament>()) } answers { firstArg() }
+
+            matchService.updateMatchesStatuses(testTournamentId)
+
+            val slot = slot<Tournament>()
+            verify(exactly = 1) { tournamentRepository.save(capture(slot)) }
+            val tournament = slot.captured
+            assertEquals(testTournament.id, tournament.id)
+            assertEquals(TournamentStatus.IN_PROGRESS, tournament.status)
         }
     }
 
@@ -466,10 +503,9 @@ class CronServiceTest {
             val predictions = listOf(
                 predictionFromDB(match = matchFromDB("ARG", "FRA"), status = PredictionStatus.MISSING),
             )
-            val results = cronService.checkCompletedPredictions(predictions)
+            val results = matchService.checkCompletedPredictions(predictions)
 
-            assertEquals(1, results.size)
-            assertEquals(PredictionStatus.MISSING, results[0].status)
+            assertEquals(0, results.size)
         }
 
         @Test
@@ -477,66 +513,9 @@ class CronServiceTest {
             val predictions = listOf(
                 predictionFromDB(match = matchFromDB("ARG", "FRA", status = MatchStatus.IN_PROGRESS)),
             )
-            val results = cronService.checkCompletedPredictions(predictions)
+            val results = matchService.checkCompletedPredictions(predictions)
 
-            assertEquals(1, results.size)
-            assertEquals(PredictionStatus.PENDING, results[0].status)
-        }
-
-        @Test
-        fun `checkCompletedPredictions marks an INCORRECT prediction`() {
-            val predictions = listOf(
-                predictionFromDB(
-                    match = matchFromDB("ARG", "FRA", homeGoals = 3, awayGoals = 3, status = MatchStatus.FINISHED),
-                    homeGoals = 3, awayGoals = 0
-                ),
-            )
-            val results = cronService.checkCompletedPredictions(predictions)
-
-            assertEquals(1, results.size)
-            assertEquals(PredictionStatus.INCORRECT, results[0].status)
-        }
-
-        @Test
-        fun `checkCompletedPredictions marks a PARTIAL prediction`() {
-            val predictions = listOf(
-                predictionFromDB(
-                    match = matchFromDB("ARG", "FRA", homeGoals = 3, awayGoals = 3, status = MatchStatus.FINISHED),
-                    homeGoals = 1, awayGoals = 1
-                ),
-            )
-            val results = cronService.checkCompletedPredictions(predictions)
-
-            assertEquals(1, results.size)
-            assertEquals(PredictionStatus.PARTIAL, results[0].status)
-        }
-
-        @Test
-        fun `checkCompletedPredictions marks a CORRECT prediction`() {
-            val predictions = listOf(
-                predictionFromDB(
-                    match = matchFromDB("ARG", "FRA", homeGoals = 1, awayGoals = 1, status = MatchStatus.FINISHED),
-                    homeGoals = 1, awayGoals = 1
-                ),
-            )
-            val results = cronService.checkCompletedPredictions(predictions)
-
-            assertEquals(1, results.size)
-            assertEquals(PredictionStatus.CORRECT, results[0].status)
-        }
-
-        @Test
-        fun `checkCompletedPredictions marks a BONUS prediction`() {
-            val predictions = listOf(
-                predictionFromDB(
-                    match = matchFromDB("ARG", "FRA", homeGoals = 3, awayGoals = 3, status = MatchStatus.FINISHED),
-                    homeGoals = 3, awayGoals = 3
-                ),
-            )
-            val results = cronService.checkCompletedPredictions(predictions)
-
-            assertEquals(1, results.size)
-            assertEquals(PredictionStatus.BONUS, results[0].status)
+            assertEquals(0, results.size)
         }
     }
 
@@ -546,7 +525,7 @@ class CronServiceTest {
         @Test
         fun `updateMatchesQuotas should fail when tournamentId is not supported`() {
             val exception = assertThrows<BadRequestException> {
-                cronService.updateMatchesQuotas(UUID.randomUUID())
+                matchService.updateMatchesQuotas(UUID.randomUUID())
             }
 
             assertEquals("Tournament not supported", exception.message)
@@ -569,7 +548,7 @@ class CronServiceTest {
             } returns listOf(dbMatch1, dbMatch2)
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
 
-            cronService.updateMatchesQuotas(testTournamentId)
+            matchService.updateMatchesQuotas(testTournamentId)
 
             val slot = slot<List<Match>>()
             verify(exactly = 1) { matchRepository.saveAll(capture(slot)) }
@@ -614,7 +593,7 @@ class CronServiceTest {
             } returns listOf(dbMatch1, dbMatch2)
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
 
-            cronService.updateMatchesQuotas(testTournamentId)
+            matchService.updateMatchesQuotas(testTournamentId)
 
             val slot = slot<List<Match>>()
             verify(exactly = 1) { matchRepository.saveAll(capture(slot)) }

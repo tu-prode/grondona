@@ -789,7 +789,7 @@ paths:
       summary: Get a group by ID
       description: |
         Retrieve a specific group by its UUID.
-      operationId: getGroup
+      operationId: getGroupById
       security:
         - bearerAuth: [ ]
       parameters:
@@ -800,10 +800,10 @@ paths:
           schema:
             type: string
             format: uuid
-        - name: standings
-          in: path
+        - name: live
+          in: query
           required: false
-          description: Flag to indicate if the response should return the group standings
+          description: Flag to indicate if the standings in the response should be live or not
           schema:
             type: boolean
       responses:
@@ -1473,22 +1473,14 @@ components:
       type: object
       description: A group the authenticated user has joined, with current member count
       required:
-        - group_id
-        - group_name
+        - group
         - tournament_id
         - points
         - rank
         - role
       properties:
-        group_id:
-          type: string
-          format: uuid
-          description: Unique group identifier
-          example: f47ac10b-58cc-4372-a567-0e02b2c3d479
-        group_name:
-          type: string
-          description: Group name
-          example: General
+        group:
+          $ref: '#/components/schemas/GroupResponse'
         tournament_id:
           type: string
           format: uuid
@@ -1559,21 +1551,13 @@ components:
     GroupStanding:
       type: object
       required:
-        - user_id
-        - username
+        - user
         - points
         - rank
         - last_predictions
       properties:
-        user_id:
-          type: string
-          format: uuid
-          description: Unique user identifier
-          example: f47ac10b-58cc-4372-a567-0e02b2c3d479
-        username:
-          type: string
-          description: Unique username
-          example: fa4e6142-20eb-43ac-a772-7cb58f409720
+        user:
+          $ref: '#/components/schemas/UserResponse'
         rank:
           type: integer
           format: int16
@@ -1599,6 +1583,7 @@ components:
         - private
         - max_members
         - has_started
+        - standings
       properties:
         id:
           type: string
@@ -1939,19 +1924,10 @@ components:
       description: List of predictions for a group and tournament
       type: object
       required:
-        - group_id
-        - group_name
-        - predictions
+        - group
       properties:
-        group_id:
-          type: string
-          format: uuid
-          description: Unique group identifier
-          example: f47ac10b-58cc-4372-a567-0e02b2c3d479
-        group_name:
-          type: string
-          description: Group name
-          example: General
+        group:
+          $ref: '#/components/schemas/GroupResponse'
         predictions:
           type: array
           items:
@@ -2102,8 +2078,11 @@ components:
       description: List of user predictions to save for a group and tournament
       type: object
       required:
+        - group
         - predictions
       properties:
+        group:
+          $ref: '#/components/schemas/GroupResponse'
         predictions:
           type: array
           items:

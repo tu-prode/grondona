@@ -5,11 +5,11 @@ import com.grondona.model.Group
 import com.grondona.model.PredictionStatus
 import com.grondona.model.Standing
 import com.grondona.model.TournamentStatus
+import com.grondona.model.User
 import java.util.UUID
 
 data class StandingResponse(
-    val userId: UUID,
-    val username: String,
+    val user: UserResponse,
     val points: Float,
     val rank: Int,
     val lastPredictions: List<PredictionStatus>
@@ -45,8 +45,7 @@ data class GroupResponse(
             hasStarted = group.tournament.status != TournamentStatus.NOT_STARTED,
             standings = standings.map { standing ->
                 StandingResponse(
-                    userId = standing.user.id!!,
-                    username = standing.user.username,
+                    user = UserResponse.from(standing.user),
                     points = standing.points,
                     rank = standing.rank,
                     lastPredictions = standing.lastPredictions,

@@ -6,17 +6,20 @@ import com.grondona.model.Match
 import com.grondona.model.MatchStatus
 import com.grondona.model.MatchPrediction
 import com.grondona.model.PredictionStatus
+import com.grondona.model.SchedulerData
 import com.grondona.model.TournamentStatus
 import com.grondona.repository.MatchRepository
 import com.grondona.repository.MembershipRepository
 import com.grondona.repository.MatchPredictionRepository
 import com.grondona.repository.TournamentRepository
-import com.grondona.utils.PointsEngine
+import com.grondona.utils.PredictionsEngine
 import com.grondona.utils.WorldCupEngine
 import java.util.UUID
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 @Service
 class MatchService(
@@ -32,7 +35,7 @@ class MatchService(
     }
 
     @Transactional
-    fun updateMatchesStatuses(tournamentId: UUID) {
+    fun updateMatchesStatuses(tournamentId: UUID): SchedulerData {
         if (tournamentId != WorldCupEngine.SYSTEM_TOURNAMENT_ID) {
             logger.warn("Currently the app only supports World Cup matches, with id={}", tournamentId)
             throw BadRequestException("Tournament not supported")
@@ -72,6 +75,18 @@ class MatchService(
         if (anyJustFinished) {
             updateStandings(matchesToUpdate)
         }
+
+        if (matchesToUpdate.any { it.status == MatchStatus.IN_PROGRESS }) {
+            return SchedulerData.wait()
+        }
+
+        val nextMatches = systemMatches.filter { it.status == MatchStatus.NOT_STARTED }
+        if (nextMatches.isNotEmpty()) {
+            val nextRunAt = nextMatches.sortedBy { it.startedAt }.first().startedAt ?: LocalDateTime.now().plus(1, ChronoUnit.DAYS)
+            return SchedulerData.sleep(nextRunAt).takeIf { nextRunAt.isAfter(LocalDateTime.now()) } ?: SchedulerData.wait()
+        }
+
+        return SchedulerData.stop()
     }
 
     fun updateStandings(matchesToUpdate: List<Match>) {
@@ -91,36 +106,14 @@ class MatchService(
                 matchesToUpdate.map { match -> matchPredictions[match.id!!]?.firstOrNull() }
             }
 
-            members = PointsEngine.updateStandings(members, newPredictions)
+            members = PredictionsEngine.updateStandings(members, newPredictions)
             logger.debug("Group={} new standings saved", group.id)
             membershipRepository.saveAll(members)
         }
     }
 
     fun checkCompletedPredictions(predictions: List<MatchPrediction>): List<MatchPrediction> =
-        predictions.toMutableList().map { prediction ->
-            if (prediction.status == PredictionStatus.PENDING && prediction.match.status == MatchStatus.FINISHED) {
-                val matchScore = prediction.match.score()
-                if (matchScore == null) {
-                    logger.error("Match with id={} has no goals submitted but status FINISHED", prediction.match.id)
-                } else {
-                    val predictionScore = prediction.score()
-
-                    when {
-                        matchScore == predictionScore && matchScore.goals() >= 5 -> prediction.status =
-                            PredictionStatus.BONUS
-
-                        matchScore == predictionScore -> prediction.status = PredictionStatus.CORRECT
-                        matchScore.outcome() == predictionScore.outcome() -> prediction.status =
-                            PredictionStatus.PARTIAL
-
-                        else -> prediction.status = PredictionStatus.INCORRECT
-                    }
-                }
-            }
-
-            prediction
-        }
+        PredictionsEngine.checkPredictions(predictions.filter { it.status == PredictionStatus.PENDING && it.match.status == MatchStatus.FINISHED })
 
     @Transactional
     fun updateMatchesQuotas(tournamentId: UUID) {

@@ -25,10 +25,4 @@ object WorldCupEngine {
 
     fun isMatchUnlocked(match: Match) =
         match.startedAt?.isAfter(now.plus(15, ChronoUnit.MINUTES)) ?: true
-
-
-    // TODO: here we should create new matches and change the tournament status
-    fun updateTournament(): Pair<TournamentStatus, List<Match>> {
-        return Pair(TournamentStatus.IN_PROGRESS, listOf())
-    }
 }

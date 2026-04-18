@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.grondona.exception.ConflictException
 import com.grondona.exception.GlobalExceptionHandler
 import com.grondona.exception.NotFoundException
+import com.grondona.model.Group
+import com.grondona.model.GroupRole
+import com.grondona.model.MembershipView
 import com.grondona.model.dto.request.CreateUserRequest
 import com.grondona.model.dto.request.LoginUserRequest
 import com.grondona.model.dto.request.UpdateUserRequest
@@ -13,13 +16,17 @@ import com.grondona.model.dto.response.UserResponse
 import com.grondona.security.JwtUserPrincipal
 import com.grondona.service.MembershipService
 import com.grondona.service.UserService
+import com.grondona.testTournament
 import io.mockk.every
 import io.mockk.just
+
 import io.mockk.mockk
 import io.mockk.Runs
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.core.MethodParameter
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -34,6 +41,7 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.method.support.ModelAndViewContainer
 import java.util.*
 
+@AutoConfigureMockMvc
 class UserControllerTest {
 
     private lateinit var mockMvc: MockMvc
@@ -45,7 +53,7 @@ class UserControllerTest {
     private val testUserId = UUID.randomUUID()
     private val testToken = "test.jwt.token"
 
-    private inner class TestPrincipalArgumentResolver : HandlerMethodArgumentResolver {
+    private class TestPrincipalArgumentResolver : HandlerMethodArgumentResolver {
         override fun supportsParameter(parameter: MethodParameter): Boolean {
             return parameter.parameterType == JwtUserPrincipal::class.java
         }
@@ -249,20 +257,17 @@ class UserControllerTest {
         fun `GET api users me groups should return 200 with list of groups`() {
             setAuthenticatedUser(testUserId, "testuser")
             val groupId = UUID.randomUUID()
-            val groups = listOf(
-                MembershipResponse(
-                    groupId = groupId,
-                    groupName = "My Group",
-                    memberCount = 5,
-                )
-            )
+            val groups = listOf(MembershipResponse.fromMembershipView(MembershipView(
+                membersCount = 5L, points = 100f, rank = 1, role = GroupRole.MEMBER,
+                group = Group(id = groupId, name = "My Group", tournament = testTournament),
+            )))
             every { groupMembershipService.getMyGroups(testUserId) } returns groups
 
             mockMvc.perform(get("/api/users/me/groups"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].groupId").value(groupId.toString()))
-                .andExpect(jsonPath("$[0].groupName").value("My Group"))
+                .andExpect(jsonPath("$[0].group.id").value(groupId.toString()))
+                .andExpect(jsonPath("$[0].group.name").value("My Group"))
                 .andExpect(jsonPath("$[0].memberCount").value(5))
 
             clearAuthentication()

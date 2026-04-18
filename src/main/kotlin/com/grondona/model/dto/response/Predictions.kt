@@ -48,27 +48,15 @@ data class MatchPredictionResponse(
 }
 
 data class GroupMatchPredictionsResponse(
-    val groupId: UUID,
-    val groupName: String,
+    val group: Group,
     val predictions: List<MatchPredictionResponse>
 ) {
     companion object {
         fun fromPredictions(group: Group, predictions: List<MatchPrediction>): GroupMatchPredictionsResponse =
-            GroupMatchPredictionsResponse(
-                groupId = group.id!!,
-                groupName = group.name,
-                predictions = predictions.map(MatchPredictionResponse::from),
-            )
+            GroupMatchPredictionsResponse(group = group, predictions = predictions.map(MatchPredictionResponse::from))
 
-        fun fromMatchPredictionViews(
-            group: Group,
-            predictions: List<MatchPredictionView>
-        ): GroupMatchPredictionsResponse =
-            GroupMatchPredictionsResponse(
-                groupId = group.id!!,
-                groupName = group.name,
-                predictions = predictions.map(MatchPredictionResponse::fromPredictionView),
-            )
+        fun fromMatchPredictionViews(group: Group, predictions: List<MatchPredictionView>): GroupMatchPredictionsResponse =
+            GroupMatchPredictionsResponse(group = group, predictions = predictions.map(MatchPredictionResponse::fromPredictionView))
     }
 }
 
@@ -114,14 +102,13 @@ data class AwardPredictionsResponse(
 }
 
 data class GroupAwardPredictionsResponse(
-    val groupId: UUID,
-    val groupName: String,
+    val group: GroupResponse,
     val predictions: List<AwardPredictionsResponse>
 ) {
     companion object {
         fun fromAwardPredictionsViews(group: Group, awardPredictions: List<AwardPredictionView>): GroupAwardPredictionsResponse =
             awardPredictions.groupBy { it.user }
                 .mapValues { AwardPredictionsResponse.fromAwardPredictionsViews(it.key, it.value) }
-                .let { GroupAwardPredictionsResponse(groupId = group.id!!, groupName = group.name, predictions = it.values.toList()) }
+                .let { GroupAwardPredictionsResponse(group = GroupResponse.from(group), predictions = it.values.toList()) }
     }
 }

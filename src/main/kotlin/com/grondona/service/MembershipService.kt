@@ -80,16 +80,7 @@ class MembershipService(
         val memberships = membershipRepository.findUserGroups(userId)
         logger.info("User {} belongs to {} groups", userId, memberships.size)
 
-        return memberships.map {
-            MembershipResponse(
-                groupId = it.group.id!!,
-                groupName = it.group.name,
-                memberCount = it.membersCount.toInt(),
-                points = it.points,
-                rank = it.rank,
-                role = it.role,
-            )
-        }
+        return memberships.map(MembershipResponse::fromMembershipView)
     }
 
     fun isAdmin(userId: UUID, groupId: UUID): Boolean {
