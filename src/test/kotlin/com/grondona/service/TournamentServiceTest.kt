@@ -10,6 +10,8 @@ import com.grondona.model.TournamentStatus
 import com.grondona.model.dto.request.CreateTournamentRequest
 import com.grondona.model.dto.request.UpdateTournamentRequest
 import com.grondona.repository.MatchRepository
+import com.grondona.repository.PlayerRepository
+import com.grondona.repository.TeamRepository
 import com.grondona.repository.TournamentRepository
 import io.mockk.*
 import io.mockk.impl.annotations.InjectMockKs
@@ -25,10 +27,15 @@ import java.util.*
 class TournamentServiceTest {
 
     @MockK
+    private lateinit var teamRepository: TeamRepository
+
+    @MockK
     private lateinit var matchRepository: MatchRepository
 
-    // relaxUnitFun avoids Kotlin overload-resolution ambiguity for delete(T) vs delete(Specification<T>)
-    @MockK(relaxUnitFun = true)
+    @MockK
+    private lateinit var playerRepository: PlayerRepository
+
+    @MockK
     private lateinit var tournamentRepository: TournamentRepository
 
     @InjectMockKs
@@ -179,8 +186,8 @@ class TournamentServiceTest {
         @Test
         fun `deleteTournament should delete when tournament exists`() {
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
+            every { tournamentRepository.delete(testTournament) } just Runs
 
-            // delete(Tournament): Unit is auto-relaxed; we verify the service completes successfully
             assertDoesNotThrow { tournamentService.deleteTournament(testTournamentId) }
             verify { tournamentRepository.findById(testTournamentId) }
         }

@@ -18,7 +18,7 @@ import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 
-class PointsEngineTest {
+class PredictionsEngineTest {
 
     private val anyTournament = Tournament(
         id = UUID.randomUUID(), name = "T", status = TournamentStatus.NOT_STARTED,
@@ -157,6 +157,50 @@ class PointsEngineTest {
             val match = testMatch(homeGoals = 1, awayGoals = 0, homeQuota = 1.3333333f)
             val result = PredictionsEngine.points(testPrediction(match, 2, 0))
             assertEquals(2.33f, result)
+        }
+    }
+
+    @Nested
+    inner class CheckPredictionsTests {
+
+        @Test
+        fun `checkPredictions marks an INCORRECT prediction`() {
+            val match = testMatch(1, 1)
+            val prediction = testPrediction(match, 1, 0)
+            val results = PredictionsEngine.checkPredictions(listOf(prediction))
+
+            assertEquals(1, results.size)
+            assertEquals(PredictionStatus.INCORRECT, results[0].status)
+        }
+
+        @Test
+        fun `checkPredictions marks a PARTIAL prediction`() {
+            val match = testMatch(1, 1)
+            val prediction = testPrediction(match, 0, 0)
+            val results = PredictionsEngine.checkPredictions(listOf(prediction))
+
+            assertEquals(1, results.size)
+            assertEquals(PredictionStatus.PARTIAL, results[0].status)
+        }
+
+        @Test
+        fun `checkPredictions marks a CORRECT prediction`() {
+            val match = testMatch(1, 1)
+            val prediction = testPrediction(match, 1, 1)
+            val results = PredictionsEngine.checkPredictions(listOf(prediction))
+
+            assertEquals(1, results.size)
+            assertEquals(PredictionStatus.CORRECT, results[0].status)
+        }
+
+        @Test
+        fun `checkPredictions marks a BONUS prediction`() {
+            val match = testMatch(3, 3)
+            val prediction = testPrediction(match, 3, 3)
+            val results = PredictionsEngine.checkPredictions(listOf(prediction))
+
+            assertEquals(1, results.size)
+            assertEquals(PredictionStatus.BONUS, results[0].status)
         }
     }
 

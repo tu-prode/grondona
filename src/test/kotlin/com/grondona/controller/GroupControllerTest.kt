@@ -11,8 +11,6 @@ import com.grondona.model.dto.response.GroupResponse
 import com.grondona.security.JwtUserPrincipal
 import com.grondona.service.MembershipService
 import com.grondona.service.GroupService
-import com.grondona.service.PredictionService
-import com.grondona.service.UserService
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk

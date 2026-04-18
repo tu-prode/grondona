@@ -55,7 +55,7 @@ class PredictionService(
         }
     }
 
-    private fun checkMembership(userId: UUID, groupId: UUID): Pair<User, Group> {
+    internal fun checkMembership(userId: UUID, groupId: UUID): Pair<User, Group> {
         val user = userRepository.findById(userId).orElseThrow { NotFoundException("User not found") }
         val group = groupRepository.findById(groupId).orElseThrow { NotFoundException("Group not found") }
 
@@ -155,12 +155,41 @@ class PredictionService(
 
     @Transactional
     fun submitAwardPredictions(
-        userId: UUID, groupId: UUID,
+        userId: UUID, groupId: UUID, tournamentId: UUID,
         awardPredictions: SubmitAwardPredictionRequest,
     ): AwardPredictionsResponse {
         logger.info("Submitting award predictions for user={} at group={}", userId, groupId)
 
         val (user, group) = checkMembership(userId, groupId)
+        val tournament = tournamentRepository.findById(tournamentId).orElseThrow { NotFoundException("Tournament not found") }
+        if (tournament.status == TournamentStatus.IN_PROGRESS) {
+            logger.warn("User={} trying to submit award predictions for the tournament={} at group={}, but it has already started", userId, tournamentId, groupId)
+            throw BadRequestException("Tournament has already started")
+        }
+
+        when {
+            awardPredictions.champions.size > 2 -> {
+                logger.warn("User={} trying to submit {} options for tournament champion", userId, awardPredictions.champions.size)
+                throw BadRequestException("Invalid amount of awards")
+            }
+            awardPredictions.topScorers.size > 3 -> {
+                logger.warn("User={} trying to submit {} options for tournament top scorer", userId, awardPredictions.topScorers.size)
+                throw BadRequestException("Invalid amount of awards")
+            }
+            awardPredictions.bestPlayers.size > 3 -> {
+                logger.warn("User={} trying to submit {} options for tournament best player", userId, awardPredictions.bestPlayers.size)
+                throw BadRequestException("Invalid amount of awards")
+            }
+            awardPredictions.bestGoalkeepers.size > 3 -> {
+                logger.warn("User={} trying to submit {} options for tournament best goalkeeper", userId, awardPredictions.bestGoalkeepers.size)
+                throw BadRequestException("Invalid amount of awards")
+            }
+            awardPredictions.bestYoungPlayers.size > 3 -> {
+                logger.warn("User={} trying to submit {} options for tournament best young player", userId, awardPredictions.bestYoungPlayers.size)
+                throw BadRequestException("Invalid amount of awards")
+            }
+        }
+
         var predictions = awardPredictions.champions.map {
             AwardPrediction(user = user, group = group, awardType = AwardType.CHAMPION, team = teamRepository.getReferenceById(it))
         } + awardPredictions.topScorers.map {

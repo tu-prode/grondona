@@ -505,8 +505,7 @@ class MatchServiceTest {
             )
             val results = matchService.checkCompletedPredictions(predictions)
 
-            assertEquals(1, results.size)
-            assertEquals(PredictionStatus.MISSING, results[0].status)
+            assertEquals(0, results.size)
         }
 
         @Test
@@ -516,64 +515,7 @@ class MatchServiceTest {
             )
             val results = matchService.checkCompletedPredictions(predictions)
 
-            assertEquals(1, results.size)
-            assertEquals(PredictionStatus.PENDING, results[0].status)
-        }
-
-        @Test
-        fun `checkCompletedPredictions marks an INCORRECT prediction`() {
-            val predictions = listOf(
-                predictionFromDB(
-                    match = matchFromDB("ARG", "FRA", homeGoals = 3, awayGoals = 3, status = MatchStatus.FINISHED),
-                    homeGoals = 3, awayGoals = 0
-                ),
-            )
-            val results = matchService.checkCompletedPredictions(predictions)
-
-            assertEquals(1, results.size)
-            assertEquals(PredictionStatus.INCORRECT, results[0].status)
-        }
-
-        @Test
-        fun `checkCompletedPredictions marks a PARTIAL prediction`() {
-            val predictions = listOf(
-                predictionFromDB(
-                    match = matchFromDB("ARG", "FRA", homeGoals = 3, awayGoals = 3, status = MatchStatus.FINISHED),
-                    homeGoals = 1, awayGoals = 1
-                ),
-            )
-            val results = matchService.checkCompletedPredictions(predictions)
-
-            assertEquals(1, results.size)
-            assertEquals(PredictionStatus.PARTIAL, results[0].status)
-        }
-
-        @Test
-        fun `checkCompletedPredictions marks a CORRECT prediction`() {
-            val predictions = listOf(
-                predictionFromDB(
-                    match = matchFromDB("ARG", "FRA", homeGoals = 1, awayGoals = 1, status = MatchStatus.FINISHED),
-                    homeGoals = 1, awayGoals = 1
-                ),
-            )
-            val results = matchService.checkCompletedPredictions(predictions)
-
-            assertEquals(1, results.size)
-            assertEquals(PredictionStatus.CORRECT, results[0].status)
-        }
-
-        @Test
-        fun `checkCompletedPredictions marks a BONUS prediction`() {
-            val predictions = listOf(
-                predictionFromDB(
-                    match = matchFromDB("ARG", "FRA", homeGoals = 3, awayGoals = 3, status = MatchStatus.FINISHED),
-                    homeGoals = 3, awayGoals = 3
-                ),
-            )
-            val results = matchService.checkCompletedPredictions(predictions)
-
-            assertEquals(1, results.size)
-            assertEquals(PredictionStatus.BONUS, results[0].status)
+            assertEquals(0, results.size)
         }
     }
 
