@@ -49,15 +49,21 @@ data class MatchPredictionResponse(
 }
 
 data class GroupMatchPredictionsResponse(
-    val group: Group,
+    val group: GroupResponse,
     val predictions: List<MatchPredictionResponse>
 ) {
     companion object {
         fun fromPredictions(group: Group, predictions: List<MatchPrediction>): GroupMatchPredictionsResponse =
-            GroupMatchPredictionsResponse(group = group, predictions = predictions.map(MatchPredictionResponse::from))
+            GroupMatchPredictionsResponse(
+                group = GroupResponse.from(group),
+                predictions = predictions.map(MatchPredictionResponse::from)
+            )
 
         fun fromMatchPredictionViews(group: Group, predictions: List<MatchPredictionView>): GroupMatchPredictionsResponse =
-            GroupMatchPredictionsResponse(group = group, predictions = predictions.map(MatchPredictionResponse::fromPredictionView))
+            GroupMatchPredictionsResponse(
+                group = GroupResponse.from(group),
+                predictions = predictions.map(MatchPredictionResponse::fromPredictionView)
+            )
     }
 }
 

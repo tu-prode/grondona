@@ -1,5 +1,6 @@
 package com.grondona.scheduler
 
+import com.grondona.model.Environments
 import com.grondona.service.MatchService
 import com.grondona.utils.WorldCupEngine
 import jakarta.annotation.PostConstruct
@@ -17,11 +18,14 @@ import java.util.concurrent.ScheduledFuture
 class MatchScheduler(
     private val matchService: MatchService,
     private val taskScheduler: TaskScheduler,
-    @Value("\${app.matches.statuses.poll-interval-ms}")
-    private val statusPollIntervalMs: Long
+    @Value("\${app.matches.poll-interval-ms}")
+    private val statusPollIntervalMs: Long,
+    @Value("\${app.env}")
+    private val rawEnv: String
 ) {
 
     private var future: ScheduledFuture<*>? = null
+    private val env = Environments.valueOf(rawEnv.uppercase())
 
     companion object {
         private val logger = LoggerFactory.getLogger(MatchService::class.java)
@@ -45,6 +49,10 @@ class MatchScheduler(
 
         val schedulerData = matchService.updateMatchesStatuses(WorldCupEngine.SYSTEM_TOURNAMENT_ID)
         when {
+            env == Environments.LOCAL -> {
+                scheduleAfterDelay(statusPollIntervalMs)
+            }
+
             schedulerData.shouldStop() -> {
                 logger.debug("Stopping MatchScheduler")
                 future?.cancel(false)
