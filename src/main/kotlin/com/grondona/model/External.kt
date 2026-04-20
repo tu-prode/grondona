@@ -2,7 +2,9 @@ package com.grondona.model
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.grondona.utils.WorldCupEngine
+import com.grondona.utils.round
 import java.time.LocalDateTime
+import kotlin.math.log
 
 // Data class for matches retrieved from LiveScoreAPI: https://live-score-api.com/documentation
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -71,14 +73,16 @@ data class ExternalMatch(
         return match?.let { Pair(it, changedToFinished) }
     }
 
+    private fun oddsToQuota(odds: Float) = 1 + 2 * log(odds.toDouble(), 10.0).toFloat().round()
+
     fun toQuotasUpdated(matches: List<Match>): Match? =
         matches.filter { it.status == MatchStatus.NOT_STARTED && WorldCupEngine.isMatchUnlocked(it) }
             .firstOrNull { it.homeTeam.name == home && it.awayTeam.name == away }?.also {
                 when (status) {
                     Status.TO_START.name -> {
-                        it.homeQuota = homeOdds
-                        it.tieQuota = tieOdds
-                        it.awayQuota = awayOdds
+                        it.homeQuota = oddsToQuota(homeOdds)
+                        it.tieQuota = oddsToQuota(tieOdds)
+                        it.awayQuota = oddsToQuota(awayOdds)
                     }
                 }
             }
