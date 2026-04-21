@@ -1773,7 +1773,7 @@ components:
         - away_team
         - home_quota
         - away_quota
-        - tie_quota
+        - draw_quota
         - status
       properties:
         id:
@@ -1799,7 +1799,7 @@ components:
           format: float16
           description: The quota for an away team win
           example: 1.8
-        tie_quota:
+        draw_quota:
           type: number
           format: float16
           description: The quota for a tie

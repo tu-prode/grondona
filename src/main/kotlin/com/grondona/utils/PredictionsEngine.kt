@@ -59,6 +59,7 @@ object PredictionsEngine {
                 }
             }
 
+            member.points = member.points.round()
             member.lastPredictions = member.lastPredictions.takeLast(5)
             member
         }.sortedWith(
@@ -89,7 +90,7 @@ object PredictionsEngine {
             if (matchOutcome == prediction.score().outcome()) {
                 points += when (matchOutcome) {
                     MatchOutcome.HOME -> prediction.match.homeQuota
-                    MatchOutcome.TIE -> prediction.match.tieQuota
+                    MatchOutcome.TIE -> prediction.match.drawQuota
                     MatchOutcome.AWAY -> prediction.match.awayQuota
                 }
             }

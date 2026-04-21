@@ -15,7 +15,7 @@ import com.grondona.repository.MatchRepository
 import com.grondona.repository.PlayerRepository
 import com.grondona.repository.TeamRepository
 import com.grondona.repository.TournamentRepository
-import com.grondona.utils.WorldCupEngine
+import com.grondona.service.engine.WorldCupEngine
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

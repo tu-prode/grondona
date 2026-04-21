@@ -1,8 +1,11 @@
 package com.grondona.scheduler
 
 import com.grondona.model.Environments
+import com.grondona.model.Match
+import com.grondona.model.MatchStatus
+import com.grondona.model.SchedulerData
 import com.grondona.service.MatchService
-import com.grondona.utils.WorldCupEngine
+import com.grondona.service.engine.WorldCupEngine
 import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -11,6 +14,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import java.util.Date
 import java.util.concurrent.ScheduledFuture
 
@@ -47,7 +51,16 @@ class MatchScheduler(
     private fun updateMatches() {
         logger.debug("Executing scheduled job for recalculating matches status")
 
-        val schedulerData = matchService.updateMatchesStatuses(WorldCupEngine.SYSTEM_TOURNAMENT_ID)
+        val schedulerData: SchedulerData
+        try {
+            val tournamentMatches = matchService.updateMatchesStatuses(WorldCupEngine.SYSTEM_TOURNAMENT_ID)
+            schedulerData = checkSchedule(tournamentMatches)
+        } catch (ex: Exception) {
+            logger.error("Error while executing MatchScheduler. Retrying in 10 minutes", ex)
+            scheduleAfterDelay(30 * 60 * 1000L)
+            return
+        }
+
         when {
             env == Environments.LOCAL -> {
                 scheduleAfterDelay(statusPollIntervalMs)
@@ -69,6 +82,20 @@ class MatchScheduler(
                 scheduleAfterDelay(statusPollIntervalMs)
             }
         }
+    }
+
+    private fun checkSchedule(tournamentMatches: List<Match>): SchedulerData {
+        if (tournamentMatches.any { it.status == MatchStatus.IN_PROGRESS }) {
+            return SchedulerData.wait()
+        }
+
+        val nextMatches = tournamentMatches.filter { it.status == MatchStatus.NOT_STARTED }
+        if (nextMatches.isNotEmpty()) {
+            val nextRunAt = nextMatches.sortedBy { it.startedAt }.first().startedAt ?: LocalDateTime.now().plus(1, ChronoUnit.DAYS)
+            return SchedulerData.sleep(nextRunAt).takeIf { nextRunAt.isAfter(LocalDateTime.now()) } ?: SchedulerData.wait()
+        }
+
+        return SchedulerData.stop()
     }
 
     private fun scheduleAfterDelay(delayMs: Long) {

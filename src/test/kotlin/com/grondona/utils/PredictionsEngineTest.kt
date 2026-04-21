@@ -42,12 +42,12 @@ class PredictionsEngineTest {
         awayGoals: Int,
         homeQuota: Float = 0f,
         awayQuota: Float = 0f,
-        tieQuota: Float = 0f,
+        drawQuota: Float = 0f,
     ) = Match(
         id = UUID.randomUUID(), code = "MATCH", tournament = anyTournament,
         homeTeam = anyTeam, awayTeam = anyTeam, status = MatchStatus.FINISHED,
         homeGoals = homeGoals, awayGoals = awayGoals,
-        homeQuota = homeQuota, awayQuota = awayQuota, tieQuota = tieQuota,
+        homeQuota = homeQuota, awayQuota = awayQuota, drawQuota = drawQuota,
         startedAt = LocalDateTime.now().minusHours(2),
         finishedAt = LocalDateTime.now().minusHours(1),
     )
@@ -113,7 +113,7 @@ class PredictionsEngineTest {
 
         @Test
         fun `points does not add high-score bonus for 4 total goals`() {
-            val match = testMatch(homeGoals = 2, awayGoals = 2, tieQuota = 1.8f) // 4 goals
+            val match = testMatch(homeGoals = 2, awayGoals = 2, drawQuota = 1.8f) // 4 goals
             val result = PredictionsEngine.points(testPrediction(match, 2, 2))
             // 3 (correct) + 0 (high-score bonus) + 1.5 (quota) = 4.5
             assertEquals(4.8f, result)
@@ -137,7 +137,7 @@ class PredictionsEngineTest {
 
         @Test
         fun `points awards tie quota for tie result`() {
-            val match = testMatch(homeGoals = 1, awayGoals = 1, tieQuota = 1.8f)
+            val match = testMatch(homeGoals = 1, awayGoals = 1, drawQuota = 1.8f)
             val result = PredictionsEngine.points(testPrediction(match, 0, 0))
             // 1 (partial) + 1.8 (quota) = 2.8
             assertEquals(2.8f, result)

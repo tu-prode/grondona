@@ -186,6 +186,7 @@ class UserControllerTest {
                 fullname = "Updated Name",
                 username = "testuser",
                 email = "test@example.com",
+                uniquePredictions = false,
             )
             every { userService.updateUser(testUserId, any()) } returns response
 
@@ -227,6 +228,7 @@ class UserControllerTest {
                 fullname = "Test User",
                 username = "testuser",
                 email = "test@example.com",
+                uniquePredictions = false,
             )
             every { userService.getUserById(testUserId) } returns response
 

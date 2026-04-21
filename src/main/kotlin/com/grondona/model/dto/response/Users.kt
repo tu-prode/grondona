@@ -16,6 +16,7 @@ data class UserResponse(
     val fullname: String,
     val username: String,
     val email: String,
+    val uniquePredictions: Boolean,
 ) {
     companion object {
         fun from(user: User): UserResponse = UserResponse(
@@ -23,6 +24,7 @@ data class UserResponse(
             fullname = user.fullname,
             username = user.username,
             email = user.email,
+            uniquePredictions = user.uniquePredictions,
         )
     }
 }

@@ -124,6 +124,7 @@ class UserService(
         }
 
         request.password?.let { user.passwordHash = hashMD5(it) }
+        request.uniquePredictions?.let { user.uniquePredictions = it }
 
         user.updatedAt = LocalDateTime.now()
 
