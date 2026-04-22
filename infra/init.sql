@@ -616,7 +616,7 @@ COMMENT ON COLUMN match_predictions.group_id IS 'Reference to the group';
 COMMENT ON COLUMN match_predictions.match_id IS 'Reference to the match';
 COMMENT ON COLUMN match_predictions.home_goals IS 'The home goals predicted';
 COMMENT ON COLUMN match_predictions.away_goals IS 'The away goals predicted';
-COMMENT ON COLUMN match_predictions.status IS 'Status of the prediction (can be either CORRECT, PARTIAL, INCORRECT or PENDING)';
+COMMENT ON COLUMN match_predictions.status IS 'Status of the prediction (can be either BONUS, CORRECT, PARTIAL, INCORRECT, PENDING or MISSING)';
 COMMENT ON COLUMN match_predictions.created_at IS 'Timestamp when the prediction was created';
 COMMENT ON COLUMN match_predictions.updated_at IS 'Timestamp when the prediction was updated';
 COMMENT ON COLUMN match_predictions.deleted_at IS 'Timestamp when the prediction was deleted';
@@ -635,6 +635,7 @@ CREATE TABLE IF NOT EXISTS award_predictions (
     award_type VARCHAR(20) NOT NULL,
     awarded_team_id UUID NULL REFERENCES teams(id) ON DELETE CASCADE,
     awarded_player_id UUID NULL REFERENCES players(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP DEFAULT NULL
@@ -650,6 +651,7 @@ COMMENT ON COLUMN award_predictions.user_id IS 'Reference to the user';
 COMMENT ON COLUMN award_predictions.award_type IS 'Type of the award, depending on the tournament';
 COMMENT ON COLUMN award_predictions.awarded_team_id IS 'Reference to the team awarded (optional)';
 COMMENT ON COLUMN award_predictions.awarded_player_id IS 'Reference to the player awarded (optional)';
+COMMENT ON COLUMN award_predictions.status IS 'Status of the prediction (can be either BONUS, CORRECT, PARTIAL, INCORRECT, PENDING or MISSING)';
 COMMENT ON COLUMN award_predictions.created_at IS 'Timestamp when the prediction was created';
 COMMENT ON COLUMN award_predictions.updated_at IS 'Timestamp when the prediction was updated';
 COMMENT ON COLUMN award_predictions.deleted_at IS 'Timestamp when the prediction was deleted';

@@ -6,6 +6,7 @@ import com.grondona.model.PredictionStatus
 import com.grondona.model.Standing
 import com.grondona.model.TournamentStatus
 import com.grondona.model.User
+import com.grondona.utils.round
 import java.util.UUID
 
 data class StandingResponse(
@@ -46,7 +47,7 @@ data class GroupResponse(
             standings = standings.map { standing ->
                 StandingResponse(
                     user = UserResponse.from(standing.user),
-                    points = standing.points,
+                    points = standing.points.round(),
                     rank = standing.rank,
                     lastPredictions = standing.lastPredictions,
                 )

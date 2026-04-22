@@ -15,7 +15,7 @@ import com.grondona.repository.GroupRepository
 import com.grondona.repository.MatchPredictionRepository
 import com.grondona.repository.MembershipRepository
 import com.grondona.repository.TournamentRepository
-import com.grondona.utils.PredictionsEngine
+import com.grondona.service.engine.PredictionsEngine
 import jakarta.persistence.criteria.JoinType
 import jakarta.persistence.criteria.Predicate
 import org.slf4j.LoggerFactory
@@ -135,9 +135,9 @@ class GroupService(
             liveStandings -> matchPredictionRepository.findGroupPredictions(groupId)
                 .filter { it.match.status == MatchStatus.IN_PROGRESS }
                 .mapNotNull { it.prediction }
-                .let { PredictionsEngine.checkPredictions(it) }
+                .let { PredictionsEngine.checkMatchPredictions(it) }
                 .groupBy { it.user.id!! }
-                .let { PredictionsEngine.updateStandings(members, it) }
+                .let { PredictionsEngine.updateMatchPoints(members, it) }
                 .mapIndexed { index, member ->
                     Standing(rank = member.rank ?: index, user = member.user, points = member.points, lastPredictions = member.lastPredictions)
                 }

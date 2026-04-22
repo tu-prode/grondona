@@ -461,7 +461,7 @@ class MatchServiceTest {
             val predictions = listOf(
                 predictionFromDB(match = matchFromDB("ARG", "FRA"), status = PredictionStatus.MISSING),
             )
-            val results = matchService.checkCompletedPredictions(predictions)
+            val results = matchService.checkMatchPredictions(predictions)
 
             assertEquals(0, results.size)
         }
@@ -471,7 +471,7 @@ class MatchServiceTest {
             val predictions = listOf(
                 predictionFromDB(match = matchFromDB("ARG", "FRA", status = MatchStatus.IN_PROGRESS)),
             )
-            val results = matchService.checkCompletedPredictions(predictions)
+            val results = matchService.checkMatchPredictions(predictions)
 
             assertEquals(0, results.size)
         }

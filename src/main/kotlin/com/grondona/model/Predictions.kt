@@ -102,6 +102,19 @@ data class AwardPrediction(
     @JoinColumn(name = "awarded_player_id")
     @OnDelete(action = OnDeleteAction.CASCADE)
     val player: Player? = null,
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    var status: PredictionStatus = PredictionStatus.PENDING,
+
+    @Column(name = "created_at", nullable = false)
+    val createdAt: LocalDateTime = LocalDateTime.now(),
+
+    @Column(name = "updated_at", nullable = false)
+    var updatedAt: LocalDateTime = LocalDateTime.now(),
+
+    @Column(name = "deleted_at")
+    var deletedAt: LocalDateTime? = null
 )
 
 data class AwardPredictionView(
