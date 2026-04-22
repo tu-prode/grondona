@@ -656,38 +656,56 @@ COMMENT ON COLUMN award_predictions.created_at IS 'Timestamp when the prediction
 COMMENT ON COLUMN award_predictions.updated_at IS 'Timestamp when the prediction was updated';
 COMMENT ON COLUMN award_predictions.deleted_at IS 'Timestamp when the prediction was deleted';
 
-INSERT INTO award_predictions (user_id, group_id, award_type, awarded_team_id, awarded_player_id) VALUES
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'CHAMPION', 'f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', NULL),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'CHAMPION', 'b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22', NULL),
-    ('23295782-bc35-4d70-892b-37a771620bc7', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'CHAMPION', '2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07', NULL),
-    ('60635292-4a13-43d8-b976-b2e292020deb', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'CHAMPION', 'f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', NULL),
-    ('60635292-4a13-43d8-b976-b2e292020deb', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'CHAMPION', '2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07', NULL),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'TOP_SCORER', NULL, 'a2f07518-9445-420d-be30-760f738104ec'),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'TOP_SCORER', NULL, '113b6f60-22d0-417b-b4c7-4a318090e5c7'),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'TOP_SCORER', NULL, 'd71b03ee-f12d-47fa-b5ff-47309e8bc624'),
-    ('23295782-bc35-4d70-892b-37a771620bc7', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'TOP_SCORER', NULL, 'a2f07518-9445-420d-be30-760f738104ec'),
-    ('23295782-bc35-4d70-892b-37a771620bc7', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'TOP_SCORER', NULL, '113b6f60-22d0-417b-b4c7-4a318090e5c7'),
-    ('23295782-bc35-4d70-892b-37a771620bc7', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'TOP_SCORER', NULL, '74446955-e559-43a5-b6ac-c0748fb04f11'),
-    ('60635292-4a13-43d8-b976-b2e292020deb', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'TOP_SCORER', NULL, 'a2f07518-9445-420d-be30-760f738104ec'),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_PLAYER', NULL, '113b6f60-22d0-417b-b4c7-4a318090e5c7'),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_PLAYER', NULL, 'a7b8a3a6-bda8-4d53-a0c3-33abcbdccc5d'),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_PLAYER', NULL, '62b3da48-9a4b-4c13-9b2e-d1992b743895'),
-    ('23295782-bc35-4d70-892b-37a771620bc7', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_PLAYER', NULL, '113b6f60-22d0-417b-b4c7-4a318090e5c7'),
-    ('23295782-bc35-4d70-892b-37a771620bc7', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_PLAYER', NULL, '93e236a0-6b1e-4489-aad1-0f36b50b4e69'),
-    ('23295782-bc35-4d70-892b-37a771620bc7', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_PLAYER', NULL, '6a7227f5-c7c5-4dab-8fdd-6e13cf43d515'),
-    ('60635292-4a13-43d8-b976-b2e292020deb', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_PLAYER', NULL, '74446955-e559-43a5-b6ac-c0748fb04f11'),
-    ('23295782-bc35-4d70-892b-37a771620bc7', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_GOALKEEPER', NULL, '1ebbd8b1-bd3e-4b24-8868-18d6c66a261a'),
-    ('23295782-bc35-4d70-892b-37a771620bc7', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_GOALKEEPER', NULL, 'ffd24638-848b-443b-8bb3-582e67adc250'),
-    ('23295782-bc35-4d70-892b-37a771620bc7', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_GOALKEEPER', NULL, '3a579e46-f9c9-474b-b147-247d3c0106b3'),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_GOALKEEPER', NULL, '1ebbd8b1-bd3e-4b24-8868-18d6c66a261a'),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_GOALKEEPER', NULL, '11194405-edb7-4f62-a9d7-cee18acfc95d'),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_GOALKEEPER', NULL, '193e7403-bff8-4415-bb5a-17dac33c55fc'),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_YOUNG_PLAYER', NULL, '8a4167fd-9204-43e4-84cf-5177684a3f0a'),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_YOUNG_PLAYER', NULL, 'ad8185f1-ecb3-4dc2-bf22-c52d7f3e45fb'),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_YOUNG_PLAYER', NULL, '53fe8636-6b3e-40c6-a066-74cc19efdd29'),
-    ('23295782-bc35-4d70-892b-37a771620bc7', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_YOUNG_PLAYER', NULL, '8a4167fd-9204-43e4-84cf-5177684a3f0a'),
-    ('23295782-bc35-4d70-892b-37a771620bc7', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_YOUNG_PLAYER', NULL, 'ad8185f1-ecb3-4dc2-bf22-c52d7f3e45fb'),
-    ('23295782-bc35-4d70-892b-37a771620bc7', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_YOUNG_PLAYER', NULL, '18696096-cd68-4a7a-8357-ab94d63ed555'),
-    ('60635292-4a13-43d8-b976-b2e292020deb', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_YOUNG_PLAYER', NULL, '8a4167fd-9204-43e4-84cf-5177684a3f0a'),
-    ('60635292-4a13-43d8-b976-b2e292020deb', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'BEST_YOUNG_PLAYER', NULL, 'ad8185f1-ecb3-4dc2-bf22-c52d7f3e45fb')
-ON CONFLICT (id) DO NOTHING;
+INSERT INTO award_predictions (user_id, group_id, award_type, awarded_team_id, awarded_player_id)
+-- 1. CHAMPION (1–2 random teams)
+SELECT gu.user_id, gu.group_id, award_type, team_id, NULL
+FROM group_users gu
+JOIN LATERAL (
+    SELECT 'CHAMPION' AS award_type, teams.id AS team_id
+    FROM teams WHERE gu.user_id IS NOT NULL
+    ORDER BY random() LIMIT (floor(random() * 2))::int + 1) ch ON TRUE
+UNION ALL
+-- 2. TOP_SCORER (1–3 players)
+SELECT gu.user_id, gu.group_id, award_type, NULL, player_id
+FROM group_users gu
+JOIN LATERAL (
+    SELECT 'TOP_SCORER' AS award_type, players.id AS player_id
+    FROM players WHERE gu.user_id IS NOT NULL
+    ORDER BY random() LIMIT (floor(random() * 3))::int + 1) ts ON TRUE
+UNION ALL
+-- 3. BEST_PLAYER (1–3 players)
+SELECT gu.user_id, gu.group_id, award_type, NULL, player_id
+FROM group_users gu
+JOIN LATERAL (
+    SELECT 'BEST_PLAYER' AS award_type, players.id AS player_id
+    FROM players WHERE gu.user_id IS NOT NULL
+    ORDER BY random() LIMIT (floor(random() * 3))::int + 1) bp ON TRUE
+UNION ALL
+-- 4. BEST_GOALKEEPER (1–3 players, filtered)
+SELECT gu.user_id, gu.group_id, award_type, NULL, player_id
+FROM group_users gu
+JOIN LATERAL (
+    SELECT 'BEST_GOALKEEPER' AS award_type, p.id AS player_id
+    FROM players p WHERE gu.user_id IS NOT NULL AND p.position = 'GOALKEEPER'
+    ORDER BY random() LIMIT (floor(random() * 3))::int + 1) bg ON TRUE
+UNION ALL
+-- 5. BEST_YOUNG_PLAYER (1–3 players, filtered)
+SELECT gu.user_id, gu.group_id, award_type, NULL, player_id
+FROM group_users gu
+JOIN LATERAL (
+    SELECT 'BEST_YOUNG_PLAYER' AS award_type, p.id AS player_id
+    FROM players p WHERE gu.user_id IS NOT NULL AND p.birthdate > DATE '2005-01-01'
+    ORDER BY random() LIMIT (floor(random() * 3))::int + 1) byp ON TRUE;
+
+DELETE FROM award_predictions ap
+    USING (
+        SELECT DISTINCT ON (gu.group_id) gu.group_id, gu.user_id, at.award_type
+        FROM group_users gu
+        JOIN LATERAL (
+            SELECT award_type FROM award_predictions ap2
+            WHERE ap2.group_id = gu.group_id ORDER BY random() LIMIT 1) at ON TRUE
+        ORDER BY gu.group_id, random()
+    ) picked
+WHERE ap.group_id = picked.group_id
+  AND ap.user_id = picked.user_id
+  AND ap.award_type = picked.award_type;

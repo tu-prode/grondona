@@ -1846,8 +1846,11 @@ components:
         - tournament_id
         - tournament_name
         - past_matches
+        - total_past_matches
         - live_matches
+        - total_live_matches
         - next_matches
+        - total_next_matches
       properties:
         tournament_id:
           type: string
@@ -1862,14 +1865,23 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MatchResponse'
+        total_past_matches:
+          type: integer
+          format: int32
         live_matches:
           type: array
           items:
             $ref: '#/components/schemas/MatchResponse'
+        total_live_matches:
+          type: integer
+          format: int32
         next_matches:
           type: array
           items:
             $ref: '#/components/schemas/MatchResponse'
+        total_next_matches:
+          type: integer
+          format: int32
 
     ScorePredictionResponse:
       description: A match prediction score

@@ -54,7 +54,6 @@ services:
 
 volumes:
   grondona-data:
-    name: grondona-data
 
 networks:
   prode-network:
