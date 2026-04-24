@@ -1,6 +1,7 @@
 package com.grondona.model
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.grondona.service.PredictionService
 import com.grondona.service.engine.WorldCupEngine
 import com.grondona.utils.round
 import java.time.LocalDateTime
@@ -108,7 +109,7 @@ data class ExternalMatch(
     private fun oddsToQuota(odds: Float) = 1 + 2 * log(odds.toDouble(), 10.0).toFloat().round()
 
     fun toQuotasUpdated(matches: List<Match>): Match? =
-        matches.filter { it.status == MatchStatus.NOT_STARTED && WorldCupEngine.isMatchUnlocked(it) }
+        matches.filter { it.status == MatchStatus.NOT_STARTED && PredictionService.isMatchUnlocked(it) }
             .firstOrNull { it.homeTeam.name == home && it.awayTeam.name == away }?.also {
                 when (status) {
                     Status.TO_START.name -> {
