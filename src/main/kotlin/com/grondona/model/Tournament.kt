@@ -12,12 +12,20 @@ enum class TournamentStatus {
     NOT_STARTED, IN_PROGRESS, FINISHED,
 }
 
+data class ExtendedAwards(
+    val champion: Team,
+    val topScorer: Player,
+    val bestPlayer: Player,
+    val bestGoalkeeper: Player,
+    val bestYoungPlayer: Player,
+)
+
 data class Awards(
-    val champions: List<UUID> = emptyList(),
-    val topScorers: List<UUID> = emptyList(),
-    val bestPlayers: List<UUID> = emptyList(),
-    val bestGoalkeepers: List<UUID> = emptyList(),
-    val bestYoungPlayers: List<UUID> = emptyList(),
+    val champion: UUID,
+    val topScorer: UUID,
+    val bestPlayer: UUID,
+    val bestGoalkeeper: UUID,
+    val bestYoungPlayer: UUID,
 )
 
 @Entity
@@ -37,8 +45,8 @@ data class Tournament(
     var status: TournamentStatus = TournamentStatus.NOT_STARTED,
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb", nullable = false)
-    var awards: Awards = Awards(),
+    @Column(columnDefinition = "jsonb", nullable = true)
+    var awards: Awards? = null,
 
     @Column(name = "created_at", nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),

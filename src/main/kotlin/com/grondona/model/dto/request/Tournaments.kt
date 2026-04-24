@@ -1,5 +1,6 @@
 package com.grondona.model.dto.request
 
+import com.grondona.model.Awards
 import com.grondona.model.TournamentStatus
 import jakarta.validation.constraints.NotBlank
 
@@ -11,7 +12,9 @@ data class CreateTournamentRequest(
 )
 
 data class UpdateTournamentRequest(
-    val name: String?,
+    val name: String? = null,
 
-    val status: TournamentStatus? = TournamentStatus.NOT_STARTED
+    val status: TournamentStatus? = null,
+
+    val awards: Awards? = null,
 )

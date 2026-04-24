@@ -1442,6 +1442,13 @@ components:
           description: Full name
           example: John Doe
 
+    UserPermissions:
+      description: The permissions of a user
+      type: string
+      enum:
+        - USER
+        - SUPERUSER
+
     UserResponse:
       type: object
       required:
@@ -1449,6 +1456,7 @@ components:
         - fullname
         - username
         - email
+        - permissions
       properties:
         id:
           type: string
@@ -1468,6 +1476,8 @@ components:
           format: email
           description: Email address
           example: john@example.com
+        permissions:
+          $ref: '#/components/schemas/UserPermissions'
 
     UserGroupResponse:
       type: object
@@ -1637,6 +1647,32 @@ components:
         status:
           $ref: '#/components/schemas/TournamentStatus'
 
+    UpdateTournamentAwardsRequest:
+      description: Request for updating the winners of the different awards in a tournament
+      type: object
+      required:
+        - champion
+        - top_scorer
+        - best_player
+        - best_goalkeeper
+        - best_young_player
+      properties:
+        champion:
+          type: string
+          format: uuid
+        top_scorer:
+          type: string
+          format: uuid
+        best_player:
+          type: string
+          format: uuid
+        best_goalkeeper:
+          type: string
+          format: uuid
+        best_young_player:
+          type: string
+          format: uuid
+
     UpdateTournamentRequest:
       type: object
       description: All fields are optional. Only provided fields will be updated.
@@ -1648,6 +1684,8 @@ components:
           example: Updated Tournament Name
         status:
           $ref: '#/components/schemas/TournamentStatus'
+        awards:
+          $ref: '#/components/schemas/UpdateTournamentAwardsRequest'
 
     TournamentResponse:
       type: object
@@ -1773,7 +1811,7 @@ components:
         - away_team
         - home_quota
         - away_quota
-        - tie_quota
+        - draw_quota
         - status
       properties:
         id:
@@ -1799,7 +1837,7 @@ components:
           format: float16
           description: The quota for an away team win
           example: 1.8
-        tie_quota:
+        draw_quota:
           type: number
           format: float16
           description: The quota for a tie
@@ -1846,8 +1884,11 @@ components:
         - tournament_id
         - tournament_name
         - past_matches
+        - total_past_matches
         - live_matches
+        - total_live_matches
         - next_matches
+        - total_next_matches
       properties:
         tournament_id:
           type: string
@@ -1862,14 +1903,23 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MatchResponse'
+        total_past_matches:
+          type: integer
+          format: int32
         live_matches:
           type: array
           items:
             $ref: '#/components/schemas/MatchResponse'
+        total_live_matches:
+          type: integer
+          format: int32
         next_matches:
           type: array
           items:
             $ref: '#/components/schemas/MatchResponse'
+        total_next_matches:
+          type: integer
+          format: int32
 
     ScorePredictionResponse:
       description: A match prediction score
@@ -2083,7 +2133,30 @@ components:
       properties:
         group:
           $ref: '#/components/schemas/GroupResponse'
+        winners:
+          $ref: '#/components/schemas/AwardsResponse'
         predictions:
           type: array
           items:
             $ref: '#/components/schemas/AwardPredictionsResponse'
+
+    AwardsResponse:
+      description: Awards winners four a certain tournament
+      type: object
+      required:
+        - champion
+        - top_scorer
+        - best_player
+        - best_goalkeeper
+        - best_young_player
+      properties:
+        champion:
+          $ref: '#/components/schemas/TeamResponse'
+        top_scorer:
+          $ref: '#/components/schemas/PlayerResponse'
+        best_player:
+          $ref: '#/components/schemas/PlayerResponse'
+        best_goalkeeper:
+          $ref: '#/components/schemas/PlayerResponse'
+        best_young_player:
+          $ref: '#/components/schemas/PlayerResponse'

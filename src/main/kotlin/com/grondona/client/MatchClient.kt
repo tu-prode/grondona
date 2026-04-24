@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming
 import com.grondona.exception.ExternalServiceException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.ExternalMatch
-import com.grondona.utils.WorldCupEngine
+import com.grondona.service.engine.WorldCupEngine
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component

@@ -17,7 +17,7 @@ import com.grondona.repository.MatchRepository
 import com.grondona.repository.MembershipRepository
 import com.grondona.repository.MatchPredictionRepository
 import com.grondona.repository.TournamentRepository
-import com.grondona.utils.WorldCupEngine
+import com.grondona.service.engine.WorldCupEngine
 import io.mockk.*
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
@@ -79,22 +79,22 @@ class MatchServiceTest {
 
     private fun matchFromDB(
         home: String, away: String, status: MatchStatus = MatchStatus.NOT_STARTED, startedAt: LocalDateTime? = null,
-        homeGoals: Int = 0, awayGoals: Int = 0, homeQuota: Float = 1f, tieQuota: Float = 1f, awayQuota: Float = 1f,
+        homeGoals: Int = 0, awayGoals: Int = 0, homeQuota: Float = 1f, drawQuota: Float = 1f, awayQuota: Float = 1f,
     ) = Match(
         id = UUID.randomUUID(),
         homeTeam = Team(tournament = testTournament, name = home, code = home, icon = "test"),
         awayTeam = Team(tournament = testTournament, name = away, code = away, icon = "test"),
-        status = status, homeQuota = homeQuota, tieQuota = tieQuota, awayQuota = awayQuota, startedAt = startedAt,
+        status = status, homeQuota = homeQuota, drawQuota = drawQuota, awayQuota = awayQuota, startedAt = startedAt,
         tournament = testTournament, code = "test", homeGoals = homeGoals, awayGoals = awayGoals,
     )
 
     private fun matchFromAPI(
         home: String, away: String, homeGoals: Int = 0, awayGoals: Int = 0,
         minutes: Int = 0, half: Int = 0, status: String = "TO START",
-        homeQuota: Float = 1f, tieQuota: Float = 1f, awayQuota: Float = 1f,
+        homeQuota: Float = 1f, drawQuota: Float = 1f, awayQuota: Float = 1f,
     ) = ExternalMatch(
-        home = home, away = away, homeGoals = homeGoals, awayGoals = awayGoals, status = status,
-        minutes = minutes, half = half, homeOdds = homeQuota, tieOdds = tieQuota, awayOdds = awayQuota
+        code = "XX", home = home, away = away, homeGoals = homeGoals, awayGoals = awayGoals, status = status,
+        minutes = minutes, half = half, homeOdds = homeQuota, drawOdds = drawQuota, awayOdds = awayQuota, startedAt = LocalDateTime.now(),
     )
 
     private fun predictionFromDB(
@@ -125,7 +125,7 @@ class MatchServiceTest {
         fun `updateMatchesStatuses doesn't update match quotas`() {
             val externalMatch = matchFromAPI(
                 home = "QAT", away = "ECU", homeGoals = 0, awayGoals = 0, minutes = 0, half = 1,
-                status = "IN_PLAY", homeQuota = 10f, tieQuota = 10f, awayQuota = 10f,
+                status = "IN_PLAY", homeQuota = 10f, drawQuota = 10f, awayQuota = 10f,
             )
             every { matchClient.getMatches(testTournamentId) } returns listOf(externalMatch)
 
@@ -133,12 +133,7 @@ class MatchServiceTest {
             val dbMatch2 = matchFromDB(home = "ENG", away = "IRN")
             val dbMatch3 = matchFromDB(home = "SEN", away = "NED")
             val dbMatch4 = matchFromDB(home = "USA", away = "WAL")
-            every {
-                matchRepository.findAllByTournamentIdAndStatusIn(
-                    testTournamentId,
-                    listOf(MatchStatus.NOT_STARTED, MatchStatus.IN_PROGRESS)
-                )
-            } returns listOf(dbMatch1, dbMatch2, dbMatch3, dbMatch4)
+            every { matchRepository.findByTournamentId(testTournamentId) } returns listOf(dbMatch1, dbMatch2, dbMatch3, dbMatch4)
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament.copy(status = TournamentStatus.IN_PROGRESS))
 
@@ -155,7 +150,7 @@ class MatchServiceTest {
             assertEquals(MatchStatus.IN_PROGRESS, savedMatches[0].status)
             assertEquals("0' PT", savedMatches[0].substatus)
             assertEquals(1f, savedMatches[0].homeQuota)
-            assertEquals(1f, savedMatches[0].tieQuota)
+            assertEquals(1f, savedMatches[0].drawQuota)
             assertEquals(1f, savedMatches[0].awayQuota)
 
             verify(exactly = 0) { predictionRepository.findByStatusAndMatchIdIn(any(), any()) }
@@ -175,12 +170,7 @@ class MatchServiceTest {
             val dbMatch2 = matchFromDB(home = "ENG", away = "IRN")
             val dbMatch3 = matchFromDB(home = "SEN", away = "NED")
             val dbMatch4 = matchFromDB(home = "USA", away = "WAL")
-            every {
-                matchRepository.findAllByTournamentIdAndStatusIn(
-                    testTournamentId,
-                    listOf(MatchStatus.NOT_STARTED, MatchStatus.IN_PROGRESS)
-                )
-            } returns listOf(dbMatch1, dbMatch2, dbMatch3, dbMatch4)
+            every { matchRepository.findByTournamentId(testTournamentId) } returns listOf(dbMatch1, dbMatch2, dbMatch3, dbMatch4)
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament.copy(status = TournamentStatus.IN_PROGRESS))
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
 
@@ -214,12 +204,7 @@ class MatchServiceTest {
             val dbMatch2 = matchFromDB(home = "ENG", away = "IRN")
             val dbMatch3 = matchFromDB(home = "SEN", away = "NED")
             val dbMatch4 = matchFromDB(home = "USA", away = "WAL")
-            every {
-                matchRepository.findAllByTournamentIdAndStatusIn(
-                    testTournamentId,
-                    listOf(MatchStatus.NOT_STARTED, MatchStatus.IN_PROGRESS)
-                )
-            } returns listOf(dbMatch1, dbMatch2, dbMatch3, dbMatch4)
+            every { matchRepository.findByTournamentId(testTournamentId) } returns listOf(dbMatch1, dbMatch2, dbMatch3, dbMatch4)
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament.copy(status = TournamentStatus.IN_PROGRESS))
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
 
@@ -253,12 +238,7 @@ class MatchServiceTest {
             val dbMatch2 = matchFromDB(home = "ENG", away = "IRN")
             val dbMatch3 = matchFromDB(home = "SEN", away = "NED")
             val dbMatch4 = matchFromDB(home = "USA", away = "WAL")
-            every {
-                matchRepository.findAllByTournamentIdAndStatusIn(
-                    testTournamentId,
-                    listOf(MatchStatus.NOT_STARTED, MatchStatus.IN_PROGRESS)
-                )
-            } returns listOf(dbMatch1, dbMatch2, dbMatch3, dbMatch4)
+            every { matchRepository.findByTournamentId(testTournamentId) } returns listOf(dbMatch1, dbMatch2, dbMatch3, dbMatch4)
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament.copy(status = TournamentStatus.IN_PROGRESS))
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
 
@@ -292,12 +272,7 @@ class MatchServiceTest {
             val dbMatch2 = matchFromDB(home = "ENG", away = "IRN")
             val dbMatch3 = matchFromDB(home = "SEN", away = "NED")
             val dbMatch4 = matchFromDB(home = "USA", away = "WAL")
-            every {
-                matchRepository.findAllByTournamentIdAndStatusIn(
-                    testTournamentId,
-                    listOf(MatchStatus.NOT_STARTED, MatchStatus.IN_PROGRESS)
-                )
-            } returns listOf(dbMatch1, dbMatch2, dbMatch3, dbMatch4)
+            every { matchRepository.findByTournamentId(testTournamentId) } returns listOf(dbMatch1, dbMatch2, dbMatch3, dbMatch4)
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament.copy(status = TournamentStatus.IN_PROGRESS))
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
 
@@ -331,12 +306,7 @@ class MatchServiceTest {
             val dbMatch2 = matchFromDB(home = "ENG", away = "IRN")
             val dbMatch3 = matchFromDB(home = "SEN", away = "NED")
             val dbMatch4 = matchFromDB(home = "USA", away = "WAL")
-            every {
-                matchRepository.findAllByTournamentIdAndStatusIn(
-                    testTournamentId,
-                    listOf(MatchStatus.NOT_STARTED, MatchStatus.IN_PROGRESS)
-                )
-            } returns listOf(dbMatch1, dbMatch2, dbMatch3, dbMatch4)
+            every { matchRepository.findByTournamentId(testTournamentId) } returns listOf(dbMatch1, dbMatch2, dbMatch3, dbMatch4)
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament.copy(status = TournamentStatus.IN_PROGRESS))
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
 
@@ -408,12 +378,7 @@ class MatchServiceTest {
             val dbMatch1 = matchFromDB(home = "POL", away = "ARG", homeGoals = 1, awayGoals = 0, status = MatchStatus.IN_PROGRESS)
             val dbMatch2 = matchFromDB(home = "QAT", away = "MEX", homeGoals = 0, awayGoals = 2, status = MatchStatus.IN_PROGRESS)
             val dbMatch3 = matchFromDB(home = "CRO", away = "BEL")
-            every {
-                matchRepository.findAllByTournamentIdAndStatusIn(
-                    testTournamentId,
-                    listOf(MatchStatus.NOT_STARTED, MatchStatus.IN_PROGRESS)
-                )
-            } returns listOf(dbMatch1, dbMatch2, dbMatch3)
+            every { matchRepository.findByTournamentId(testTournamentId) } returns listOf(dbMatch1, dbMatch2, dbMatch3)
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament.copy(status = TournamentStatus.IN_PROGRESS))
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
 
@@ -452,12 +417,7 @@ class MatchServiceTest {
             val dbMatch1 = matchFromDB(home = "POL", away = "ARG")
             val dbMatch2 = matchFromDB(home = "QAT", away = "MEX")
             val dbMatch3 = matchFromDB(home = "CRO", away = "BEL")
-            every {
-                matchRepository.findAllByTournamentIdAndStatusIn(
-                    testTournamentId,
-                    listOf(MatchStatus.NOT_STARTED, MatchStatus.IN_PROGRESS)
-                )
-            } returns listOf(dbMatch1, dbMatch2, dbMatch3)
+            every { matchRepository.findByTournamentId(testTournamentId) } returns listOf(dbMatch1, dbMatch2, dbMatch3)
 
             matchService.updateMatchesStatuses(testTournamentId)
 
@@ -477,9 +437,7 @@ class MatchServiceTest {
 
             val dbMatch1 = matchFromDB(home = "QAT", away = "ECU", status = MatchStatus.IN_PROGRESS)
             val dbMatch2 = matchFromDB(home = "ENG", away = "IRN")
-            every {
-                matchRepository.findAllByTournamentIdAndStatusIn(testTournamentId, listOf(MatchStatus.NOT_STARTED, MatchStatus.IN_PROGRESS))
-            } returns listOf(dbMatch1, dbMatch2)
+            every { matchRepository.findByTournamentId(testTournamentId) } returns listOf(dbMatch1, dbMatch2)
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
 
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
@@ -503,7 +461,7 @@ class MatchServiceTest {
             val predictions = listOf(
                 predictionFromDB(match = matchFromDB("ARG", "FRA"), status = PredictionStatus.MISSING),
             )
-            val results = matchService.checkCompletedPredictions(predictions)
+            val results = matchService.checkMatchPredictions(predictions)
 
             assertEquals(0, results.size)
         }
@@ -513,7 +471,7 @@ class MatchServiceTest {
             val predictions = listOf(
                 predictionFromDB(match = matchFromDB("ARG", "FRA", status = MatchStatus.IN_PROGRESS)),
             )
-            val results = matchService.checkCompletedPredictions(predictions)
+            val results = matchService.checkMatchPredictions(predictions)
 
             assertEquals(0, results.size)
         }
@@ -534,17 +492,17 @@ class MatchServiceTest {
         @Test
         fun `updateMatchesQuotas updates a match quotas before it starts`() {
             val externalMatch1 = matchFromAPI(
-                home = "QAT", away = "ECU", status = "TO_START", homeQuota = 1f, tieQuota = 1.5f, awayQuota = 2f,
+                home = "QAT", away = "ECU", status = "TO_START", homeQuota = 1f, drawQuota = 1.5f, awayQuota = 2f,
             )
             val externalMatch2 = matchFromAPI(
-                home = "ENG", away = "IRN", status = "IN_PLAY", homeQuota = 2f, tieQuota = 2.5f, awayQuota = 3f,
+                home = "ENG", away = "IRN", status = "IN_PLAY", homeQuota = 2f, drawQuota = 2.5f, awayQuota = 3f,
             )
             every { matchClient.getMatches(testTournamentId) } returns listOf(externalMatch1, externalMatch2)
 
-            val dbMatch1 = matchFromDB(home = "QAT", away = "ECU", homeQuota = 2f, tieQuota = 3f, awayQuota = 4f)
-            val dbMatch2 = matchFromDB(home = "ENG", away = "IRN", homeQuota = 4f, tieQuota = 3f, awayQuota = 2f)
+            val dbMatch1 = matchFromDB(home = "QAT", away = "ECU", homeQuota = 2f, drawQuota = 3f, awayQuota = 4f)
+            val dbMatch2 = matchFromDB(home = "ENG", away = "IRN", homeQuota = 4f, drawQuota = 3f, awayQuota = 2f)
             every {
-                matchRepository.findAllByTournamentIdAndStatusIn(testTournamentId, listOf(MatchStatus.NOT_STARTED))
+                matchRepository.findByTournamentIdAndStatus(testTournamentId, MatchStatus.NOT_STARTED)
             } returns listOf(dbMatch1, dbMatch2)
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
 
@@ -559,7 +517,7 @@ class MatchServiceTest {
             assertEquals(0, savedMatches[0].homeGoals)
             assertEquals(0, savedMatches[0].awayGoals)
             assertEquals(1f, savedMatches[0].homeQuota)
-            assertEquals(1.5f, savedMatches[0].tieQuota)
+            assertEquals(1.5f, savedMatches[0].drawQuota)
             assertEquals(2f, savedMatches[0].awayQuota)
             assertEquals(MatchStatus.NOT_STARTED, savedMatches[0].status)
             assertNull(savedMatches[0].substatus)
@@ -568,7 +526,7 @@ class MatchServiceTest {
             assertEquals(0, savedMatches[1].homeGoals)
             assertEquals(0, savedMatches[1].awayGoals)
             assertEquals(4f, savedMatches[1].homeQuota)
-            assertEquals(3f, savedMatches[1].tieQuota)
+            assertEquals(3f, savedMatches[1].drawQuota)
             assertEquals(2f, savedMatches[1].awayQuota)
             assertEquals(MatchStatus.NOT_STARTED, savedMatches[1].status)
             assertNull(savedMatches[1].substatus)
@@ -577,19 +535,19 @@ class MatchServiceTest {
         @Test
         fun `updateMatchesQuotas doesn't update a match quotas when it will start in less than 15 minutes`() {
             val externalMatch1 = matchFromAPI(
-                home = "QAT", away = "ECU", status = "TO_START", homeQuota = 1f, tieQuota = 2.5f, awayQuota = 2f,
+                home = "QAT", away = "ECU", status = "TO_START", homeQuota = 1f, drawQuota = 2.5f, awayQuota = 2f,
             )
             val externalMatch2 = matchFromAPI(
-                home = "ENG", away = "IRN", status = "TO_START", homeQuota = 2f, tieQuota = 2.5f, awayQuota = 3f,
+                home = "ENG", away = "IRN", status = "TO_START", homeQuota = 2f, drawQuota = 2.5f, awayQuota = 3f,
             )
             every { matchClient.getMatches(testTournamentId) } returns listOf(externalMatch1, externalMatch2)
 
-            val dbMatch1 = matchFromDB(home = "QAT", away = "ECU", homeQuota = 2f, tieQuota = 3f, awayQuota = 4f,
+            val dbMatch1 = matchFromDB(home = "QAT", away = "ECU", homeQuota = 2f, drawQuota = 3f, awayQuota = 4f,
                 startedAt = LocalDateTime.now().plus(10, ChronoUnit.MINUTES))
-            val dbMatch2 = matchFromDB(home = "ENG", away = "IRN", homeQuota = 4f, tieQuota = 3f, awayQuota = 2f,
+            val dbMatch2 = matchFromDB(home = "ENG", away = "IRN", homeQuota = 4f, drawQuota = 3f, awayQuota = 2f,
                 startedAt = LocalDateTime.now().plus(30, ChronoUnit.MINUTES))
             every {
-                matchRepository.findAllByTournamentIdAndStatusIn(testTournamentId, listOf(MatchStatus.NOT_STARTED))
+                matchRepository.findByTournamentIdAndStatus(testTournamentId, MatchStatus.NOT_STARTED)
             } returns listOf(dbMatch1, dbMatch2)
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
 
@@ -604,7 +562,7 @@ class MatchServiceTest {
             assertEquals(0, savedMatches[0].homeGoals)
             assertEquals(0, savedMatches[0].awayGoals)
             assertEquals(2f, savedMatches[0].homeQuota)
-            assertEquals(2.5f, savedMatches[0].tieQuota)
+            assertEquals(2.5f, savedMatches[0].drawQuota)
             assertEquals(3f, savedMatches[0].awayQuota)
             assertEquals(MatchStatus.NOT_STARTED, savedMatches[0].status)
             assertNull(savedMatches[0].substatus)
@@ -613,17 +571,17 @@ class MatchServiceTest {
         @Test
         fun `updateMatchesQuotas doesn't update a match IN_PROGRESS`() {
             val externalMatch1 = matchFromAPI(
-                home = "QAT", away = "ECU", status = "TO_START", homeQuota = 2f, tieQuota = 2.5f, awayQuota = 3f,
+                home = "QAT", away = "ECU", status = "TO_START", homeQuota = 2f, drawQuota = 2.5f, awayQuota = 3f,
             )
             val externalMatch2 = matchFromAPI(
-                home = "ENG", away = "IRN", status = "IN_PLAY", homeQuota = 2f, tieQuota = 2.5f, awayQuota = 3f,
+                home = "ENG", away = "IRN", status = "IN_PLAY", homeQuota = 2f, drawQuota = 2.5f, awayQuota = 3f,
             )
             every { matchClient.getMatches(testTournamentId) } returns listOf(externalMatch1, externalMatch2)
 
-            val dbMatch1 = matchFromDB(home = "QAT", away = "ECU", homeQuota = 2f, tieQuota = 3f, awayQuota = 4f, status = MatchStatus.IN_PROGRESS)
-            val dbMatch2 = matchFromDB(home = "ENG", away = "IRN", homeQuota = 4f, tieQuota = 3f, awayQuota = 2f, status = MatchStatus.IN_PROGRESS)
+            val dbMatch1 = matchFromDB(home = "QAT", away = "ECU", homeQuota = 2f, drawQuota = 3f, awayQuota = 4f, status = MatchStatus.IN_PROGRESS)
+            val dbMatch2 = matchFromDB(home = "ENG", away = "IRN", homeQuota = 4f, drawQuota = 3f, awayQuota = 2f, status = MatchStatus.IN_PROGRESS)
             every {
-                matchRepository.findAllByTournamentIdAndStatusIn(testTournamentId, listOf(MatchStatus.NOT_STARTED))
+                matchRepository.findByTournamentIdAndStatus(testTournamentId, MatchStatus.NOT_STARTED)
             } returns listOf(dbMatch1, dbMatch2)
 
             verify(exactly = 0) { matchRepository.saveAll<Match>(any()) }
@@ -632,17 +590,17 @@ class MatchServiceTest {
         @Test
         fun `updateMatchesQuotas doesn't update a match FINISHED`() {
             val externalMatch1 = matchFromAPI(
-                home = "QAT", away = "ECU", status = "IN_PLAY", homeQuota = 2f, tieQuota = 2.5f, awayQuota = 3f,
+                home = "QAT", away = "ECU", status = "IN_PLAY", homeQuota = 2f, drawQuota = 2.5f, awayQuota = 3f,
             )
             val externalMatch2 = matchFromAPI(
-                home = "ENG", away = "IRN", status = "COMPLETED", homeQuota = 2f, tieQuota = 2.5f, awayQuota = 3f,
+                home = "ENG", away = "IRN", status = "COMPLETED", homeQuota = 2f, drawQuota = 2.5f, awayQuota = 3f,
             )
             every { matchClient.getMatches(testTournamentId) } returns listOf(externalMatch1, externalMatch2)
 
-            val dbMatch1 = matchFromDB(home = "QAT", away = "ECU", homeQuota = 2f, tieQuota = 3f, awayQuota = 4f, status = MatchStatus.FINISHED)
-            val dbMatch2 = matchFromDB(home = "ENG", away = "IRN", homeQuota = 4f, tieQuota = 3f, awayQuota = 2f, status = MatchStatus.FINISHED)
+            val dbMatch1 = matchFromDB(home = "QAT", away = "ECU", homeQuota = 2f, drawQuota = 3f, awayQuota = 4f, status = MatchStatus.FINISHED)
+            val dbMatch2 = matchFromDB(home = "ENG", away = "IRN", homeQuota = 4f, drawQuota = 3f, awayQuota = 2f, status = MatchStatus.FINISHED)
             every {
-                matchRepository.findAllByTournamentIdAndStatusIn(testTournamentId, listOf(MatchStatus.NOT_STARTED))
+                matchRepository.findByTournamentIdAndStatus(testTournamentId, MatchStatus.NOT_STARTED)
             } returns listOf(dbMatch1, dbMatch2)
 
             verify(exactly = 0) { matchRepository.saveAll<Match>(any()) }

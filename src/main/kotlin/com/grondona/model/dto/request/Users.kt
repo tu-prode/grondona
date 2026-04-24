@@ -39,13 +39,16 @@ data class UpdateUserRequest(
     val email: String? = null,
 
     @field:Size(min = 6, message = "Password must be at least 6 characters")
-    val password: String? = null
+    val password: String? = null,
+
+    val uniquePredictions: Boolean? = null
 ) {
     fun sanitized() = UpdateUserRequest(
         fullname = fullname?.trim(),
         username = username?.trim()?.lowercase(),
         email = email?.trim()?.lowercase(),
-        password = password?.trim()
+        password = password?.trim(),
+        uniquePredictions = uniquePredictions,
     )
 }
 

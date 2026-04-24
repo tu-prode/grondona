@@ -1,7 +1,9 @@
 package com.grondona.service
 
+import com.grondona.exception.BadRequestException
 import com.grondona.exception.ConflictException
 import com.grondona.exception.NotFoundException
+import com.grondona.model.ExtendedAwards
 import com.grondona.model.Tournament
 import com.grondona.model.TournamentStatus
 import com.grondona.model.dto.request.CreateTournamentRequest
@@ -14,7 +16,7 @@ import com.grondona.repository.MatchRepository
 import com.grondona.repository.PlayerRepository
 import com.grondona.repository.TeamRepository
 import com.grondona.repository.TournamentRepository
-import com.grondona.utils.WorldCupEngine
+import com.grondona.service.engine.WorldCupEngine
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -50,7 +52,7 @@ class TournamentService(
 
         val savedTournament = tournamentRepository.save(tournament)
         logger.info("Tournament created successfully: id={}, name='{}'", savedTournament.id, savedTournament.name)
-        return TournamentResponse.from(savedTournament)
+        return TournamentResponse.from(savedTournament, checkAwards(tournament))
     }
 
     @Transactional
@@ -71,11 +73,19 @@ class TournamentService(
         }
 
         request.status?.let { newStatus -> tournament.status = newStatus }
+        request.awards?.let { newAwards ->
+            if (tournament.status == TournamentStatus.FINISHED) {
+                tournament.awards = newAwards
+            } else {
+                logger.warn("Tournament update failed: cannot set awards for a non-finished tournament")
+                throw BadRequestException(message = "Setting awards for a non-finished tournament")
+            }
+        }
         tournament.updatedAt = LocalDateTime.now()
 
         val savedTournament = tournamentRepository.save(tournament)
         logger.info("Tournament updated successfully: id={}, name='{}'", savedTournament.id, savedTournament.name)
-        return TournamentResponse.from(savedTournament)
+        return TournamentResponse.from(savedTournament, checkAwards(tournament))
     }
 
     @Transactional
@@ -100,7 +110,7 @@ class TournamentService(
         }
 
         logger.info("Tournament fetched successfully: id={}, name='{}'", tournament.id, tournament.name)
-        return TournamentResponse.from(tournament)
+        return TournamentResponse.from(tournament, checkAwards(tournament))
     }
 
     fun getTournamentMatches(tournamentId: UUID, past: Int?, next: Int?, live: Int?): TournamentMatchesResponse {
@@ -143,4 +153,15 @@ class TournamentService(
         logger.info("Tournament players fetched successfully id={}, amount of players={}", tournamentId, players.size)
         return TournamentPlayersResponse.from(players)
     }
+
+    fun checkAwards(tournament: Tournament): ExtendedAwards? =
+        tournament.awards?.let {
+            ExtendedAwards(
+                champion = teamRepository.findById(it.champion).orElseThrow { NotFoundException("Champion not found") },
+                topScorer = playerRepository.findById(it.topScorer).orElseThrow { NotFoundException("Top scorer not found") },
+                bestPlayer = playerRepository.findById(it.bestPlayer).orElseThrow { NotFoundException("Best player not found") },
+                bestGoalkeeper = playerRepository.findById(it.bestGoalkeeper).orElseThrow { NotFoundException("Best goalkeeper not found") },
+                bestYoungPlayer = playerRepository.findById(it.bestYoungPlayer).orElseThrow { NotFoundException("Best young player not found") },
+            )
+        }.takeIf { tournament.status == TournamentStatus.FINISHED }
 }

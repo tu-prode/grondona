@@ -61,8 +61,8 @@ data class Match(
     @Column(name = "away_quota", nullable = false)
     var awayQuota: Float = 1F,
 
-    @Column(name = "tie_quota", nullable = false)
-    var tieQuota: Float = 1F,
+    @Column(name = "draw_quota", nullable = false)
+    var drawQuota: Float = 1F,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

@@ -15,7 +15,7 @@ import com.grondona.repository.GroupRepository
 import com.grondona.repository.MatchPredictionRepository
 import com.grondona.repository.MembershipRepository
 import com.grondona.repository.TournamentRepository
-import com.grondona.utils.PredictionsEngine
+import com.grondona.service.engine.PredictionsEngine
 import jakarta.persistence.criteria.JoinType
 import jakarta.persistence.criteria.Predicate
 import org.slf4j.LoggerFactory
@@ -109,7 +109,7 @@ class GroupService(
         logger.info("Group deleted successfully: id={}, name='{}'", groupId, group.name)
     }
 
-    fun getGroupById(groupId: UUID, liveStandings: Boolean = false): GroupResponse {
+    fun getGroupById(groupId: UUID, liveStandings: Boolean = false, omitStandings: Boolean = false): GroupResponse {
         logger.info("Fetching group id={}", groupId)
 
         val group = groupRepository.findById(groupId).orElseThrow {
@@ -118,6 +118,10 @@ class GroupService(
         }
 
         logger.info("Group fetched successfully: id={}, name='{}'", group.id, group.name)
+
+        if (omitStandings) {
+            return GroupResponse.from(group)
+        }
 
         val members = membershipRepository.findByGroupId(groupId)
         val standings = when {
@@ -131,9 +135,9 @@ class GroupService(
             liveStandings -> matchPredictionRepository.findGroupPredictions(groupId)
                 .filter { it.match.status == MatchStatus.IN_PROGRESS }
                 .mapNotNull { it.prediction }
-                .let { PredictionsEngine.checkPredictions(it) }
+                .let { PredictionsEngine.checkMatchPredictions(it) }
                 .groupBy { it.user.id!! }
-                .let { PredictionsEngine.updateStandings(members, it) }
+                .let { PredictionsEngine.updateMatchPoints(members, it) }
                 .mapIndexed { index, member ->
                     Standing(rank = member.rank ?: index, user = member.user, points = member.points, lastPredictions = member.lastPredictions)
                 }
@@ -165,7 +169,7 @@ class GroupService(
 
             // joined filter [optional]
             if (joined != null) {
-                val join = root.join<Group, GroupUser>("groupUsers", JoinType.LEFT)
+                val join = root.join<Group, GroupUser>("members", JoinType.LEFT)
 
                 join.on(
                     builder.equal(

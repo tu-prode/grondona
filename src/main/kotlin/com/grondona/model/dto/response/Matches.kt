@@ -14,7 +14,7 @@ data class MatchResponse(
     val awayTeam: TeamResponse,
     val homeQuota: Float,
     val awayQuota: Float,
-    val tieQuota: Float,
+    val drawQuota: Float,
     val status: MatchStatus,
     val substatus: String?,
     val startedAt: LocalDateTime?,
@@ -32,7 +32,7 @@ data class MatchResponse(
             awayTeam = TeamResponse.from(match.awayTeam),
             homeQuota = match.homeQuota,
             awayQuota = match.awayQuota,
-            tieQuota = match.tieQuota,
+            drawQuota = match.drawQuota,
             status = match.status,
             substatus = match.substatus,
             startedAt = match.startedAt,
@@ -49,8 +49,11 @@ data class TournamentMatchesResponse(
     val tournamentId: UUID,
     val tournamentName: String,
     val pastMatches: List<MatchResponse>,
+    val totalPastMatches: Int,
     val liveMatches: List<MatchResponse>,
+    val totalLiveMatches: Int,
     val nextMatches: List<MatchResponse>,
+    val totalNextMatches: Int,
 ) {
     companion object {
         fun from(tournament: Tournament, matches: List<Match>, past: Int?, next: Int?, live: Int?): TournamentMatchesResponse {
@@ -58,15 +61,18 @@ data class TournamentMatchesResponse(
             var liveMatches = matches.filter { it.status == MatchStatus.IN_PROGRESS }.map(MatchResponse::from)
             var nextMatches = matches.filter { it.status == MatchStatus.NOT_STARTED }.map(MatchResponse::from)
 
-            pastMatches = past?.let { pastMatches.subList(0, min(it, pastMatches.lastIndex)) } ?: pastMatches
-            liveMatches = live?.let { liveMatches.subList(0, min(it, liveMatches.lastIndex)) } ?: liveMatches
-            nextMatches = next?.let { nextMatches.subList(0, min(it, nextMatches.lastIndex)) } ?: nextMatches
+            pastMatches = past?.takeIf { pastMatches.isNotEmpty() }?.let { pastMatches.subList(0, min(it, pastMatches.lastIndex)) } ?: pastMatches
+            liveMatches = live?.takeIf { liveMatches.isNotEmpty() }?.let { liveMatches.subList(0, min(it, liveMatches.lastIndex)) } ?: liveMatches
+            nextMatches = next?.takeIf { nextMatches.isNotEmpty() }?.let { nextMatches.subList(0, min(it, nextMatches.lastIndex)) } ?: nextMatches
             return TournamentMatchesResponse(
                 tournamentId = tournament.id!!,
                 tournamentName = tournament.name,
                 pastMatches = pastMatches,
+                totalPastMatches = pastMatches.size,
                 liveMatches = liveMatches,
+                totalLiveMatches = liveMatches.size,
                 nextMatches = nextMatches,
+                totalNextMatches = nextMatches.size,
             )
         }
     }

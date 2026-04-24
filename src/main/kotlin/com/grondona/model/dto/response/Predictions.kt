@@ -3,6 +3,7 @@ package com.grondona.model.dto.response
 import com.grondona.model.AwardPrediction
 import com.grondona.model.AwardPredictionView
 import com.grondona.model.AwardType
+import com.grondona.model.ExtendedAwards
 import com.grondona.model.Group
 import com.grondona.model.MatchPrediction
 import com.grondona.model.PredictionStatus
@@ -48,15 +49,21 @@ data class MatchPredictionResponse(
 }
 
 data class GroupMatchPredictionsResponse(
-    val group: Group,
+    val group: GroupResponse,
     val predictions: List<MatchPredictionResponse>
 ) {
     companion object {
         fun fromPredictions(group: Group, predictions: List<MatchPrediction>): GroupMatchPredictionsResponse =
-            GroupMatchPredictionsResponse(group = group, predictions = predictions.map(MatchPredictionResponse::from))
+            GroupMatchPredictionsResponse(
+                group = GroupResponse.from(group),
+                predictions = predictions.map(MatchPredictionResponse::from)
+            )
 
         fun fromMatchPredictionViews(group: Group, predictions: List<MatchPredictionView>): GroupMatchPredictionsResponse =
-            GroupMatchPredictionsResponse(group = group, predictions = predictions.map(MatchPredictionResponse::fromPredictionView))
+            GroupMatchPredictionsResponse(
+                group = GroupResponse.from(group),
+                predictions = predictions.map(MatchPredictionResponse::fromPredictionView)
+            )
     }
 }
 
@@ -103,12 +110,23 @@ data class AwardPredictionsResponse(
 
 data class GroupAwardPredictionsResponse(
     val group: GroupResponse,
+    val winners: AwardsResponse? = null,
     val predictions: List<AwardPredictionsResponse>
 ) {
     companion object {
-        fun fromAwardPredictionsViews(group: Group, awardPredictions: List<AwardPredictionView>): GroupAwardPredictionsResponse =
+        fun fromAwardPredictionsViews(
+            group: Group,
+            awardPredictions: List<AwardPredictionView>,
+            awards: ExtendedAwards?
+        ): GroupAwardPredictionsResponse =
             awardPredictions.groupBy { it.user }
                 .mapValues { AwardPredictionsResponse.fromAwardPredictionsViews(it.key, it.value) }
-                .let { GroupAwardPredictionsResponse(group = GroupResponse.from(group), predictions = it.values.toList()) }
+                .let {
+                    GroupAwardPredictionsResponse(
+                        group = GroupResponse.from(group),
+                        predictions = it.values.toList(),
+                        winners = awards?.let(AwardsResponse::from)
+                    )
+                }
     }
 }
