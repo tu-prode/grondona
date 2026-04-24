@@ -1,5 +1,6 @@
 package com.grondona.service
 
+import com.grondona.exception.BadRequestException
 import com.grondona.exception.ConflictException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.ExtendedAwards
@@ -72,7 +73,14 @@ class TournamentService(
         }
 
         request.status?.let { newStatus -> tournament.status = newStatus }
-        request.awards?.let { newAwards -> tournament.awards = newAwards }
+        request.awards?.let { newAwards ->
+            if (tournament.status == TournamentStatus.FINISHED) {
+                tournament.awards = newAwards
+            } else {
+                logger.warn("Tournament update failed: cannot set awards for a non-finished tournament")
+                throw BadRequestException(message = "Setting awards for a non-finished tournament")
+            }
+        }
         tournament.updatedAt = LocalDateTime.now()
 
         val savedTournament = tournamentRepository.save(tournament)

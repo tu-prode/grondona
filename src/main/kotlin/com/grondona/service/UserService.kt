@@ -63,7 +63,8 @@ class UserService(
             userId = savedUser.id,
             username = savedUser.username,
             email = savedUser.email,
-            fullname = savedUser.fullname
+            fullname = savedUser.fullname,
+            permissions = savedUser.permissions,
         )
     }
 
@@ -91,7 +92,8 @@ class UserService(
             userId = user.id,
             username = user.username,
             email = user.email,
-            fullname = user.fullname
+            fullname = user.fullname,
+            permissions = user.permissions,
         )
     }
 

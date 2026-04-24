@@ -1,6 +1,7 @@
 package com.grondona.model.dto.response
 
 import com.grondona.model.User
+import com.grondona.model.UserPermissions
 import java.util.UUID
 
 data class AuthenticatedUserResponse(
@@ -8,7 +9,8 @@ data class AuthenticatedUserResponse(
     val userId: UUID,
     val username: String,
     val email: String,
-    val fullname: String
+    val fullname: String,
+    val permissions: UserPermissions,
 )
 
 data class UserResponse(
@@ -16,6 +18,7 @@ data class UserResponse(
     val fullname: String,
     val username: String,
     val email: String,
+    val permissions: UserPermissions,
     val uniquePredictions: Boolean,
 ) {
     companion object {
@@ -24,6 +27,7 @@ data class UserResponse(
             fullname = user.fullname,
             username = user.username,
             email = user.email,
+            permissions = user.permissions,
             uniquePredictions = user.uniquePredictions,
         )
     }

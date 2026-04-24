@@ -7,6 +7,7 @@ import com.grondona.exception.NotFoundException
 import com.grondona.model.Group
 import com.grondona.model.GroupRole
 import com.grondona.model.MembershipView
+import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.CreateUserRequest
 import com.grondona.model.dto.request.LoginUserRequest
 import com.grondona.model.dto.request.UpdateUserRequest
@@ -108,7 +109,8 @@ class UserControllerTest {
                 userId = testUserId,
                 username = request.username,
                 email = request.email,
-                fullname = request.fullname
+                fullname = request.fullname,
+                permissions = UserPermissions.USER,
             )
             every { userService.createUser(any()) } returns response
 
@@ -159,7 +161,8 @@ class UserControllerTest {
                 userId = testUserId,
                 username = request.user,
                 email = "test@example.com",
-                fullname = "Test User"
+                fullname = "Test User",
+                permissions = UserPermissions.USER,
             )
             every { userService.login(any()) } returns response
 
@@ -186,6 +189,7 @@ class UserControllerTest {
                 fullname = "Updated Name",
                 username = "testuser",
                 email = "test@example.com",
+                permissions = UserPermissions.USER,
                 uniquePredictions = false,
             )
             every { userService.updateUser(testUserId, any()) } returns response
@@ -228,6 +232,7 @@ class UserControllerTest {
                 fullname = "Test User",
                 username = "testuser",
                 email = "test@example.com",
+                permissions = UserPermissions.USER,
                 uniquePredictions = false,
             )
             every { userService.getUserById(testUserId) } returns response
