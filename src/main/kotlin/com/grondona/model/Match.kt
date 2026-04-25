@@ -89,6 +89,9 @@ data class Match(
     @Column(name = "away_penalties")
     var awayPenalties: Int? = null,
 
+    @Column(name = "has_multiplier")
+    val hasMultiplier: Boolean = false,
+
     @Column(name = "created_at", nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 

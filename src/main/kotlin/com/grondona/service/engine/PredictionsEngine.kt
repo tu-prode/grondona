@@ -25,6 +25,8 @@ object PredictionsEngine {
     private const val POINTS_DOUBLE_PLAYER = 8
     private const val POINTS_TRIPLE_PLAYER = 4
 
+    private const val MULTIPLIER_BONUS = 1.5f
+
     private val logger = LoggerFactory.getLogger(PredictionsEngine::class.java)
 
     private fun awardStatus(isCorrect: Boolean) = if (isCorrect) PredictionStatus.CORRECT else PredictionStatus.INCORRECT
@@ -114,17 +116,14 @@ object PredictionsEngine {
         var points = 0f
         val matchScore = prediction.match.score()
         if (matchScore == null) {
-            logger.error(
-                "Match with id={} has no goals submitted but status FINISHED",
-                prediction.match.id
-            )
+            logger.error("Match with id={} has no goals submitted but status FINISHED", prediction.match.id)
         } else {
             points += when (prediction.status) {
                 PredictionStatus.BONUS -> POINTS_BONUS
                 PredictionStatus.CORRECT -> POINTS_CORRECT
                 PredictionStatus.PARTIAL -> POINTS_PARTIAL
                 else -> 0
-            }
+            } * if (prediction.match.hasMultiplier) MULTIPLIER_BONUS else 1f
 
             val matchOutcome = matchScore.outcome()
             if (matchOutcome == prediction.score().outcome()) {

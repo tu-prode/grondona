@@ -1813,6 +1813,7 @@ components:
         - away_quota
         - draw_quota
         - status
+        - has_multiplier
       properties:
         id:
           type: string
@@ -1876,6 +1877,8 @@ components:
           format: int8
           description: The amount of penalties scored by the away team
           example: 7
+        has_multiplier:
+          type: boolean
 
     TournamentMatchesResponse:
       description: All the matches of the tournament

@@ -106,7 +106,7 @@ data class ExternalMatch(
         return match?.let { Pair(it, changedToFinished) }
     }
 
-    private fun oddsToQuota(odds: Float) = 1 + 2 * log(odds.toDouble(), 10.0).toFloat().round()
+    private fun oddsToQuota(odds: Float) = 0.5f + 2 * log(odds.toDouble(), 10.0).toFloat().round()
 
     fun toQuotasUpdated(matches: List<Match>): Match? =
         matches.filter { it.status == MatchStatus.NOT_STARTED && PredictionService.isMatchUnlocked(it) }
