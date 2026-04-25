@@ -38,7 +38,11 @@ class MatchScheduler(
     @Scheduled(cron = "0 0 7 * * *", zone = "America/Argentina/Buenos_Aires")
     fun updateQuotas() {
         logger.debug("Starting matches quotas polling job")
-        matchService.updateMatchesQuotas(WorldCupEngine.SYSTEM_TOURNAMENT_ID)
+        try {
+            matchService.updateMatchesQuotas(WorldCupEngine.SYSTEM_TOURNAMENT_ID)
+        } catch (ex: Exception) {
+            logger.error("Error while executing MatchScheduler (quotas)", ex)
+        }
     }
 
     @PostConstruct
@@ -56,7 +60,7 @@ class MatchScheduler(
             val tournamentMatches = matchService.updateMatchesStatuses(WorldCupEngine.SYSTEM_TOURNAMENT_ID)
             schedulerData = checkSchedule(tournamentMatches)
         } catch (ex: Exception) {
-            logger.error("Error while executing MatchScheduler. Retrying in 10 minutes", ex)
+            logger.error("Error while executing MatchScheduler (status). Retrying in 10 minutes", ex)
             scheduleAfterDelay(30 * 60 * 1000L)
             return
         }
