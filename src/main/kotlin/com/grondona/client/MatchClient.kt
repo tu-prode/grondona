@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming
 import com.grondona.exception.ExternalServiceException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.ExternalMatch
+import com.grondona.now
 import com.grondona.service.engine.WorldCupEngine
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -69,7 +70,7 @@ class MatchClient(
                 .bodyToMono(MocknaldoResponse::class.java)
                 .block().also {
                     logger.debug("Set current-time at {}", it?.current)
-                    WorldCupEngine.now = it?.current ?: LocalDateTime.now()
+                    now = it?.current ?: LocalDateTime.now()
                 }?.matches ?: emptyList()
         } catch (ex: WebClientResponseException) {
             throw ExternalServiceException("HTTP error calling matches service: ${ex.statusCode}", ex)

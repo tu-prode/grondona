@@ -18,6 +18,7 @@ import com.grondona.model.dto.response.AwardPredictionsResponse
 import com.grondona.model.dto.response.GroupAwardPredictionsResponse
 import com.grondona.model.dto.response.GroupMatchPredictionsResponse
 import com.grondona.model.dto.response.MatchPredictionResponse
+import com.grondona.now
 import com.grondona.repository.AwardPredictionRepository
 import com.grondona.repository.GroupRepository
 import com.grondona.repository.MembershipRepository
@@ -27,11 +28,11 @@ import com.grondona.repository.PlayerRepository
 import com.grondona.repository.TeamRepository
 import com.grondona.repository.TournamentRepository
 import com.grondona.repository.UserRepository
-import com.grondona.service.engine.WorldCupEngine
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 @Service
@@ -50,10 +51,8 @@ class PredictionService(
     companion object {
         private val logger = LoggerFactory.getLogger(PredictionService::class.java)
 
-        fun canSubmit(match: Match): Boolean = when (match.tournament.id) {
-            WorldCupEngine.SYSTEM_TOURNAMENT_ID -> WorldCupEngine.isMatchUnlocked(match)
-            else -> throw NotFoundException("Tournament not support")
-        }
+        fun isMatchUnlocked(match: Match): Boolean =
+            match.startedAt?.isAfter(now.plus(15, ChronoUnit.MINUTES)) ?: true
     }
 
     internal fun checkMembership(userId: UUID, groupId: UUID): Pair<User, Group> {
@@ -87,7 +86,7 @@ class PredictionService(
             match = matchRepository.findById(request.matchId).orElseThrow { NotFoundException("Match not found") },
         )
 
-        if (!canSubmit(prediction.match)) {
+        if (!isMatchUnlocked(prediction.match)) {
             logger.warn("Trying to submit a prediction for a match that is locked, user={}, match={} at group={}", userId, request.matchId, groupId)
             throw BadRequestException(message = "Cannot submit predictions for this match")
         }
@@ -115,7 +114,7 @@ class PredictionService(
                     .orElseThrow { NotFoundException("Match not found") },
             )
         }.filter {
-            if (canSubmit(it.match)) true else {
+            if (isMatchUnlocked(it.match)) true else {
                 logger.warn("User={} trying to submit predictions for match={}, but it's locked", userId, it.match.id); false
             }
         }
@@ -145,7 +144,7 @@ class PredictionService(
 
         val (_, group) = checkMembership(userId, groupId)
         val match = matchRepository.findById(matchId).orElseThrow { NotFoundException("Match not found") }
-        if (canSubmit(match)) {
+        if (isMatchUnlocked(match)) {
             logger.warn("User={} trying fetch predictions for the match={} at group={}, but it's not locked", userId, matchId, groupId)
             throw BadRequestException("Match is still open")
         }

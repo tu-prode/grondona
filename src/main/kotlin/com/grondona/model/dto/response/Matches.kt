@@ -23,6 +23,7 @@ data class MatchResponse(
     val awayGoals: Int?,
     val homePenalties: Int?,
     val awayPenalties: Int?,
+    val hasMultiplier: Boolean,
 ) {
     companion object {
         fun from(match: Match): MatchResponse = MatchResponse(
@@ -41,6 +42,7 @@ data class MatchResponse(
             awayGoals = match.awayGoals,
             homePenalties = match.homePenalties,
             awayPenalties = match.awayPenalties,
+            hasMultiplier = match.hasMultiplier,
         )
     }
 }
@@ -57,7 +59,7 @@ data class TournamentMatchesResponse(
 ) {
     companion object {
         fun from(tournament: Tournament, matches: List<Match>, past: Int?, next: Int?, live: Int?): TournamentMatchesResponse {
-            var pastMatches = matches.filter { it.status == MatchStatus.FINISHED }.map(MatchResponse::from)
+            var pastMatches = matches.filter { it.status == MatchStatus.FINISHED }.map(MatchResponse::from).sortedByDescending { it.startedAt }
             var liveMatches = matches.filter { it.status == MatchStatus.IN_PROGRESS }.map(MatchResponse::from)
             var nextMatches = matches.filter { it.status == MatchStatus.NOT_STARTED }.map(MatchResponse::from)
 

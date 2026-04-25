@@ -55,10 +55,11 @@ class PredictionsEngineTest {
         homeQuota: Float = 0f,
         awayQuota: Float = 0f,
         drawQuota: Float = 0f,
+        hasMultiplier: Boolean = false
     ) = Match(
         id = UUID.randomUUID(), code = "MATCH", tournament = anyTournament,
         homeTeam = anyTeam, awayTeam = anyTeam, status = MatchStatus.FINISHED,
-        homeGoals = homeGoals, awayGoals = awayGoals,
+        homeGoals = homeGoals, awayGoals = awayGoals, hasMultiplier = hasMultiplier,
         homeQuota = homeQuota, awayQuota = awayQuota, drawQuota = drawQuota,
         startedAt = LocalDateTime.now().minusHours(2),
         finishedAt = LocalDateTime.now().minusHours(1),
@@ -100,6 +101,15 @@ class PredictionsEngineTest {
         fun `matchPoints() returns 0 for incorrect prediction`() {
             // home wins 2-1, homeQuota=1.5; prediction: away wins 0-1 → wrong outcome
             val match = testMatch(homeGoals = 2, awayGoals = 1, homeQuota = 1.5f)
+            val result = PredictionsEngine.matchPoints(testMatchPrediction(match, 0, 1))
+            // 0 (incorrect) + 0 (high-score bonus) + 0 (quota) = 0
+            Assertions.assertEquals(0f, result)
+        }
+
+        @Test
+        fun `matchPoints() returns 0 for incorrect prediction (even with multiplier)`() {
+            // home wins 2-1, homeQuota=1.5; prediction: away wins 0-1 → wrong outcome
+            val match = testMatch(homeGoals = 2, awayGoals = 1, homeQuota = 1.5f, hasMultiplier = true)
             val result = PredictionsEngine.matchPoints(testMatchPrediction(match, 0, 1))
             // 0 (incorrect) + 0 (high-score bonus) + 0 (quota) = 0
             Assertions.assertEquals(0f, result)
@@ -183,6 +193,27 @@ class PredictionsEngineTest {
             val match = testMatch(homeGoals = 1, awayGoals = 0, homeQuota = 1.3333333f)
             val result = PredictionsEngine.matchPoints(testMatchPrediction(match, 2, 0))
             Assertions.assertEquals(2.33f, result)
+        }
+
+        @Test
+        fun `matchPoints() returns 1,5x the PARTIAL prediction points for a match with multiplier (ignoring quotas)`() {
+            val match = testMatch(homeGoals = 1, awayGoals = 0, homeQuota = 1f, hasMultiplier = true)
+            val result = PredictionsEngine.matchPoints(testMatchPrediction(match, 2, 0))
+            Assertions.assertEquals(2.5f, result)
+        }
+
+        @Test
+        fun `matchPoints() returns 1,5x the CORRECT prediction points for a match with multiplier (ignoring quotas)`() {
+            val match = testMatch(homeGoals = 1, awayGoals = 0, homeQuota = 1f, hasMultiplier = true)
+            val result = PredictionsEngine.matchPoints(testMatchPrediction(match, 1, 0))
+            Assertions.assertEquals(5.5f, result)
+        }
+
+        @Test
+        fun `matchPoints() returns 1,5x the BONUS prediction points for a match with multiplier (ignoring quotas)`() {
+            val match = testMatch(homeGoals = 5, awayGoals = 0, homeQuota = 1f, hasMultiplier = true)
+            val result = PredictionsEngine.matchPoints(testMatchPrediction(match, 5, 0))
+            Assertions.assertEquals(8.5f, result)
         }
     }
 

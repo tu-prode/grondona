@@ -35,11 +35,6 @@ class WorldCupEngine(
         val SEMIFINALS_MATCHES_CODE: List<String> = (101..102).map { it.toString() }
         val LAST_ROUND_MATCHES_CODE: List<String> = (103..104).map { it.toString() }
         const val FINAL_MATCH_CODE: String = "104"
-
-        var now: LocalDateTime = LocalDateTime.now()
-
-        fun isMatchUnlocked(match: Match) =
-            match.startedAt?.isAfter(now.plus(15, ChronoUnit.MINUTES)) ?: true
     }
 
     override fun calculateNewStatus(tournament: Tournament, matches: List<Match>): TournamentStatus? {

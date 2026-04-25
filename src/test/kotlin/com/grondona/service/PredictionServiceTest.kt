@@ -168,24 +168,24 @@ class PredictionServiceTest {
         @Test
         fun `canSubmit returns true when match starts more than 15 minutes from now`() {
             val match = testMatchOpen.copy(startedAt = LocalDateTime.now().plusHours(1))
-            assertTrue(PredictionService.canSubmit(match))
+            assertTrue(PredictionService.isMatchUnlocked(match))
         }
 
         @Test
         fun `canSubmit returns false when match starts in less than 15 minutes`() {
             val match = testMatchOpen.copy(startedAt = LocalDateTime.now().plusMinutes(5))
-            assertFalse(PredictionService.canSubmit(match))
+            assertFalse(PredictionService.isMatchUnlocked(match))
         }
 
         @Test
         fun `canSubmit returns false when match has already started`() {
-            assertFalse(PredictionService.canSubmit(testMatchLocked))
+            assertFalse(PredictionService.isMatchUnlocked(testMatchLocked))
         }
 
         @Test
         fun `canSubmit returns false when startedAt is null`() {
             val match = testMatchOpen.copy(startedAt = null)
-            assertTrue(PredictionService.canSubmit(match))
+            assertTrue(PredictionService.isMatchUnlocked(match))
         }
     }
 
