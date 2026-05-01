@@ -782,6 +782,140 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/tournaments/{tournamentId}/groups/{groupId}/accept/{candidateId}:
+    put:
+      tags:
+        - Groups
+      summary: Accept a user in a group
+      description: |
+        Authenticated admin user accepts another user in the group
+      operationId: acceptCandidate
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
+        - name: groupId
+          in: path
+          required: true
+          description: UUID of the group to join
+          schema:
+            type: string
+            format: uuid
+        - name: candidateId
+          in: path
+          required: true
+          description: UUID of the user to accept
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User accepted successfully
+        '400':
+          description: Already a member or group is full
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                alreadyMember:
+                  summary: User is already a member
+                  value:
+                    status: 400
+                    error: Bad Request
+                    message: You are already member of this group
+                groupFull:
+                  summary: Group has reached max members
+                  value:
+                    status: 400
+                    error: Bad Request
+                    message: Group is full
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/tournaments/{tournamentId}/groups/{groupId}/reject/{candidateId}:
+    delete:
+      tags:
+        - Groups
+      summary: Reject a user in a group
+      description: |
+        Authenticated admin user rejects another user in the group
+      operationId: rejectCandidate
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
+        - name: groupId
+          in: path
+          required: true
+          description: UUID of the group to join
+          schema:
+            type: string
+            format: uuid
+        - name: candidateId
+          in: path
+          required: true
+          description: UUID of the user to accept
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User rejected successfully
+        '400':
+          description: Already a member or group is full
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                alreadyMember:
+                  summary: User is already a member
+                  value:
+                    status: 400
+                    error: Bad Request
+                    message: You are already member of this group
+                groupFull:
+                  summary: Group has reached max members
+                  value:
+                    status: 400
+                    error: Bad Request
+                    message: Group is full
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/tournaments/{tournamentId}/groups/{groupId}:
     get:
       tags:
@@ -1479,27 +1613,31 @@ components:
         permissions:
           $ref: '#/components/schemas/UserPermissions'
 
+    CurrentUserResponse:
+      allOf:
+        - $ref: '#/components/schemas/UserResponse'
+        - type: object
+          required:
+            - join_requests
+          properties:
+            join_requests:
+              type: array
+              items:
+                $ref: '#/components/schemas/JoinGroupRequest'
+
     UserGroupResponse:
       type: object
       description: A group the authenticated user has joined, with current member count
       required:
         - group
-        - tournament_id
         - points
         - rank
         - role
+        - total_members
+        - total_candidates
       properties:
         group:
           $ref: '#/components/schemas/GroupResponse'
-        tournament_id:
-          type: string
-          format: uuid
-          description: Unique tournament identifier
-          example: c0773be5-a5aa-4b88-9a3d-3143fae8d48f
-        tournament_name:
-          type: string
-          description: Group name
-          example: Copa del Mundo 2026
         points:
           type: number
           format: float16
@@ -1514,6 +1652,16 @@ components:
           type: string
           description: Role in the group
           example: MEMBER
+        total_members:
+          type: integer
+          format: int32
+          description: Amount of members in the group
+          example: 17
+        total_candidates:
+          type: integer
+          format: int32
+          description: Amount of candidates for the group
+          example: 4
 
     CreateGroupRequest:
       type: object
@@ -1558,6 +1706,20 @@ components:
           minimum: 1
           example: 30
 
+    JoinGroupRequest:
+      type: object
+      required:
+        - group
+        - users
+      description: All fields are optional. Only provided fields will be updated.
+      properties:
+        group:
+          $ref: '#/components/schemas/GroupResponse'
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserResponse'
+
     GroupStanding:
       type: object
       required:
@@ -1594,6 +1756,7 @@ components:
         - max_members
         - has_started
         - standings
+        - candidates
       properties:
         id:
           type: string
@@ -1625,6 +1788,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GroupStanding'
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserResponse'
 
     TournamentStatus:
       description: The status of a tournament

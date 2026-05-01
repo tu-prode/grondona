@@ -2,7 +2,6 @@ package com.grondona.controller
 
 import com.grondona.exception.ForbiddenException
 import com.grondona.exception.UnauthorizedException
-import com.grondona.model.GroupRole
 import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.model.dto.response.GroupResponse
@@ -37,10 +36,9 @@ class GroupController(
         logger.info("POST /api/tournaments/{}/groups - Creating group: name='{}'", tournamentId, request.name)
         val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
 
-        val response = groupService.createGroup(tournamentId, request)
+        val response = groupService.createGroup(userId, tournamentId, request)
         logger.info("POST /api/tournaments/{}/groups - Group created: id={}", tournamentId, response.id)
 
-        groupMembershipService.joinGroup(userId, groupId = response.id, role = GroupRole.OWNER)
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 
@@ -141,6 +139,30 @@ class GroupController(
         logger.info("DELETE /api/tournaments/{}/groups/{}/leave - userId={}", tournamentId, groupId, userId)
         groupMembershipService.leaveGroup(userId, groupId)
         logger.info("DELETE /api/tournaments/{}/groups/{}/leave - Left successfully, userId={}", tournamentId, groupId, userId)
+        return ResponseEntity.noContent().build()
+    }
+
+    @PutMapping("/{groupId}/accept/{candidateId}")
+    fun acceptCandidate(
+        @AuthenticationPrincipal principal: JwtUserPrincipal?,
+        @PathVariable tournamentId: UUID, @PathVariable groupId: UUID, @PathVariable candidateId: UUID
+    ): ResponseEntity<Void> {
+        val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
+        logger.info("PUT /api/tournaments/{}/groups/{}/accept/{} - userId={}", tournamentId, groupId, candidateId, userId)
+        groupMembershipService.acceptCandidate(userId, groupId, candidateId)
+        logger.info("PUT /api/tournaments/{}/groups/{}/accept/{} - Accepted successfully, userId={}", tournamentId, groupId, candidateId, userId)
+        return ResponseEntity.status(HttpStatus.OK).build()
+    }
+
+    @DeleteMapping("/{groupId}/reject/{candidateId}")
+    fun rejectCandidate(
+        @AuthenticationPrincipal principal: JwtUserPrincipal?,
+        @PathVariable tournamentId: UUID, @PathVariable groupId: UUID, @PathVariable candidateId: UUID
+    ): ResponseEntity<Void> {
+        val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
+        logger.info("DELETE /api/tournaments/{}/groups/{}/reject/{} - userId={}", tournamentId, groupId, candidateId, userId)
+        groupMembershipService.rejectCandidate(userId, groupId, candidateId)
+        logger.info("DELETE /api/tournaments/{}/groups/{}/reject/{} - Accepted successfully, userId={}", tournamentId, groupId, candidateId, userId)
         return ResponseEntity.noContent().build()
     }
 }

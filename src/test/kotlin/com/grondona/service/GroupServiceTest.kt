@@ -2,22 +2,20 @@ package com.grondona.service
 
 import com.grondona.exception.ConflictException
 import com.grondona.exception.NotFoundException
-import com.grondona.model.Group
+import com.grondona.model.GroupRole
 import com.grondona.model.GroupUser
 import com.grondona.model.Match
 import com.grondona.model.MatchPrediction
 import com.grondona.model.MatchPredictionView
 import com.grondona.model.MatchStatus
 import com.grondona.model.PredictionStatus
-import com.grondona.model.Tournament
-import com.grondona.model.TournamentStatus
-import com.grondona.model.User
 import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.repository.GroupRepository
 import com.grondona.repository.MatchPredictionRepository
 import com.grondona.repository.MembershipRepository
 import com.grondona.repository.TournamentRepository
+import com.grondona.repository.UserRepository
 import com.grondona.testGroup
 import com.grondona.testTeam
 import com.grondona.testTournament
@@ -35,6 +33,9 @@ import java.time.temporal.ChronoUnit
 import java.util.*
 
 class GroupServiceTest {
+
+    @MockK
+    private lateinit var userRepository: UserRepository
 
     @MockK
     private lateinit var groupRepository: GroupRepository
@@ -64,11 +65,13 @@ class GroupServiceTest {
             val request = CreateGroupRequest(name = "New Group", isPrivate = false, maxMembers = 15)
             val savedGroup = testGroup.copy(name = "New Group", maxMembers = 15)
 
+            every { userRepository.findById(testUser.id!!) } returns Optional.of(testUser)
             every { tournamentRepository.findById(testTournament.id!!) } returns Optional.of(testTournament)
             every { groupRepository.existsByName(request.name) } returns false
             every { groupRepository.save(any()) } returns savedGroup
+            every { membershipRepository.save(any()) } answers { firstArg() }
 
-            val result = groupService.createGroup(testTournament.id!!, request)
+            val result = groupService.createGroup(testUser.id!!, testTournament.id!!, request)
 
             assertEquals("New Group", result.name)
             assertEquals(false, result.isPrivate)
@@ -81,11 +84,13 @@ class GroupServiceTest {
             val request = CreateGroupRequest(name = "Private Group", isPrivate = true, maxMembers = 5)
             val savedGroup = testGroup.copy(name = "Private Group", isPrivate = true, maxMembers = 5)
 
+            every { userRepository.findById(testUser.id!!) } returns Optional.of(testUser)
             every { tournamentRepository.findById(testTournament.id!!) } returns Optional.of(testTournament)
             every { groupRepository.existsByName(request.name) } returns false
             every { groupRepository.save(any()) } returns savedGroup
+            every { membershipRepository.save(any()) } answers { firstArg() }
 
-            val result = groupService.createGroup(testTournament.id!!, request)
+            val result = groupService.createGroup(testUser.id!!, testTournament.id!!, request)
 
             assertTrue(result.isPrivate)
         }
@@ -93,10 +98,11 @@ class GroupServiceTest {
         @Test
         fun `createGroup should throw ConflictException when name already exists`() {
             val request = CreateGroupRequest(name = "Existing Group", isPrivate = false, maxMembers = 10)
+            every { userRepository.findById(testUser.id!!) } returns Optional.of(testUser)
             every { groupRepository.existsByName(request.name) } returns true
 
             val exception = assertThrows<ConflictException> {
-                groupService.createGroup(testTournament.id!!, request)
+                groupService.createGroup(testUser.id!!, testTournament.id!!, request)
             }
             assertEquals("Group name already exists", exception.message)
             assertEquals("name", exception.field)
@@ -107,14 +113,40 @@ class GroupServiceTest {
         @Test
         fun `createGroup should throw NotFoundException when tournament not found`() {
             val request = CreateGroupRequest(name = "New Group", isPrivate = false, maxMembers = 10)
+            every { userRepository.findById(testUser.id!!) } returns Optional.of(testUser)
             every { groupRepository.existsByName(request.name) } returns false
             every { tournamentRepository.findById(testTournament.id!!) } returns Optional.empty()
 
             val exception = assertThrows<NotFoundException> {
-                groupService.createGroup(testTournament.id!!, request)
+                groupService.createGroup(testUser.id!!, testTournament.id!!, request)
             }
             assertEquals("Tournament not found", exception.message)
             verify(exactly = 0) { groupRepository.save(any()) }
+        }
+
+        @Test
+        fun `createGroup should set current user as group owner`() {
+            val request = CreateGroupRequest(name = "New Group", isPrivate = false, maxMembers = 15)
+            val savedGroup = testGroup.copy(name = "New Group", maxMembers = 15)
+
+            every { userRepository.findById(testUser.id!!) } returns Optional.of(testUser)
+            every { tournamentRepository.findById(testTournament.id!!) } returns Optional.of(testTournament)
+            every { groupRepository.existsByName(request.name) } returns false
+            every { groupRepository.save(any()) } returns savedGroup
+            every { membershipRepository.save(any()) } answers { firstArg() }
+
+            val result = groupService.createGroup(testUser.id!!, testTournament.id!!, request)
+
+            assertEquals("New Group", result.name)
+            assertEquals(false, result.isPrivate)
+            assertEquals(15, result.maxMembers)
+            verify { groupRepository.save(any()) }
+
+            val slot = slot<GroupUser>()
+            verify(exactly = 1) { membershipRepository.save(capture(slot)) }
+            val memberSaved = slot.captured
+            assertEquals(testUser.id, memberSaved.user.id)
+            assertEquals(GroupRole.OWNER, memberSaved.role)
         }
     }
 
@@ -227,7 +259,7 @@ class GroupServiceTest {
         @Test
         fun `getGroupById should return GroupResponse when group exists`() {
             every { groupRepository.findById(testGroup.id!!) } returns Optional.of(testGroup)
-            every { membershipRepository.findByGroupId(testGroup.id!!) } returns emptyList()
+            every { membershipRepository.findGroupUsers(testGroup.id!!) } returns emptyList()
 
             val result = groupService.getGroupById(testGroup.id!!)
 
@@ -248,6 +280,33 @@ class GroupServiceTest {
         }
 
         @Test
+        fun `getGroupById should return list of candidates when there are some`() {
+            val member1 = GroupUser(
+                user = testUser.copy(id = UUID.randomUUID()), role = GroupRole.MEMBER,
+                group = testGroup, joinedAt = LocalDateTime.now()
+            )
+            val member2 = GroupUser(
+                user = testUser.copy(id = UUID.randomUUID()), role = GroupRole.MEMBER,
+                group = testGroup, joinedAt = LocalDateTime.now().minus(1, ChronoUnit.DAYS)
+            )
+            val candidate1 = GroupUser(
+                user = testUser.copy(id = UUID.randomUUID()), role = GroupRole.CANDIDATE,
+                group = testGroup, joinedAt = LocalDateTime.now()
+            )
+            every { groupRepository.findById(testGroup.id!!) } returns Optional.of(testGroup)
+            every { membershipRepository.findGroupUsers(testGroup.id!!) } returns listOf(member1, member2, candidate1)
+
+            val result = groupService.getGroupById(testGroup.id!!)
+
+            assertEquals(testGroup.id, result.id)
+            assertEquals(testGroup.name, result.name)
+            assertEquals(testGroup.isPrivate, result.isPrivate)
+            assertEquals(testGroup.maxMembers, result.maxMembers)
+            assertEquals(1, result.candidates.size)
+            assertEquals(candidate1.user.id, result.candidates[0].id)
+        }
+
+        @Test
         fun `getGroupById should return empty standings when no user has rank yet`() {
             val member1 = GroupUser(
                 user = testUser.copy(id = UUID.randomUUID()),
@@ -259,7 +318,7 @@ class GroupServiceTest {
             )
 
             every { groupRepository.findById(testGroup.id!!) } returns Optional.of(testGroup)
-            every { membershipRepository.findByGroupId(testGroup.id!!) } returns listOf(member1, member2)
+            every { membershipRepository.findGroupUsers(testGroup.id!!) } returns listOf(member1, member2)
 
             val result = groupService.getGroupById(testGroup.id!!)
 
@@ -276,7 +335,7 @@ class GroupServiceTest {
         }
 
         @Test
-        fun `getGroupById should return real standings when no user are already ranked`() {
+        fun `getGroupById should return real standings when no users are already ranked`() {
             val member1 = GroupUser(
                 user = testUser.copy(id = UUID.randomUUID()), rank = 1, points = 2f,
                 group = testGroup, joinedAt = LocalDateTime.now()
@@ -287,7 +346,7 @@ class GroupServiceTest {
             )
 
             every { groupRepository.findById(testGroup.id!!) } returns Optional.of(testGroup)
-            every { membershipRepository.findByGroupId(testGroup.id!!) } returns listOf(member1, member2)
+            every { membershipRepository.findGroupUsers(testGroup.id!!) } returns listOf(member1, member2)
 
             val result = groupService.getGroupById(testGroup.id!!)
 
@@ -334,7 +393,7 @@ class GroupServiceTest {
             )
 
             every { groupRepository.findById(testGroup.id!!) } returns Optional.of(testGroup)
-            every { membershipRepository.findByGroupId(testGroup.id!!) } returns listOf(member1, member2)
+            every { membershipRepository.findGroupUsers(testGroup.id!!) } returns listOf(member1, member2)
             every { matchPredictionRepository.findGroupPredictions(testGroup.id!!) } returns listOf(prediction1, prediction2)
 
             val result = groupService.getGroupById(testGroup.id!!, liveStandings = true)
@@ -349,6 +408,30 @@ class GroupServiceTest {
             assertEquals(2, result.standings[1].rank)
             assertEquals(4f, result.standings[1].points)
             assertEquals(listOf(PredictionStatus.PARTIAL), result.standings[1].lastPredictions)
+        }
+
+        @Test
+        fun `getGroupById should not return standings for non-members`() {
+            val member = GroupUser(
+                user = testUser.copy(id = UUID.randomUUID()), rank = 1, points = 2f,
+                group = testGroup, joinedAt = LocalDateTime.now()
+            )
+            val candidate = GroupUser(
+                user = testUser.copy(id = UUID.randomUUID()), role = GroupRole.CANDIDATE,
+                group = testGroup, joinedAt = LocalDateTime.now().minus(1, ChronoUnit.DAYS)
+            )
+
+            every { groupRepository.findById(testGroup.id!!) } returns Optional.of(testGroup)
+            every { membershipRepository.findGroupUsers(testGroup.id!!) } returns listOf(member, candidate)
+
+            val result = groupService.getGroupById(testGroup.id!!)
+
+            assertEquals(testGroup.id, result.id)
+            assertEquals(1, result.standings.size)
+            assertEquals(member.user.id, result.standings[0].user.id)
+            assertEquals(1, result.standings[0].rank)
+            assertEquals(1, result.candidates.size)
+            assertEquals(candidate.user.id, result.candidates[0].id)
         }
     }
 }

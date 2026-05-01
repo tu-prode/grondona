@@ -11,8 +11,10 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 enum class GroupRole {
-    MEMBER, ADMIN, OWNER,
+    OWNER, ADMIN, MEMBER, CANDIDATE
 }
+
+fun GroupRole.hasAdminAccess() = this == GroupRole.ADMIN || this == GroupRole.OWNER
 
 @Entity
 @Table(name = "group_users")
@@ -44,7 +46,7 @@ data class GroupUser(
     var rank: Int? = null,
 
     @Column(name = "joined_at", nullable = false)
-    val joinedAt: LocalDateTime = LocalDateTime.now(),
+    val joinedAt: LocalDateTime? = null,
 
     @Column(name = "amount_bonus", nullable = false)
     var amountBonus: Int = 0,
@@ -60,14 +62,21 @@ data class GroupUser(
     @Column(name = "last_predictions", nullable = false, columnDefinition = "varchar(20) array")
     var lastPredictions: List<PredictionStatus> = emptyList(),
 
+    @Column(name = "created_at")
+    val createdAt: LocalDateTime = LocalDateTime.now(),
+
+    @Column(name = "updated_at")
+    val updatedAt: LocalDateTime = LocalDateTime.now(),
+
     @Column(name = "deleted_at")
     val deletedAt: LocalDateTime? = null
 )
 
 data class MembershipView(
     val group: Group,
-    val membersCount: Long,
     val points: Float,
     val rank: Int? = null,
     val role: GroupRole,
+    val membersCount: Long,
+    val candidatesCount: Long,
 )

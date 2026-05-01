@@ -4,12 +4,16 @@ import com.grondona.exception.BadRequestException
 import com.grondona.exception.ConflictException
 import com.grondona.exception.ForbiddenException
 import com.grondona.exception.NotFoundException
+import com.grondona.model.GroupRole
+import com.grondona.model.GroupUser
 import com.grondona.model.User
 import com.grondona.model.dto.request.CreateUserRequest
 import com.grondona.model.dto.request.LoginUserRequest
 import com.grondona.model.dto.request.UpdateUserRequest
+import com.grondona.repository.MembershipRepository
 import com.grondona.repository.UserRepository
 import com.grondona.security.JwtService
+import com.grondona.testGroup
 import io.mockk.*
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
@@ -25,6 +29,9 @@ class UserServiceTest {
 
     @MockK
     private lateinit var userRepository: UserRepository
+
+    @MockK
+    private lateinit var membershipRepository: MembershipRepository
 
     @MockK
     private lateinit var jwtService: JwtService
@@ -316,9 +323,22 @@ class UserServiceTest {
     inner class GetUserByIdTests {
 
         @Test
+        fun `getUserById should throw NotFoundException when user not found`() {
+            // Given
+            every { userRepository.findById(testUserId) } returns Optional.empty()
+
+            // When/Then
+            val exception = assertThrows<NotFoundException> {
+                userService.getUserById(testUserId)
+            }
+            assertEquals("User not found", exception.message)
+        }
+
+        @Test
         fun `getUserById should return UserResponse when user exists`() {
             // Given
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
+            every { membershipRepository.findJoinRequests(testUserId) } returns emptyList()
 
             // When
             val result = userService.getUserById(testUserId)
@@ -330,15 +350,40 @@ class UserServiceTest {
         }
 
         @Test
-        fun `getUserById should throw NotFoundException when user not found`() {
-            // Given
-            every { userRepository.findById(testUserId) } returns Optional.empty()
+        fun `getUserById should return UserResponse with join requests when there are some`() {
+            val testGroup2 = testGroup.copy(id = UUID.randomUUID(), name = "group2")
+            val candidate1 = testUser.copy(id = UUID.randomUUID(), username = "candidate1", email = "candidate1@gmail.com")
+            val candidate2 = testUser.copy(id = UUID.randomUUID(), username = "candidate2", email = "candidate2@gmail.com")
 
-            // When/Then
-            val exception = assertThrows<NotFoundException> {
-                userService.getUserById(testUserId)
-            }
-            assertEquals("User not found", exception.message)
+            // Given
+            every { userRepository.findById(testUserId) } returns Optional.of(testUser)
+            every { membershipRepository.findJoinRequests(testUserId) } returns listOf(
+                GroupUser(group = testGroup, user = candidate1, role = GroupRole.CANDIDATE),
+                GroupUser(group = testGroup, user = candidate2, role = GroupRole.CANDIDATE),
+                GroupUser(group = testGroup2, user = candidate1, role = GroupRole.CANDIDATE),
+            )
+
+            // When
+            val result = userService.getUserById(testUserId)
+
+            // Then
+            assertEquals(testUserId, result.id)
+            assertEquals(testUser.username, result.username)
+            assertEquals(testUser.email, result.email)
+            assertEquals(2, result.joinRequests.size)
+            assertEquals(testGroup.id, result.joinRequests[0].group.id)
+            assertEquals(2, result.joinRequests[0].users.size)
+            assertEquals(candidate1.id, result.joinRequests[0].users[0].id)
+            assertEquals(candidate1.username, result.joinRequests[0].users[0].username)
+            assertEquals(candidate1.email, result.joinRequests[0].users[0].email)
+            assertEquals(candidate2.id, result.joinRequests[0].users[1].id)
+            assertEquals(candidate2.username, result.joinRequests[0].users[1].username)
+            assertEquals(candidate2.email, result.joinRequests[0].users[1].email)
+            assertEquals(testGroup2.id, result.joinRequests[1].group.id)
+            assertEquals(1, result.joinRequests[1].users.size)
+            assertEquals(candidate1.id, result.joinRequests[1].users[0].id)
+            assertEquals(candidate1.username, result.joinRequests[1].users[0].username)
+            assertEquals(candidate1.email, result.joinRequests[1].users[0].email)
         }
     }
 }

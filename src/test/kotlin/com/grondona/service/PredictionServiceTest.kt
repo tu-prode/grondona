@@ -154,7 +154,7 @@ class PredictionServiceTest {
     private fun mockMembership() {
         every { userRepository.findById(testUserId) } returns Optional.of(testUser)
         every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
-        every { membershipRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns true
+        every { membershipRepository.isMember(testUserId, testGroupId) } returns true
     }
 
     @BeforeEach
@@ -209,7 +209,7 @@ class PredictionServiceTest {
         fun `checkMembership should throw ForbiddenException when not a member`() {
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
-            every { membershipRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns false
+            every { membershipRepository.isMember(testUserId, testGroupId) } returns false
 
             val exception = assertThrows<ForbiddenException> { awardPredictionService.getUserMatchPredictionsForGroup(testUserId, testGroupId) }
             assertEquals("User doesn't belong to the group", exception.message)
@@ -238,7 +238,7 @@ class PredictionServiceTest {
         fun `submitSingleMatchPrediction should throw NotFoundException when match not found`() {
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
-            every { membershipRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns true
+            every { membershipRepository.isMember(testUserId, testGroupId) } returns true
             every { matchRepository.findById(testMatchId) } returns Optional.empty()
 
             assertThrows<NotFoundException> {
@@ -251,7 +251,7 @@ class PredictionServiceTest {
         fun `submitSingleMatchPrediction should throw BadRequestException when match is locked`() {
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
-            every { membershipRepository.existsByUserIdAndGroupId(testUserId, testGroupId) } returns true
+            every { membershipRepository.isMember(testUserId, testGroupId) } returns true
             every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchLocked)
 
             val exception = assertThrows<BadRequestException> {

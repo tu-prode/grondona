@@ -3,7 +3,9 @@ package com.grondona.service
 import com.grondona.exception.BadRequestException
 import com.grondona.exception.ConflictException
 import com.grondona.exception.NotFoundException
+import com.grondona.model.AwardPrediction
 import com.grondona.model.ExtendedAwards
+import com.grondona.model.PredictionStatus
 import com.grondona.model.Tournament
 import com.grondona.model.TournamentStatus
 import com.grondona.model.dto.request.CreateTournamentRequest
@@ -12,16 +14,21 @@ import com.grondona.model.dto.response.TournamentMatchesResponse
 import com.grondona.model.dto.response.TournamentPlayersResponse
 import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.model.dto.response.TournamentTeamsResponse
+import com.grondona.repository.AwardPredictionRepository
 import com.grondona.repository.MatchRepository
+import com.grondona.repository.MembershipRepository
 import com.grondona.repository.PlayerRepository
 import com.grondona.repository.TeamRepository
 import com.grondona.repository.TournamentRepository
+import com.grondona.service.engine.PredictionsEngine
 import com.grondona.service.engine.WorldCupEngine
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.util.UUID
+import kotlin.collections.component1
+import kotlin.collections.component2
 
 @Service
 class TournamentService(
@@ -29,6 +36,8 @@ class TournamentService(
     private val matchRepository: MatchRepository,
     private val playerRepository: PlayerRepository,
     private val tournamentRepository: TournamentRepository,
+    private val membershipRepository: MembershipRepository,
+    private val awardPredictionRepository: AwardPredictionRepository,
 ) {
 
     companion object {
@@ -85,8 +94,36 @@ class TournamentService(
 
         val savedTournament = tournamentRepository.save(tournament)
         logger.info("Tournament updated successfully: id={}, name='{}'", savedTournament.id, savedTournament.name)
+
+        if (savedTournament.awards != null) {
+            logger.info("Running the awards predictions check for tournament={}", savedTournament.id)
+            updateAwardPredictionsPoints(savedTournament)
+        }
+
         return TournamentResponse.from(savedTournament, checkAwards(tournament))
     }
+
+    fun updateAwardPredictionsPoints(tournament: Tournament) {
+        var predictionsToUpdate = awardPredictionRepository.findByTournamentId(tournament.id!!)
+        predictionsToUpdate = checkAwardPredictions(predictionsToUpdate)
+        if (predictionsToUpdate.isNotEmpty()) {
+            logger.debug("Award predictions to update in DB={}", predictionsToUpdate.size)
+            awardPredictionRepository.saveAll(predictionsToUpdate)
+        }
+
+        predictionsToUpdate.groupBy { it.group }.forEach { (group, groupPredictions) ->
+            var members = membershipRepository.findMembers(group.id!!)
+            val newPredictions = groupPredictions.groupBy { it.user.id!! }
+            members = PredictionsEngine.updateAwardPoints(members, newPredictions)
+            logger.debug("Group={} new standings saved, after applying awards points", group.id)
+            membershipRepository.saveAll(members)
+        }
+    }
+
+    fun checkAwardPredictions(predictions: List<AwardPrediction>): List<AwardPrediction> =
+        PredictionsEngine.checkAwardPredictions(predictions.filter {
+            it.status == PredictionStatus.PENDING && it.group.tournament.status == TournamentStatus.FINISHED
+        })
 
     @Transactional
     fun deleteTournament(tournamentId: UUID) {
@@ -150,6 +187,7 @@ class TournamentService(
         val players = playerRepository.findTournamentPlayers(
             tournamentId, country, isGoalkeeper, WorldCupEngine.BEST_YOUNG_PLAYER_DATE_LIMIT.takeIf { isU21 ?: false },
         )
+
         logger.info("Tournament players fetched successfully id={}, amount of players={}", tournamentId, players.size)
         return TournamentPlayersResponse.from(players)
     }

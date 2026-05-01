@@ -12,6 +12,7 @@ import com.grondona.model.dto.request.LoginUserRequest
 import com.grondona.model.dto.request.UpdateUserRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
 import com.grondona.model.dto.response.UserResponse
+import com.grondona.repository.MembershipRepository
 import com.grondona.repository.UserRepository
 import com.grondona.security.JwtService
 import com.grondona.utils.hashMD5
@@ -24,8 +25,9 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class UserService(
-    private val userRepository: UserRepository,
     private val jwtService: JwtService,
+    private val userRepository: UserRepository,
+    private val membershipRepository: MembershipRepository,
 ) {
 
     companion object {
@@ -157,14 +159,15 @@ class UserService(
     fun getUserById(userId: UUID): UserResponse {
         logger.info("Fetching user: userId={}", userId)
 
-        val user =
-            userRepository.findById(userId).orElseThrow {
-                logger.warn("User not found: userId={}", userId)
-                NotFoundException("User not found")
-            }
+        val user = userRepository.findById(userId).orElseThrow {
+            logger.warn("User not found: userId={}", userId)
+            NotFoundException("User not found")
+        }
+
+        val joinRequests = membershipRepository.findJoinRequests(userId)
 
         logger.info("User fetched successfully: userId={}, username='{}'", user.id, user.username)
-        return UserResponse.from(user)
+        return UserResponse.withJoinRequests(user, joinRequests)
     }
 
     fun hasAdminAccess(userId: UUID): Boolean =

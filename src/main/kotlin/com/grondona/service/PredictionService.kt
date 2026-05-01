@@ -59,7 +59,7 @@ class PredictionService(
         val user = userRepository.findById(userId).orElseThrow { NotFoundException("User not found") }
         val group = groupRepository.findById(groupId).orElseThrow { NotFoundException("Group not found") }
 
-        if (!membershipRepository.existsByUserIdAndGroupId(userId, groupId)) {
+        if (!membershipRepository.isMember(userId, groupId)) {
             logger.warn("User={} trying to submit a prediction to the group={}, but doesn't belong to", userId, groupId)
             throw ForbiddenException("User doesn't belong to the group")
         }
