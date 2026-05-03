@@ -217,7 +217,7 @@ class GroupControllerTest {
 
         @Test
         fun `DELETE api groups groupId should return 403 when user is not group admin`() {
-            every { groupService.getGroupById(testGroupId) } returns testGroupResponse
+            every { groupService.getGroupById(testGroupId, omitStandings = true) } returns testGroupResponse
             every { groupMembershipService.isAdmin(testUserId, testGroupId) } returns false
 
             setAuthenticatedUser(testUserId)
@@ -227,7 +227,7 @@ class GroupControllerTest {
 
         @Test
         fun `DELETE api groups groupId should return 204 when group deleted successfully`() {
-            every { groupService.getGroupById(testGroupId) } returns testGroupResponse
+            every { groupService.getGroupById(testGroupId, omitStandings = true) } returns testGroupResponse
             every { groupMembershipService.isAdmin(testUserId, testGroupId) } returns true
             every { groupService.deleteGroup(testGroupId) } just Runs
 
@@ -238,7 +238,7 @@ class GroupControllerTest {
 
         @Test
         fun `DELETE api groups groupId should return 404 when group not found`() {
-            every { groupService.getGroupById(testGroupId) } throws NotFoundException("Group not found")
+            every { groupService.getGroupById(testGroupId, omitStandings = true) } throws NotFoundException("Group not found")
 
             setAuthenticatedUser(testUserId)
             mockMvc.perform(delete("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, testGroupId))

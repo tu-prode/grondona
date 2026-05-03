@@ -45,7 +45,7 @@ data class GroupUser(
     @Column(nullable = true)
     var rank: Int? = null,
 
-    @Column(name = "joined_at", nullable = false)
+    @Column(name = "joined_at", nullable = true)
     val joinedAt: LocalDateTime? = null,
 
     @Column(name = "amount_bonus", nullable = false)
@@ -59,7 +59,7 @@ data class GroupUser(
 
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Enumerated(EnumType.STRING)
-    @Column(name = "last_predictions", nullable = false, columnDefinition = "varchar(20) array")
+    @Column(name = "last_predictions", nullable = false)
     var lastPredictions: List<PredictionStatus> = emptyList(),
 
     @Column(name = "created_at")

@@ -12,6 +12,7 @@ import com.grondona.model.dto.response.GroupResponse
 import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.repository.GroupRepository
 import com.grondona.repository.MembershipRepository
+import com.grondona.repository.TournamentRepository
 import com.grondona.repository.UserRepository
 import org.junit.jupiter.api.*
 import org.springframework.beans.factory.annotation.Autowired
@@ -44,6 +45,9 @@ class GroupIntegrationTest {
     private lateinit var membershipRepository: MembershipRepository
 
     @Autowired
+    private lateinit var tournamentRepository: TournamentRepository
+
+    @Autowired
     private lateinit var userRepository: UserRepository
 
     private var authToken: String? = null
@@ -54,6 +58,7 @@ class GroupIntegrationTest {
     fun setUp() {
         groupRepository.deleteAll()
         userRepository.deleteAll()
+        tournamentRepository.deleteAll()
 
         // Create an admin user to create the first tournament
         val adminResult = mockMvc.perform(

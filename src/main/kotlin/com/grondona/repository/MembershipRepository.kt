@@ -45,16 +45,16 @@ interface MembershipRepository : JpaRepository<GroupUser, UUID> {
     @Query("""
         SELECT u
         FROM GroupUser u
-        WHERE u.user.id = :userId AND u.group.id = :groupId AND u.role <>  'CANDIDATE'
+        WHERE u.group.id = :groupId AND u.role <>  'CANDIDATE'
     """)
-    fun findMembers(groupId: UUID): List<GroupUser>
+    fun findMembers(@Param("groupId") groupId: UUID): List<GroupUser>
 
     @Query("""
         SELECT u
         FROM GroupUser u
-        WHERE u.user.id = :userId AND u.group.id = :groupId
+        WHERE u.group.id = :groupId
     """)
-    fun findGroupUsers(groupId: UUID): List<GroupUser>
+    fun findGroupUsers(@Param("groupId") groupId: UUID): List<GroupUser>
 
     @Query("""
         SELECT new com.grondona.model.MembershipView(

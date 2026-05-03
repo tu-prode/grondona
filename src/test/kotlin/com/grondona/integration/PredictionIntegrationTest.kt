@@ -111,7 +111,7 @@ class PredictionIntegrationTest {
     }
 
     @Nested
-    inner class SubmitPredictionAuthTests {
+    inner class SubmitGroupSingleMatchPredictionsTests {
 
         private val matchId = UUID.randomUUID()
         private val validRequest = SubmitMatchPredictionRequest(matchId = matchId, homeGoals = 1, awayGoals = 0)
@@ -184,7 +184,7 @@ class PredictionIntegrationTest {
     }
 
     @Nested
-    inner class SubmitBulkPredictionsAuthTests {
+    inner class SubmitGroupBulkMatchPredictionsTests {
 
         private val validRequest = SubmitBulkMatchPredictionsRequest(
             predictions = listOf(SubmitMatchPredictionRequest(matchId = UUID.randomUUID(), homeGoals = 1, awayGoals = 0))
@@ -193,7 +193,7 @@ class PredictionIntegrationTest {
         @Test
         fun `should return 401 when submitting bulk predictions without authentication`() {
             mockMvc.perform(
-                post("/api/tournaments/{tournamentId}/groups/{groupId}/predictions", tournamentId, groupId)
+                post("/api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches", tournamentId, groupId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(validRequest))
             )
@@ -203,7 +203,7 @@ class PredictionIntegrationTest {
         @Test
         fun `should return 403 when submitting bulk predictions as non-member`() {
             mockMvc.perform(
-                post("/api/tournaments/{tournamentId}/groups/{groupId}/predictions", tournamentId, groupId)
+                post("/api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches", tournamentId, groupId)
                     .header("Authorization", "Bearer $nonMemberToken")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(validRequest))
@@ -216,7 +216,7 @@ class PredictionIntegrationTest {
         fun `should return 404 when group does not exist for bulk submission`() {
             val nonExistentGroupId = UUID.randomUUID()
             mockMvc.perform(
-                post("/api/tournaments/{tournamentId}/groups/{groupId}/predictions", tournamentId, nonExistentGroupId)
+                post("/api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches", tournamentId, nonExistentGroupId)
                     .header("Authorization", "Bearer $memberToken")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(validRequest))
@@ -229,7 +229,7 @@ class PredictionIntegrationTest {
         fun `should return 400 when bulk predictions list is empty`() {
             val emptyRequest = SubmitBulkMatchPredictionsRequest(predictions = emptyList())
             mockMvc.perform(
-                post("/api/tournaments/{tournamentId}/groups/{groupId}/predictions", tournamentId, groupId)
+                post("/api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches", tournamentId, groupId)
                     .header("Authorization", "Bearer $memberToken")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(emptyRequest))
@@ -239,12 +239,12 @@ class PredictionIntegrationTest {
     }
 
     @Nested
-    inner class GetGroupUserPredictionsAuthTests {
+    inner class GetMyGroupMatchPredictionsTests {
 
         @Test
         fun `should return 401 when getting predictions without authentication`() {
             mockMvc.perform(
-                get("/api/tournaments/{tournamentId}/groups/{groupId}/predictions", tournamentId, groupId)
+                get("/api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches/me", tournamentId, groupId)
             )
                 .andExpect(status().isUnauthorized)
         }
@@ -252,7 +252,7 @@ class PredictionIntegrationTest {
         @Test
         fun `should return 403 when getting predictions as non-member`() {
             mockMvc.perform(
-                get("/api/tournaments/{tournamentId}/groups/{groupId}/predictions", tournamentId, groupId)
+                get("/api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches/me", tournamentId, groupId)
                     .header("Authorization", "Bearer $nonMemberToken")
             )
                 .andExpect(status().isForbidden)
@@ -263,7 +263,7 @@ class PredictionIntegrationTest {
         fun `should return 404 when group does not exist`() {
             val nonExistentGroupId = UUID.randomUUID()
             mockMvc.perform(
-                get("/api/tournaments/{tournamentId}/groups/{groupId}/predictions", tournamentId, nonExistentGroupId)
+                get("/api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches/me", tournamentId, nonExistentGroupId)
                     .header("Authorization", "Bearer $memberToken")
             )
                 .andExpect(status().isNotFound)
@@ -272,7 +272,7 @@ class PredictionIntegrationTest {
     }
 
     @Nested
-    inner class GetGroupMatchPredictionsAuthTests {
+    inner class GetSingleGroupMatchPredictionsTests {
 
         private val matchId = UUID.randomUUID()
 

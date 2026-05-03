@@ -41,7 +41,7 @@ class MembershipService(
             NotFoundException("User not found")
         }
 
-        if (membershipRepository.isMember(userId, groupId)) {
+        if (membershipRepository.isMember(userId, groupId) || membershipRepository.findCandidate(userId, groupId).isPresent) {
             logger.warn("Join failed: user {} is already a member of group {}", userId, groupId)
             throw BadRequestException("You are already member of this group")
         }

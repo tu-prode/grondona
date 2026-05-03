@@ -108,6 +108,7 @@ class GroupService(
             NotFoundException("Group not found")
         }
 
+        membershipRepository.findGroupUsers(groupId).forEach { membershipRepository.delete(it) }
         groupRepository.delete(group)
         logger.info("Group deleted successfully: id={}, name='{}'", groupId, group.name)
     }

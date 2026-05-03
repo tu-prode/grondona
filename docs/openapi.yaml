@@ -1361,7 +1361,7 @@ paths:
       summary: Post a single predictions for a certain group and tournament.
       description: |
         Publish a user predictions for a certain group and tournament.
-      operationId: submitSingleGroupMatchPredictions
+      operationId: submitGroupSingleMatchPredictions
       security:
         - bearerAuth: [ ]
       parameters:
