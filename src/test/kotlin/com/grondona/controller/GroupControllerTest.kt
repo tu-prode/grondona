@@ -91,8 +91,8 @@ class GroupControllerTest {
     inner class CreateGroupEndpointTests {
         @Test
         fun `POST api groups should return 201 when group created successfully`() {
-            every { groupService.createGroup(any(), any()) } returns testGroupResponse.copy(name = "New Group")
-            every { groupMembershipService.joinGroup(any(), any(), any()) } just Runs
+            every { groupService.createGroup(any(), any(), any()) } returns testGroupResponse.copy(name = "New Group")
+            every { groupMembershipService.joinGroup(any(), any()) } just Runs
 
             setAuthenticatedUser(testUserId)
             val request = CreateGroupRequest(name = "New Group", isPrivate = false, maxMembers = 10)
@@ -110,7 +110,7 @@ class GroupControllerTest {
 
         @Test
         fun `POST api groups should return 409 when group name already exists`() {
-            every { groupService.createGroup(any(), any()) } throws ConflictException(
+            every { groupService.createGroup(any(), any(), any()) } throws ConflictException(
                 message = "Group name already exists",
                 field = "name",
                 rejectedValue = "Duplicate"

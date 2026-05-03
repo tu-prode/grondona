@@ -20,8 +20,8 @@ object WorldCupEngine : TournamentEngine {
 
     internal val GS_MATCHES_CODE: List<String> = (1..72).map { it.toString() }
     internal val RO32_MATCHES_CODE: List<String> = (73..88).map { it.toString() }
-    internal val RO16_MATCHES_CODE: List<String> = (88..96).map { it.toString() }
-    internal val QUARTERFINALS_MATCHES_CODE: List<String> = (96..100).map { it.toString() }
+    internal val RO16_MATCHES_CODE: List<String> = (89..96).map { it.toString() }
+    internal val QUARTERFINALS_MATCHES_CODE: List<String> = (97..100).map { it.toString() }
     internal val SEMIFINALS_MATCHES_CODE: List<String> = (101..102).map { it.toString() }
     internal val LAST_ROUND_MATCHES_CODE: List<String> = (103..104).map { it.toString() }
     internal const val FINAL_MATCH_CODE: String = "104"
@@ -35,7 +35,7 @@ object WorldCupEngine : TournamentEngine {
                     matches.any { it.status != MatchStatus.NOT_STARTED } -> TournamentStatus.IN_PROGRESS
 
             tournament.status == TournamentStatus.IN_PROGRESS &&
-                    matches.firstOrNull { it.code == FINAL_MATCH_CODE }?.status == MatchStatus.FINISHED -> TournamentStatus.IN_PROGRESS
+                    matches.firstOrNull { it.code == FINAL_MATCH_CODE }?.status == MatchStatus.FINISHED -> TournamentStatus.FINISHED
 
             else -> null
         }
@@ -50,7 +50,7 @@ object WorldCupEngine : TournamentEngine {
         return when {
             systemMatches.allMatchesFinished(GS_MATCHES_CODE) && systemMatches.none { it.code in RO32_MATCHES_CODE } -> {
                 logger.info("World Cup 2026's GS finished, preparing RO32 matches")
-                val availableTeams = gatherTeams(systemMatches)
+                val availableTeams = gatherTeamsByCode(systemMatches)
                 val tournament = systemMatches.firstOrNull()?.tournament ?: return emptyList()
                 externalMatches.filter { it.code in RO32_MATCHES_CODE }.map { it.toNewMatch(tournament, availableTeams) }.also {
                     logger.info("New matches added to system: {}", it.size)
@@ -59,7 +59,7 @@ object WorldCupEngine : TournamentEngine {
 
             systemMatches.allMatchesFinished(RO32_MATCHES_CODE) && systemMatches.none { it.code in RO16_MATCHES_CODE } -> {
                 logger.info("World Cup 2026's RO32 finished, preparing RO16 matches")
-                val availableTeams = gatherTeams(systemMatches)
+                val availableTeams = gatherTeamsByCode(systemMatches)
                 val tournament = systemMatches.firstOrNull()?.tournament ?: return emptyList()
                 externalMatches.filter { it.code in RO16_MATCHES_CODE }.map { it.toNewMatch(tournament, availableTeams) }.also {
                     logger.info("New matches added to system: {}", it.size)
@@ -68,7 +68,7 @@ object WorldCupEngine : TournamentEngine {
 
             systemMatches.allMatchesFinished(RO16_MATCHES_CODE) && systemMatches.none { it.code in QUARTERFINALS_MATCHES_CODE } -> {
                 logger.info("World Cup 2026's RO16 finished, preparing QF matches")
-                val availableTeams = gatherTeams(systemMatches)
+                val availableTeams = gatherTeamsByCode(systemMatches)
                 val tournament = systemMatches.firstOrNull()?.tournament ?: return emptyList()
                 externalMatches.filter { it.code in QUARTERFINALS_MATCHES_CODE }.map { it.toNewMatch(tournament, availableTeams) }.also {
                     logger.info("New matches added to system: {}", it.size)
@@ -77,7 +77,7 @@ object WorldCupEngine : TournamentEngine {
 
             systemMatches.allMatchesFinished(QUARTERFINALS_MATCHES_CODE) && systemMatches.none { it.code in SEMIFINALS_MATCHES_CODE } -> {
                 logger.info("World Cup 2026's QF finished, preparing SF matches")
-                val availableTeams = gatherTeams(systemMatches)
+                val availableTeams = gatherTeamsByCode(systemMatches)
                 val tournament = systemMatches.firstOrNull()?.tournament ?: return emptyList()
                 externalMatches.filter { it.code in SEMIFINALS_MATCHES_CODE }.map { it.toNewMatch(tournament, availableTeams) }.also {
                     logger.info("New matches added to system: {}", it.size)
@@ -86,7 +86,7 @@ object WorldCupEngine : TournamentEngine {
 
             systemMatches.allMatchesFinished(SEMIFINALS_MATCHES_CODE) && systemMatches.none { it.code in LAST_ROUND_MATCHES_CODE } -> {
                 logger.info("World Cup 2026's SF finished, preparing F+3P matches")
-                val availableTeams = gatherTeams(systemMatches)
+                val availableTeams = gatherTeamsByCode(systemMatches)
                 val tournament = systemMatches.firstOrNull()?.tournament ?: return emptyList()
                 externalMatches.filter { it.code in LAST_ROUND_MATCHES_CODE }.map { it.toNewMatch(tournament, availableTeams) }.also {
                     logger.info("New matches added to system: {}", it.size)
@@ -97,7 +97,7 @@ object WorldCupEngine : TournamentEngine {
         }
     }
 
-    internal fun gatherTeams(matches: List<Match>) =
-        matches.flatMap { listOf(it.homeTeam, it.awayTeam) }.distinct().associateBy { it.id!!.toString() }
+    internal fun gatherTeamsByCode(matches: List<Match>) =
+        matches.flatMap { listOf(it.homeTeam, it.awayTeam) }.distinct().associateBy { it.code }
 
 }
