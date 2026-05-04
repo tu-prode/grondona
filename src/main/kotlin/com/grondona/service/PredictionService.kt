@@ -9,6 +9,7 @@ import com.grondona.model.ExtendedAwards
 import com.grondona.model.Group
 import com.grondona.model.Match
 import com.grondona.model.MatchPrediction
+import com.grondona.model.PlayerPosition
 import com.grondona.model.TournamentStatus
 import com.grondona.model.User
 import com.grondona.model.dto.request.SubmitAwardPredictionRequest
@@ -28,6 +29,7 @@ import com.grondona.repository.PlayerRepository
 import com.grondona.repository.TeamRepository
 import com.grondona.repository.TournamentRepository
 import com.grondona.repository.UserRepository
+import com.grondona.service.engine.WorldCupEngine
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -52,7 +54,7 @@ class PredictionService(
         private val logger = LoggerFactory.getLogger(PredictionService::class.java)
 
         fun isMatchUnlocked(match: Match): Boolean =
-            match.startedAt?.isAfter(now.plus(15, ChronoUnit.MINUTES)) ?: true
+            match.startedAt.isAfter(now.plus(15, ChronoUnit.MINUTES))
     }
 
     internal fun checkMembership(userId: UUID, groupId: UUID): Pair<User, Group> {
@@ -163,7 +165,12 @@ class PredictionService(
         val (user, group) = checkMembership(userId, groupId)
         val tournament = tournamentRepository.findById(tournamentId).orElseThrow { NotFoundException("Tournament not found") }
         if (tournament.status == TournamentStatus.IN_PROGRESS) {
-            logger.warn("User={} trying to submit award predictions for the tournament={} at group={}, but it has already started", userId, tournamentId, groupId)
+            logger.warn(
+                "User={} trying to submit award predictions for the tournament={} at group={}, but it has already started",
+                userId,
+                tournamentId,
+                groupId
+            )
             throw BadRequestException("Tournament has already started")
         }
 
@@ -172,21 +179,49 @@ class PredictionService(
                 logger.warn("User={} trying to submit {} options for tournament champion", userId, awardPredictions.champions.size)
                 throw BadRequestException("Invalid amount of awards")
             }
+
             awardPredictions.topScorers.size > 3 -> {
                 logger.warn("User={} trying to submit {} options for tournament top scorer", userId, awardPredictions.topScorers.size)
                 throw BadRequestException("Invalid amount of awards")
             }
+
             awardPredictions.bestPlayers.size > 3 -> {
                 logger.warn("User={} trying to submit {} options for tournament best player", userId, awardPredictions.bestPlayers.size)
                 throw BadRequestException("Invalid amount of awards")
             }
+
             awardPredictions.bestGoalkeepers.size > 3 -> {
                 logger.warn("User={} trying to submit {} options for tournament best goalkeeper", userId, awardPredictions.bestGoalkeepers.size)
                 throw BadRequestException("Invalid amount of awards")
             }
+
             awardPredictions.bestYoungPlayers.size > 3 -> {
                 logger.warn("User={} trying to submit {} options for tournament best young player", userId, awardPredictions.bestYoungPlayers.size)
                 throw BadRequestException("Invalid amount of awards")
+            }
+        }
+
+        val chosenGoalkeepers = awardPredictions.bestGoalkeepers.map { goalkeeperId ->
+            playerRepository.findById(goalkeeperId).orElseThrow {
+                logger.warn("Goalkeeper not found id={}", goalkeeperId)
+                NotFoundException("Goalkeeper not found")
+            }.also {
+                if (it.position != PlayerPosition.GOALKEEPER) {
+                    logger.warn("User={} trying to set a non-goalkeeper with id={} as best goalkeeper", userId, goalkeeperId)
+                    throw BadRequestException("Player is not suitable for the best goalkeeper award")
+                }
+            }
+        }
+
+        val chosenYoungPlayers = awardPredictions.bestYoungPlayers.map { playerId ->
+            playerRepository.findById(playerId).orElseThrow {
+                logger.warn("Goalkeeper not found id={}", playerId)
+                NotFoundException("Goalkeeper not found")
+            }.also {
+                if (it.birthdate.isBefore(WorldCupEngine.BEST_YOUNG_PLAYER_DATE_LIMIT)) {
+                    logger.warn("User={} trying to set a older player with id={} as best young player", userId, playerId)
+                    throw BadRequestException("Player is not suitable for the best young player award")
+                }
             }
         }
 
@@ -196,10 +231,10 @@ class PredictionService(
             AwardPrediction(user = user, group = group, awardType = AwardType.TOP_SCORER, player = playerRepository.getReferenceById(it))
         } + awardPredictions.bestPlayers.map {
             AwardPrediction(user = user, group = group, awardType = AwardType.BEST_PLAYER, player = playerRepository.getReferenceById(it))
-        } + awardPredictions.bestGoalkeepers.map {
-            AwardPrediction(user = user, group = group, awardType = AwardType.BEST_GOALKEEPER, player = playerRepository.getReferenceById(it))
-        } + awardPredictions.bestYoungPlayers.map {
-            AwardPrediction(user = user, group = group, awardType = AwardType.BEST_YOUNG_PLAYER, player = playerRepository.getReferenceById(it))
+        } + chosenGoalkeepers.map {
+            AwardPrediction(user = user, group = group, awardType = AwardType.BEST_GOALKEEPER, player = it)
+        } + chosenYoungPlayers.map {
+            AwardPrediction(user = user, group = group, awardType = AwardType.BEST_YOUNG_PLAYER, player = it)
         }
 
         val deletedAwards = awardPredictionRepository.deleteByUserId(userId)
@@ -214,7 +249,10 @@ class PredictionService(
         val (_, group) = checkMembership(userId, groupId)
         val tournament = tournamentRepository.findById(tournamentId).orElseThrow { NotFoundException("Tournament not found") }
         if (tournament.status == TournamentStatus.NOT_STARTED) {
-            logger.warn("User={} trying fetch award predictions for the tournament={} at group={}, but it hasn't started yet", userId, tournamentId, groupId)
+            logger.warn(
+                "User={} trying fetch award predictions for the tournament={} at group={}, but it hasn't started yet",
+                userId, tournamentId, groupId
+            )
             throw BadRequestException("Tournament hasn't started yet")
         }
 

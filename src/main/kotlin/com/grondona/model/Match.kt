@@ -72,7 +72,7 @@ data class Match(
     var substatus: String? = null,
 
     @Column(name = "started_at")
-    var startedAt: LocalDateTime? = null,
+    var startedAt: LocalDateTime,
 
     @Column(name = "finished_at")
     var finishedAt: LocalDateTime? = null,

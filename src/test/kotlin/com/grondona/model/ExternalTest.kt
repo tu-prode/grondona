@@ -16,7 +16,7 @@ class ExternalTest {
     )
 
     private fun matchFromDB(
-        home: String, away: String, status: MatchStatus = MatchStatus.NOT_STARTED, startedAt: LocalDateTime? = null,
+        home: String, away: String, status: MatchStatus = MatchStatus.NOT_STARTED, startedAt: LocalDateTime = LocalDateTime.now().plusDays(1),
         homeGoals: Int = 0, awayGoals: Int = 0, homeQuota: Float = 1f, drawQuota: Float = 1f, awayQuota: Float = 1f,
     ) = Match(
         id = UUID.randomUUID(),

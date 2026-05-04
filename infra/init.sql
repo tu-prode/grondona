@@ -465,7 +465,7 @@ CREATE TABLE IF NOT EXISTS matches (
       away_quota FLOAT NOT NULL DEFAULT 1,
       status VARCHAR(20) NOT NULL DEFAULT 'NOT_STARTED',
       substatus VARCHAR(20) DEFAULT NULL,
-      started_at TIMESTAMP DEFAULT NULL,
+      started_at TIMESTAMP NOT NULL,
       finished_at TIMESTAMP DEFAULT NULL,
       home_goals INT DEFAULT NULL,
       away_goals INT DEFAULT NULL,

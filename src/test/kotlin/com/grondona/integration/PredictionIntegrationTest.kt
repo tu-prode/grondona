@@ -7,11 +7,13 @@ import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.SubmitBulkMatchPredictionsRequest
 import com.grondona.model.dto.request.SubmitMatchPredictionRequest
 import com.grondona.model.dto.request.CreateGroupRequest
+import com.grondona.model.dto.request.SubmitAwardPredictionRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
 import com.grondona.model.dto.response.GroupResponse
 import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.repository.GroupRepository
 import com.grondona.repository.MembershipRepository
+import com.grondona.repository.PlayerRepository
 import com.grondona.repository.TournamentRepository
 import com.grondona.repository.UserRepository
 import org.junit.jupiter.api.*
@@ -34,8 +36,9 @@ class PredictionIntegrationTest {
     @Autowired private lateinit var mockMvc: MockMvc
     @Autowired private lateinit var objectMapper: ObjectMapper
     @Autowired private lateinit var userRepository: UserRepository
-    @Autowired private lateinit var tournamentRepository: TournamentRepository
     @Autowired private lateinit var groupRepository: GroupRepository
+    @Autowired private lateinit var playerRepository: PlayerRepository
+    @Autowired private lateinit var tournamentRepository: TournamentRepository
     @Autowired private lateinit var membershipRepository: MembershipRepository
 
     private var memberToken: String? = null
@@ -45,10 +48,11 @@ class PredictionIntegrationTest {
 
     @BeforeAll
     fun setUp() {
-        membershipRepository.deleteAll()
-        groupRepository.deleteAll()
-        tournamentRepository.deleteAll()
         userRepository.deleteAll()
+        groupRepository.deleteAll()
+        playerRepository.deleteAll()
+        tournamentRepository.deleteAll()
+        membershipRepository.deleteAll()
 
         // Create superuser for setup
         val adminResult = mockMvc.perform(

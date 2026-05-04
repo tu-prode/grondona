@@ -95,7 +95,7 @@ class MatchScheduler(
 
         val nextMatches = tournamentMatches.filter { it.status == MatchStatus.NOT_STARTED }
         if (nextMatches.isNotEmpty()) {
-            val nextRunAt = nextMatches.sortedBy { it.startedAt }.first().startedAt ?: LocalDateTime.now().plus(1, ChronoUnit.DAYS)
+            val nextRunAt = nextMatches.sortedBy { it.startedAt }.first().startedAt
             return SchedulerData.sleep(nextRunAt).takeIf { nextRunAt.isAfter(LocalDateTime.now()) } ?: SchedulerData.wait()
         }
 

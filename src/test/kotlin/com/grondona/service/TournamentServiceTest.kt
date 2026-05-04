@@ -342,7 +342,7 @@ class TournamentServiceTest {
     @Nested
     inner class GetTournamentMatchesTests {
 
-        private fun makeMatch(status: MatchStatus, startedAt: LocalDateTime? = null): Match {
+        private fun makeMatch(status: MatchStatus, startedAt: LocalDateTime = LocalDateTime.now().plusDays(1)): Match {
             val team = Team(
                 id = UUID.randomUUID(),
                 tournament = testTournament,

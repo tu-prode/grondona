@@ -2,8 +2,14 @@ package com.grondona.controller
 
 import com.grondona.exception.ForbiddenException
 import com.grondona.exception.UnauthorizedException
+import com.grondona.model.dto.request.CreateMatchRequest
+import com.grondona.model.dto.request.CreatePlayerRequest
+import com.grondona.model.dto.request.CreateTeamRequest
 import com.grondona.model.dto.request.CreateTournamentRequest
 import com.grondona.model.dto.request.UpdateTournamentRequest
+import com.grondona.model.dto.response.MatchResponse
+import com.grondona.model.dto.response.PlayerResponse
+import com.grondona.model.dto.response.TeamResponse
 import com.grondona.model.dto.response.TournamentMatchesResponse
 import com.grondona.model.dto.response.TournamentPlayersResponse
 import com.grondona.model.dto.response.TournamentResponse
@@ -29,6 +35,48 @@ class TournamentController(
     companion object {
         private val logger = LoggerFactory.getLogger(TournamentController::class.java)
     }
+
+    @GetMapping("/{tournamentId}")
+    fun getTournament(@PathVariable tournamentId: UUID): ResponseEntity<TournamentResponse> {
+        logger.info("GET /api/tournaments/{} - Fetching tournament", tournamentId)
+        val response = tournamentService.getTournamentById(tournamentId)
+        return ResponseEntity.ok(response)
+    }
+
+    @GetMapping("/{tournamentId}/matches")
+    fun getTournamentMatches(
+        @PathVariable tournamentId: UUID,
+        @RequestParam(required = false) past: Int?,
+        @RequestParam(required = false) live: Int?,
+        @RequestParam(required = false) next: Int?
+    ): ResponseEntity<TournamentMatchesResponse> {
+        logger.info("GET /api/tournaments/{}/matches - Fetching tournament matches, past={}, live={}, next={}", tournamentId, past, live, next)
+        val response = tournamentService.getTournamentMatches(tournamentId, past, next, live)
+        return ResponseEntity.ok(response)
+    }
+
+    @GetMapping("/{tournamentId}/teams")
+    fun getTournamentTeams(
+        @PathVariable tournamentId: UUID
+    ): ResponseEntity<TournamentTeamsResponse> {
+        logger.info("GET /api/tournaments/{}/teams - Fetching tournament teams", tournamentId)
+        val response = tournamentService.getTournamentTeams(tournamentId)
+        return ResponseEntity.ok(response)
+    }
+
+    @GetMapping("/{tournamentId}/players")
+    fun getTournamentPlayers(
+        @PathVariable tournamentId: UUID,
+        @RequestParam(required = false) country: String?,
+        @RequestParam(required = false) goalkeeper: Boolean?,
+        @RequestParam(required = false) u21: Boolean?,
+    ): ResponseEntity<TournamentPlayersResponse> {
+        logger.info("GET /api/tournaments/{}/players - Fetching tournament players, country={}, goalkeeper={}, u21={}", tournamentId, country, goalkeeper, u21)
+        val response = tournamentService.getTournamentPlayers(tournamentId, country, goalkeeper, u21)
+        return ResponseEntity.ok(response)
+    }
+
+    //// ADMIN ENDPOINTS
 
     fun <T> withSuperuserValidation(principal: JwtUserPrincipal?, callback: () -> ResponseEntity<T>): ResponseEntity<T> {
         val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
@@ -69,13 +117,6 @@ class TournamentController(
         }
     }
 
-    @GetMapping("/{tournamentId}")
-    fun getTournament(@PathVariable tournamentId: UUID): ResponseEntity<TournamentResponse> {
-        logger.info("GET /api/tournaments/{} - Fetching tournament", tournamentId)
-        val response = tournamentService.getTournamentById(tournamentId)
-        return ResponseEntity.ok(response)
-    }
-
     @DeleteMapping("/{tournamentId}")
     fun deleteTournament(
         @AuthenticationPrincipal principal: JwtUserPrincipal?,
@@ -90,35 +131,44 @@ class TournamentController(
     }
 
     @GetMapping("/{tournamentId}/matches")
-    fun getTournamentMatches(
+    fun createTournamentMatch(
+        @AuthenticationPrincipal principal: JwtUserPrincipal?,
         @PathVariable tournamentId: UUID,
-        @RequestParam(required = false) past: Int?,
-        @RequestParam(required = false) live: Int?,
-        @RequestParam(required = false) next: Int?
-    ): ResponseEntity<TournamentMatchesResponse> {
-        logger.info("GET /api/tournaments/{}/matches - Fetching tournament matches, past={}, live={}, next={}", tournamentId, past, live, next)
-        val response = tournamentService.getTournamentMatches(tournamentId, past, next, live)
-        return ResponseEntity.ok(response)
+        @Valid @RequestBody request: CreateMatchRequest,
+    ): ResponseEntity<MatchResponse> {
+        return withSuperuserValidation(principal) {
+            logger.info("POST /api/tournaments/{}/matches - Creating match: code='{}'", tournamentId, request.code)
+            val response = tournamentService.createTournamentMatch(tournamentId, request)
+            logger.info("POST /api/tournaments/{}/matches - Match created: code='{}', id={}", tournamentId, response.code, response.id)
+            ResponseEntity.status(HttpStatus.CREATED).body(response)
+        }
     }
 
     @GetMapping("/{tournamentId}/teams")
-    fun getTournamentTeams(
-        @PathVariable tournamentId: UUID
-    ): ResponseEntity<TournamentTeamsResponse> {
-        logger.info("GET /api/tournaments/{}/teams - Fetching tournament teams", tournamentId)
-        val response = tournamentService.getTournamentTeams(tournamentId)
-        return ResponseEntity.ok(response)
+    fun createTournamentTeam(
+        @AuthenticationPrincipal principal: JwtUserPrincipal?,
+        @PathVariable tournamentId: UUID,
+        @Valid @RequestBody request: CreateTeamRequest,
+    ): ResponseEntity<TeamResponse> {
+        return withSuperuserValidation(principal) {
+            logger.info("POST /api/tournaments/{}/teams - Creating team: code='{}'", tournamentId, request.code)
+            val response = tournamentService.createTournamentTeam(tournamentId, request)
+            logger.info("POST /api/tournaments/{}/teams - Team created: code='{}', id={}", tournamentId, response.code, response.id)
+            ResponseEntity.status(HttpStatus.CREATED).body(response)
+        }
     }
 
     @GetMapping("/{tournamentId}/players")
-    fun getTournamentPlayers(
+    fun createTournamentPlayer(
+        @AuthenticationPrincipal principal: JwtUserPrincipal?,
         @PathVariable tournamentId: UUID,
-        @RequestParam(required = false) country: String?,
-        @RequestParam(required = false) goalkeeper: Boolean?,
-        @RequestParam(required = false) u21: Boolean?,
-    ): ResponseEntity<TournamentPlayersResponse> {
-        logger.info("GET /api/tournaments/{}/players - Fetching tournament players, country={}, goalkeeper={}, u21={}", tournamentId, country, goalkeeper, u21)
-        val response = tournamentService.getTournamentPlayers(tournamentId, country, goalkeeper, u21)
-        return ResponseEntity.ok(response)
+        @Valid @RequestBody request: CreatePlayerRequest,
+    ): ResponseEntity<PlayerResponse> {
+        return withSuperuserValidation(principal) {
+            logger.info("POST /api/tournaments/{}/matches - Creating player: name='{}', team={}", tournamentId, request.name, request.team)
+            val response = tournamentService.createTournamentPlayer(tournamentId, request)
+            logger.info("POST /api/tournaments/{}/matches - Player created: name='{}', team={}, id={}", tournamentId, response.name, response.team.id, response.id)
+            ResponseEntity.status(HttpStatus.CREATED).body(response)
+        }
     }
 }

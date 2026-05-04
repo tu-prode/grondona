@@ -22,7 +22,7 @@ class WorldCupEngineTest {
     )
 
     private fun matchFromDB(
-        home: String = "XXX", away: String = "XXX", status: MatchStatus = MatchStatus.NOT_STARTED, startedAt: LocalDateTime? = null,
+        home: String = "XXX", away: String = "XXX", status: MatchStatus = MatchStatus.NOT_STARTED, startedAt: LocalDateTime = LocalDateTime.now().plusDays(1),
         code: String = "XXX", homeGoals: Int = 0, awayGoals: Int = 0, homeQuota: Float = 1f, drawQuota: Float = 1f, awayQuota: Float = 1f,
     ) = Match(
         id = UUID.randomUUID(), code = code,

@@ -38,6 +38,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 
@@ -180,12 +181,6 @@ class PredictionServiceTest {
         @Test
         fun `canSubmit returns false when match has already started`() {
             assertFalse(PredictionService.isMatchUnlocked(testMatchLocked))
-        }
-
-        @Test
-        fun `canSubmit returns false when startedAt is null`() {
-            val match = testMatchOpen.copy(startedAt = null)
-            assertTrue(PredictionService.isMatchUnlocked(match))
         }
     }
 
@@ -408,7 +403,7 @@ class PredictionServiceTest {
     inner class SubmitAwardsPredictionsTests {
 
         @Test
-        fun `submitAwardPredictions should submit awards for a tournament (if they're all provided)`() {
+        fun `submitAwardPredictions should submit awards for a tournament (when they're all provided)`() {
             val request = SubmitAwardPredictionRequest(
                 champions = listOf(UUID.randomUUID(), UUID.randomUUID()),
                 topScorers = listOf(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()),
@@ -438,18 +433,18 @@ class PredictionServiceTest {
                     testPlayer.copy(id = request.bestPlayers[1], name = "Player 5")
             every { playerRepository.getReferenceById(request.bestPlayers[2]) } returns
                     testPlayer.copy(id = request.bestPlayers[2], name = "Player 6")
-            every { playerRepository.getReferenceById(request.bestGoalkeepers[0]) } returns
-                    testPlayer.copy(id = request.bestGoalkeepers[0], name = "Player 7")
-            every { playerRepository.getReferenceById(request.bestGoalkeepers[1]) } returns
-                    testPlayer.copy(id = request.bestGoalkeepers[1], name = "Player 8")
-            every { playerRepository.getReferenceById(request.bestGoalkeepers[2]) } returns
-                    testPlayer.copy(id = request.bestGoalkeepers[2], name = "Player 9")
-            every { playerRepository.getReferenceById(request.bestYoungPlayers[0]) } returns
-                    testPlayer.copy(id = request.bestYoungPlayers[0], name = "Player 10")
-            every { playerRepository.getReferenceById(request.bestYoungPlayers[1]) } returns
-                    testPlayer.copy(id = request.bestYoungPlayers[1], name = "Player 11")
-            every { playerRepository.getReferenceById(request.bestYoungPlayers[2]) } returns
-                    testPlayer.copy(id = request.bestYoungPlayers[2], name = "Player 12")
+            every { playerRepository.findById(request.bestGoalkeepers[0]) } returns
+                    Optional.of(testPlayer.copy(id = request.bestGoalkeepers[0], name = "Player 7", position = PlayerPosition.GOALKEEPER))
+            every { playerRepository.findById(request.bestGoalkeepers[1]) } returns
+                    Optional.of(testPlayer.copy(id = request.bestGoalkeepers[1], name = "Player 8", position = PlayerPosition.GOALKEEPER))
+            every { playerRepository.findById(request.bestGoalkeepers[2]) } returns
+                    Optional.of(testPlayer.copy(id = request.bestGoalkeepers[2], name = "Player 9", position = PlayerPosition.GOALKEEPER))
+            every { playerRepository.findById(request.bestYoungPlayers[0]) } returns
+                    Optional.of(testPlayer.copy(id = request.bestYoungPlayers[0], name = "Player 10", birthdate = LocalDate.now()))
+            every { playerRepository.findById(request.bestYoungPlayers[1]) } returns
+                    Optional.of(testPlayer.copy(id = request.bestYoungPlayers[1], name = "Player 11", birthdate = LocalDate.now()))
+            every { playerRepository.findById(request.bestYoungPlayers[2]) } returns
+                    Optional.of(testPlayer.copy(id = request.bestYoungPlayers[2], name = "Player 12", birthdate = LocalDate.now()))
 
             val result = awardPredictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
             assertEquals(request.champions[0], result.champions[0].id)
@@ -516,12 +511,12 @@ class PredictionServiceTest {
         }
 
         @Test
-        fun `submitAwardPredictions should submit awards for a tournament (if some are missing)`() {
+        fun `submitAwardPredictions should submit awards for a tournament (when some are missing)`() {
             val request = SubmitAwardPredictionRequest(
                 champions = listOf(UUID.randomUUID()),
-                topScorers = emptyList(),
                 bestPlayers = listOf(UUID.randomUUID(), UUID.randomUUID()),
-                bestGoalkeepers = listOf(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()),
+                topScorers = listOf(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()),
+                bestGoalkeepers = emptyList(),
                 bestYoungPlayers = emptyList(),
             )
 
@@ -536,12 +531,12 @@ class PredictionServiceTest {
                     testPlayer.copy(id = request.bestPlayers[0], name = "Player 1")
             every { playerRepository.getReferenceById(request.bestPlayers[1]) } returns
                     testPlayer.copy(id = request.bestPlayers[1], name = "Player 2")
-            every { playerRepository.getReferenceById(request.bestGoalkeepers[0]) } returns
-                    testPlayer.copy(id = request.bestGoalkeepers[0], name = "Player 3")
-            every { playerRepository.getReferenceById(request.bestGoalkeepers[1]) } returns
-                    testPlayer.copy(id = request.bestGoalkeepers[1], name = "Player 4")
-            every { playerRepository.getReferenceById(request.bestGoalkeepers[2]) } returns
-                    testPlayer.copy(id = request.bestGoalkeepers[2], name = "Player 5")
+            every { playerRepository.getReferenceById(request.topScorers[0]) } returns
+                    testPlayer.copy(id = request.topScorers[0], name = "Player 3")
+            every { playerRepository.getReferenceById(request.topScorers[1]) } returns
+                    testPlayer.copy(id = request.topScorers[1], name = "Player 4")
+            every { playerRepository.getReferenceById(request.topScorers[2]) } returns
+                    testPlayer.copy(id = request.topScorers[2], name = "Player 5")
 
             val result = awardPredictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
             assertEquals(request.champions[0], result.champions[0].id)
@@ -550,12 +545,12 @@ class PredictionServiceTest {
             assertEquals("Player 1", result.bestPlayers[0].name)
             assertEquals(request.bestPlayers[1], result.bestPlayers[1].id)
             assertEquals("Player 2", result.bestPlayers[1].name)
-            assertEquals(request.bestGoalkeepers[0], result.bestGoalkeepers[0].id)
-            assertEquals("Player 3", result.bestGoalkeepers[0].name)
-            assertEquals(request.bestGoalkeepers[1], result.bestGoalkeepers[1].id)
-            assertEquals("Player 4", result.bestGoalkeepers[1].name)
-            assertEquals(request.bestGoalkeepers[2], result.bestGoalkeepers[2].id)
-            assertEquals("Player 5", result.bestGoalkeepers[2].name)
+            assertEquals(request.topScorers[0], result.topScorers[0].id)
+            assertEquals("Player 3", result.topScorers[0].name)
+            assertEquals(request.topScorers[1], result.topScorers[1].id)
+            assertEquals("Player 4", result.topScorers[1].name)
+            assertEquals(request.topScorers[2], result.topScorers[2].id)
+            assertEquals("Player 5", result.topScorers[2].name)
 
             val slot = slot<List<AwardPrediction>>()
             verify(exactly = 1) { awardPredictionRepository.saveAll(capture(slot)) }
@@ -563,16 +558,16 @@ class PredictionServiceTest {
             assertEquals(6, savedPredictions.size)
             assertEquals(AwardType.CHAMPION, savedPredictions[0].awardType)
             assertEquals(request.champions[0], savedPredictions[0].team!!.id!!)
-            assertEquals(AwardType.BEST_PLAYER, savedPredictions[1].awardType)
-            assertEquals(request.bestPlayers[0], savedPredictions[1].player!!.id!!)
-            assertEquals(AwardType.BEST_PLAYER, savedPredictions[2].awardType)
-            assertEquals(request.bestPlayers[1], savedPredictions[2].player!!.id!!)
-            assertEquals(AwardType.BEST_GOALKEEPER, savedPredictions[3].awardType)
-            assertEquals(request.bestGoalkeepers[0], savedPredictions[3].player!!.id!!)
-            assertEquals(AwardType.BEST_GOALKEEPER, savedPredictions[4].awardType)
-            assertEquals(request.bestGoalkeepers[1], savedPredictions[4].player!!.id!!)
-            assertEquals(AwardType.BEST_GOALKEEPER, savedPredictions[5].awardType)
-            assertEquals(request.bestGoalkeepers[2], savedPredictions[5].player!!.id!!)
+            assertEquals(AwardType.TOP_SCORER, savedPredictions[1].awardType)
+            assertEquals(request.topScorers[0], savedPredictions[1].player!!.id!!)
+            assertEquals(AwardType.TOP_SCORER, savedPredictions[2].awardType)
+            assertEquals(request.topScorers[1], savedPredictions[2].player!!.id!!)
+            assertEquals(AwardType.TOP_SCORER, savedPredictions[3].awardType)
+            assertEquals(request.topScorers[2], savedPredictions[3].player!!.id!!)
+            assertEquals(AwardType.BEST_PLAYER, savedPredictions[4].awardType)
+            assertEquals(request.bestPlayers[0], savedPredictions[4].player!!.id!!)
+            assertEquals(AwardType.BEST_PLAYER, savedPredictions[5].awardType)
+            assertEquals(request.bestPlayers[1], savedPredictions[5].player!!.id!!)
         }
 
         @Test
@@ -682,6 +677,48 @@ class PredictionServiceTest {
             }
             assertEquals("Invalid amount of awards", exception.message)
         }
+
+        @Test
+        fun `submitAwardPredictions should not allow a non-goalkeeper as the best goalkeeper`() {
+            val request = SubmitAwardPredictionRequest(
+                champions = emptyList(),
+                topScorers = emptyList(),
+                bestPlayers = emptyList(),
+                bestGoalkeepers = listOf(UUID.randomUUID()),
+                bestYoungPlayers = emptyList(),
+            )
+
+            mockMembership()
+            every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
+            every { playerRepository.findById(request.bestGoalkeepers[0]) } returns
+                    Optional.of(testPlayer.copy(position = PlayerPosition.MIDFIELDER))
+
+            val exception = assertThrows<BadRequestException> {
+                awardPredictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
+            }
+            assertEquals("Player is not suitable for the best goalkeeper award", exception.message)
+        }
+
+        @Test
+        fun `submitAwardPredictions should not allow an over-aged player as the best young player`() {
+            val request = SubmitAwardPredictionRequest(
+                champions = emptyList(),
+                topScorers = emptyList(),
+                bestPlayers = emptyList(),
+                bestGoalkeepers = emptyList(),
+                bestYoungPlayers = listOf(UUID.randomUUID()),
+            )
+
+            mockMembership()
+            every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
+            every { playerRepository.findById(request.bestYoungPlayers[0]) } returns
+                    Optional.of(testPlayer.copy(birthdate = LocalDate.parse("1987-06-24")))
+
+            val exception = assertThrows<BadRequestException> {
+                awardPredictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
+            }
+            assertEquals("Player is not suitable for the best young player award", exception.message)
+        }
     }
 
     @Nested
@@ -729,10 +766,14 @@ class PredictionServiceTest {
         fun `getAwardPredictionsForGroup should return awards predictions for member`() {
             val testUser2 = testUser.copy(id = UUID.randomUUID())
             val predictions = listOf(
-                AwardPredictionView(id = UUID.randomUUID(), user = testUser,
-                    awardPrediction = AwardPrediction(user = testUser, group = testGroup, awardType = AwardType.CHAMPION, team = testTeam)),
-                AwardPredictionView(id = UUID.randomUUID(), user = testUser2,
-                    awardPrediction = AwardPrediction(user = testUser2, group = testGroup, awardType = AwardType.BEST_PLAYER, player = testPlayer)),
+                AwardPredictionView(
+                    id = UUID.randomUUID(), user = testUser,
+                    awardPrediction = AwardPrediction(user = testUser, group = testGroup, awardType = AwardType.CHAMPION, team = testTeam)
+                ),
+                AwardPredictionView(
+                    id = UUID.randomUUID(), user = testUser2,
+                    awardPrediction = AwardPrediction(user = testUser2, group = testGroup, awardType = AwardType.BEST_PLAYER, player = testPlayer)
+                ),
             )
 
             mockMembership()

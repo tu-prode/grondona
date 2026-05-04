@@ -375,7 +375,7 @@ class GroupServiceTest {
 
             val testMatch = Match(
                 id = UUID.randomUUID(), code = "XX", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 1, awayGoals = 1, status = MatchStatus.IN_PROGRESS,
+                homeGoals = 1, awayGoals = 1, status = MatchStatus.IN_PROGRESS, startedAt = LocalDateTime.now().minusMinutes(60)
             )
             val prediction1 = MatchPredictionView(
                 id = UUID.randomUUID(),
