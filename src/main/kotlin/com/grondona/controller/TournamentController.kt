@@ -15,6 +15,7 @@ import com.grondona.model.dto.response.TournamentPlayersResponse
 import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.model.dto.response.TournamentTeamsResponse
 import com.grondona.security.JwtUserPrincipal
+import com.grondona.service.PredictionService
 import com.grondona.service.TournamentService
 import com.grondona.service.UserService
 import jakarta.validation.Valid
@@ -29,6 +30,7 @@ import java.util.UUID
 @RequestMapping("/api/tournaments")
 class TournamentController(
     private val userService: UserService,
+    private val predictionService: PredictionService,
     private val tournamentService: TournamentService,
 ) {
 
@@ -82,10 +84,10 @@ class TournamentController(
         val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
 
         if (userService.hasAdminAccess(userId)) {
-            logger.info("User {} performing a SUPERADMIN operation", userId)
+            logger.info("User={} performing a SUPERUSER operation", userId)
             return callback()
         } else {
-            logger.warn("User {} trying to perform a superuser operation", userId)
+            logger.warn("User={} trying to perform a SUPERUSER operation but has no access", userId)
             throw ForbiddenException("User has no access to perform this operation")
         }
     }
@@ -169,6 +171,19 @@ class TournamentController(
             val response = tournamentService.createTournamentPlayer(tournamentId, request)
             logger.info("POST /api/tournaments/{}/matches - Player created: name='{}', team={}, id={}", tournamentId, response.name, response.team.id, response.id)
             ResponseEntity.status(HttpStatus.CREATED).body(response)
+        }
+    }
+
+    @PutMapping("/{tournamentId}/points")
+    fun recalculateTournamentPoints(
+        @AuthenticationPrincipal principal: JwtUserPrincipal?,
+        @PathVariable tournamentId: UUID,
+    ): ResponseEntity<Void> {
+        return withSuperuserValidation(principal) {
+            logger.info("PUT /api/tournaments/{}/points - Triggering points recalculation", tournamentId)
+            predictionService.recalculatePoints(tournamentId)
+            logger.info("PUT /api/tournaments/{}/points - Points recalculated", tournamentId)
+            ResponseEntity.noContent().build()
         }
     }
 }

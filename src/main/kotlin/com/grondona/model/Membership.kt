@@ -70,7 +70,12 @@ data class GroupUser(
 
     @Column(name = "deleted_at")
     val deletedAt: LocalDateTime? = null
-)
+) {
+    fun clear() = this.copy(
+        points = 0F, rank = null, lastPredictions = emptyList(),
+        amountBonus = 0, amountCorrect = 0, amountPartial = 0,
+    )
+}
 
 data class MembershipView(
     val group: Group,

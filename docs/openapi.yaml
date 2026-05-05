@@ -328,6 +328,45 @@ paths:
                   field: name
                   rejectedValue: Copa del Mundo 20206
 
+  /api/tournaments/points:
+    put:
+      tags:
+        - Tournaments
+      summary: Recalculates points for a tournament
+      description: |
+        Recheck every match and award prediction, and then recalculates the points for each user in each group within that tournament
+      operationId: recalculateTournamentPoints
+      security:
+        - bearerAuth: [ SUPERUSER ]
+      responses:
+        "200":
+          description: Points recalculated successfully
+        "401":
+          description: Credentials missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: User has no access for performing this action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Tournament not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Some detailed error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+
   /api/tournaments/{tournamentId}:
     get:
       tags:

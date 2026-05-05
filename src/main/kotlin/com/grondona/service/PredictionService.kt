@@ -7,6 +7,7 @@ import com.grondona.model.AwardPrediction
 import com.grondona.model.AwardType
 import com.grondona.model.ExtendedAwards
 import com.grondona.model.Group
+import com.grondona.model.GroupUser
 import com.grondona.model.Match
 import com.grondona.model.MatchPrediction
 import com.grondona.model.PlayerPosition
@@ -29,6 +30,7 @@ import com.grondona.repository.PlayerRepository
 import com.grondona.repository.TeamRepository
 import com.grondona.repository.TournamentRepository
 import com.grondona.repository.UserRepository
+import com.grondona.service.engine.PredictionsEngine
 import com.grondona.service.engine.WorldCupEngine
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -326,5 +328,59 @@ class PredictionService(
             .flatMap { membership -> masterGroupAwardPredictions.map { it.copy(id = null, group = membership.group) } }
         awardPredictionRepository.saveAll(awardPredictionsToClone)
         logger.info("User={} cloned predictions from group={} to other {} groups", userId, masterGroupId, otherGroupsIds.size)
+    }
+
+    @Transactional
+    fun recalculatePoints(tournamentId: UUID) {
+        logger.info("Fetching members and predictions for tournament={} to recalculate points", tournamentId)
+
+        val members = membershipRepository.findByTournamentId(tournamentId)
+        val matchPredictions = matchPredictionRepository.findByTournamentId(tournamentId)
+        val awardPredictions = awardPredictionRepository.findByTournamentId(tournamentId)
+
+        val groupMembers = members.groupBy { it.group.id!! }
+        val matchPredictionsPerGroup = matchPredictions.groupBy { it.group.id!! }
+        val awardPredictionsPerGroup = awardPredictions.groupBy { it.group.id!! }
+
+        val membersToSave = mutableListOf<GroupUser>()
+        val matchPredictionsToSave = mutableListOf<MatchPrediction>()
+        val awardPredictionsToSave = mutableListOf<AwardPrediction>()
+
+        groupMembers.forEach { (groupId, members) ->
+            logger.info("Recalculating points for group={} in tournament={}", groupId, tournamentId)
+            var recalculatedMembers = members.map { it.clear() }
+            val groupMatchPredictions = matchPredictionsPerGroup[groupId] ?: emptyList()
+            val newGroupMatchPredictions = PredictionsEngine.checkMatchPredictions(groupMatchPredictions)
+
+            val updatedGroupMatchPredictions = groupMatchPredictions.zip(newGroupMatchPredictions)
+                .filter { (old, new) -> old != new }.map { it.second }
+            matchPredictionsToSave.addAll(updatedGroupMatchPredictions)
+
+            val groupMatchPredictionsPerUser = groupMatchPredictions.groupBy { it.user.id!! }
+            recalculatedMembers = PredictionsEngine.updateMatchPoints(recalculatedMembers, groupMatchPredictionsPerUser)
+
+            val groupAwardPredictions = awardPredictionsPerGroup[groupId] ?: emptyList()
+            val newGroupAwardPredictions = PredictionsEngine.checkAwardPredictions(groupAwardPredictions)
+
+            val updatedGroupAwardPredictions = groupAwardPredictions.zip(newGroupAwardPredictions)
+                .filter { (old, new) -> old != new }.map { it.second }
+            awardPredictionsToSave.addAll(updatedGroupAwardPredictions)
+
+            val groupAwardPredictionsPerUser = groupAwardPredictions.groupBy { it.user.id!! }
+            recalculatedMembers = PredictionsEngine.updateAwardPoints(recalculatedMembers, groupAwardPredictionsPerUser)
+
+            val updatedMembers = members.zip(recalculatedMembers).filter { (old, new) -> old != new }.map { it.second }
+            membersToSave.addAll(updatedMembers)
+
+            logger.info("Updated elements for group={} in tournament={}, match-predictions={} award-predictions={} members={}",
+                groupId, tournamentId, updatedGroupMatchPredictions.size, updatedGroupAwardPredictions.size, updatedMembers.size)
+        }
+
+        membershipRepository.saveAll(membersToSave)
+        logger.info("Total members updated: {}", membersToSave.size)
+        matchPredictionRepository.saveAll(matchPredictionsToSave)
+        logger.info("Total match predictions updated: {}", matchPredictionsToSave.size)
+        awardPredictionRepository.saveAll(awardPredictionsToSave)
+        logger.info("Total award predictions updated: {}", awardPredictionsToSave.size)
     }
 }

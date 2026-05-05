@@ -1,5 +1,6 @@
 package com.grondona.repository
 
+import com.grondona.model.AwardPrediction
 import com.grondona.model.GroupUser
 import com.grondona.model.MembershipView
 import org.springframework.data.jpa.repository.JpaRepository
@@ -17,30 +18,21 @@ interface MembershipRepository : JpaRepository<GroupUser, UUID> {
         FROM GroupUser u
         WHERE u.user.id = :userId AND u.group.id = :groupId AND u.role <>  'CANDIDATE'
     """)
-    fun isMember(
-        @Param("userId") userId: UUID,
-        @Param("groupId") groupId: UUID
-    ): Boolean
+    fun isMember(@Param("userId") userId: UUID, @Param("groupId") groupId: UUID): Boolean
 
     @Query("""
         SELECT u
         FROM GroupUser u
         WHERE u.user.id = :userId AND u.group.id = :groupId AND u.role <>  'CANDIDATE'
     """)
-    fun findMember(
-        @Param("userId") userId: UUID,
-        @Param("groupId") groupId: UUID
-    ): Optional<GroupUser>
+    fun findMember(@Param("userId") userId: UUID, @Param("groupId") groupId: UUID): Optional<GroupUser>
 
     @Query("""
         SELECT u
         FROM GroupUser u
         WHERE u.user.id = :userId AND u.group.id = :groupId AND u.role =  'CANDIDATE'
     """)
-    fun findCandidate(
-        @Param("userId") userId: UUID,
-        @Param("groupId") groupId: UUID
-    ): Optional<GroupUser>
+    fun findCandidate(@Param("userId") userId: UUID, @Param("groupId") groupId: UUID): Optional<GroupUser>
 
     @Query("""
         SELECT u
@@ -95,8 +87,13 @@ interface MembershipRepository : JpaRepository<GroupUser, UUID> {
             WHERE gu2.user.id = :userId AND gu2.role IN ('ADMIN', 'OWNER')
         )
     """)
-    fun findJoinRequests(
-        @Param("userId") userId: UUID
-    ): List<GroupUser>
+    fun findJoinRequests(@Param("userId") userId: UUID): List<GroupUser>
+
+    @Query("""
+        SELECT gu
+        FROM GroupUser gu
+        WHERE gu.group.tournament.id = :tournamentId
+    """)
+    fun findByTournamentId(@Param("tournamentId") tournamentId: UUID): List<GroupUser>
 
 }

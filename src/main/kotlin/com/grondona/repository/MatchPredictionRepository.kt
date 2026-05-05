@@ -1,15 +1,11 @@
 package com.grondona.repository
 
-import com.grondona.model.Group
-import com.grondona.model.Match
 import com.grondona.model.MatchPrediction
 import com.grondona.model.PredictionStatus
 import com.grondona.model.MatchPredictionView
-import com.grondona.model.User
 import jakarta.persistence.EntityManager
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
-import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
@@ -34,7 +30,7 @@ interface MatchPredictionRepository : JpaRepository<MatchPrediction, UUID>, JpaS
         ORDER BY CASE WHEN m.startedAt IS NULL THEN 1 ELSE 0 END, m.startedAt ASC
     """
     )
-    fun findGroupPredictions(groupId: UUID): List<MatchPredictionView>
+    fun findGroupPredictions(@Param("groupId") groupId: UUID): List<MatchPredictionView>
 
     @Query(
         """
@@ -48,7 +44,7 @@ interface MatchPredictionRepository : JpaRepository<MatchPrediction, UUID>, JpaS
         WHERE gu.group.id = :groupId AND gu.user.id = :userId
         ORDER BY CASE WHEN m.startedAt IS NULL THEN 1 ELSE 0 END, m.startedAt ASC
     """)
-    fun findGroupPredictionsForUser(groupId: UUID, userId: UUID): List<MatchPredictionView>
+    fun findGroupPredictionsForUser(@Param("groupId") groupId: UUID, @Param("userId") userId: UUID): List<MatchPredictionView>
 
     @Query(
         """
@@ -62,9 +58,17 @@ interface MatchPredictionRepository : JpaRepository<MatchPrediction, UUID>, JpaS
         WHERE gu.group.id = :groupId
         ORDER BY CASE WHEN gu.rank IS NULL THEN 1 ELSE 0 END, gu.rank ASC
     """)
-    fun findGroupPredictionsForMatch(groupId: UUID, matchId: UUID): List<MatchPredictionView>
+    fun findGroupPredictionsForMatch(@Param("groupId") groupId: UUID, @Param("matchId")matchId: UUID): List<MatchPredictionView>
 
     fun findByStatusAndMatchIdIn(status: PredictionStatus, matchIds: List<UUID>): List<MatchPrediction>
+
+    @Query(
+        """
+        SELECT mp
+        FROM MatchPrediction mp
+        WHERE mp.group.tournament.id = :tournamentId
+    """)
+    fun findByTournamentId(@Param("tournamentId") tournamentId: UUID): List<MatchPrediction>
 }
 
 interface MatchPredictionRepositoryCustom {
