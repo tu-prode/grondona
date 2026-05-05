@@ -7,6 +7,7 @@ import com.grondona.model.AwardPrediction
 import com.grondona.model.AwardPredictionView
 import com.grondona.model.AwardType
 import com.grondona.model.Group
+import com.grondona.model.GroupUser
 import com.grondona.model.Match
 import com.grondona.model.MatchStatus
 import com.grondona.model.MatchPrediction
@@ -85,6 +86,7 @@ class PredictionServiceTest {
         username = "testuser",
         email = "test@example.com",
         passwordHash = "hash",
+        hasUniquePredictions = false,
         createdAt = LocalDateTime.now(),
         updatedAt = LocalDateTime.now()
     )
@@ -108,7 +110,7 @@ class PredictionServiceTest {
     private val testPlayer = Player(
         id = UUID.randomUUID(),
         team = testTeam,
-        name = "Team A",
+        name = "Player A",
         position = PlayerPosition.MIDFIELDER,
     )
 
@@ -152,9 +154,9 @@ class PredictionServiceTest {
         awayGoals = 0
     )
 
-    private fun mockMembership() {
-        every { userRepository.findById(testUserId) } returns Optional.of(testUser)
-        every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
+    private fun mockMembership(user: User = testUser, group: Group = testGroup) {
+        every { userRepository.findById(testUserId) } returns Optional.of(user)
+        every { groupRepository.findById(testGroupId) } returns Optional.of(group)
         every { membershipRepository.isMember(testUserId, testGroupId) } returns true
     }
 
@@ -230,6 +232,37 @@ class PredictionServiceTest {
         }
 
         @Test
+        fun `submitSingleMatchPrediction should succeed for a user with the unique-predictions flag set as true`() {
+            val user = testUser.copy(hasUniquePredictions = true)
+            mockMembership(user = user)
+            every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchOpen)
+
+            val userGroups = listOf(
+                GroupUser(user = user, group = testGroup),
+                GroupUser(user = user, group = testGroup.copy(id = UUID.randomUUID(), name = "Another Group")),
+            )
+            every { membershipRepository.findUserGroups(testUserId) } returns userGroups
+            every { matchPredictionRepository.upsertAll(any()) } answers { firstArg() }
+
+            val result = awardPredictionService.submitSingleMatchPrediction(testUserId, testGroupId, request)
+
+            assertEquals(testUserId, result.user.id)
+            assertEquals(testMatchId, result.match.id)
+
+            val slot = slot<List<MatchPrediction>>()
+            verify(exactly = 1) { matchPredictionRepository.upsertAll(capture(slot)) }
+            val savedPredictions = slot.captured
+            assertEquals(2, savedPredictions.size)
+            assertEquals(testMatchId, savedPredictions[0].match.id)
+            assertEquals(testUserId, savedPredictions[0].user.id)
+            assertEquals(userGroups[0].group.id, savedPredictions[0].group.id)
+            assertEquals(testMatchId, savedPredictions[1].match.id)
+            assertEquals(testUserId, savedPredictions[1].user.id)
+            assertEquals(userGroups[1].group.id, savedPredictions[1].group.id)
+
+        }
+
+        @Test
         fun `submitSingleMatchPrediction should throw NotFoundException when match not found`() {
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
@@ -285,6 +318,50 @@ class PredictionServiceTest {
             assertEquals(testGroupId, result.group.id)
             assertEquals(2, result.predictions.size)
             verify { matchPredictionRepository.upsertAll(match { it.size == 2 }) }
+        }
+
+        @Test
+        fun `submitMatchPredictions should submit all open matches for a user with the unique-predictions flag set as trues`() {
+            val request = SubmitBulkMatchPredictionsRequest(
+                predictions = listOf(
+                    SubmitMatchPredictionRequest(matchId = testMatchId, homeGoals = 1, awayGoals = 0),
+                    SubmitMatchPredictionRequest(matchId = matchId2, homeGoals = 2, awayGoals = 2)
+                )
+            )
+
+            val user = testUser.copy(hasUniquePredictions = true)
+            mockMembership(user = user)
+            every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchOpen)
+            every { matchRepository.findById(matchId2) } returns Optional.of(openMatch2)
+
+            val userGroups = listOf(
+                GroupUser(user = user, group = testGroup),
+                GroupUser(user = user, group = testGroup.copy(id = UUID.randomUUID(), name = "Another Group")),
+            )
+            every { membershipRepository.findUserGroups(testUserId) } returns userGroups
+            every { matchPredictionRepository.upsertAll(any()) } answers { firstArg() }
+
+            val result = awardPredictionService.submitMatchPredictions(testUserId, testGroupId, request)
+
+            assertEquals(testGroupId, result.group.id)
+            assertEquals(2, result.predictions.size)
+
+            val slot = slot<List<MatchPrediction>>()
+            verify(exactly = 1) { matchPredictionRepository.upsertAll(capture(slot)) }
+            val savedPredictions = slot.captured
+            assertEquals(4, savedPredictions.size)
+            assertEquals(testMatchId, savedPredictions[0].match.id)
+            assertEquals(testUserId, savedPredictions[0].user.id)
+            assertEquals(userGroups[0].group.id, savedPredictions[0].group.id)
+            assertEquals(matchId2, savedPredictions[1].match.id)
+            assertEquals(testUserId, savedPredictions[1].user.id)
+            assertEquals(userGroups[0].group.id, savedPredictions[1].group.id)
+            assertEquals(testMatchId, savedPredictions[2].match.id)
+            assertEquals(testUserId, savedPredictions[2].user.id)
+            assertEquals(userGroups[1].group.id, savedPredictions[2].group.id)
+            assertEquals(matchId2, savedPredictions[3].match.id)
+            assertEquals(testUserId, savedPredictions[3].user.id)
+            assertEquals(userGroups[1].group.id, savedPredictions[3].group.id)
         }
 
         @Test
@@ -414,7 +491,7 @@ class PredictionServiceTest {
 
             mockMembership()
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
-            every { awardPredictionRepository.deleteByUserId(testUserId) } returns 0
+            every { awardPredictionRepository.deleteAwardPredictionsForGroup(testUserId, testGroupId) } returns 0
             every { awardPredictionRepository.saveAll(any<List<AwardPrediction>>()) } answers { firstArg() }
 
             every { teamRepository.getReferenceById(request.champions[0]) } returns
@@ -522,7 +599,7 @@ class PredictionServiceTest {
 
             mockMembership()
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
-            every { awardPredictionRepository.deleteByUserId(testUserId) } returns 0
+            every { awardPredictionRepository.deleteAwardPredictionsForGroup(testUserId, testGroupId) } returns 0
             every { awardPredictionRepository.saveAll(any<List<AwardPrediction>>()) } answers { firstArg() }
 
             every { teamRepository.getReferenceById(request.champions[0]) } returns
@@ -568,6 +645,67 @@ class PredictionServiceTest {
             assertEquals(request.bestPlayers[0], savedPredictions[4].player!!.id!!)
             assertEquals(AwardType.BEST_PLAYER, savedPredictions[5].awardType)
             assertEquals(request.bestPlayers[1], savedPredictions[5].player!!.id!!)
+        }
+
+        @Test
+        fun `submitAwardPredictions should submit awards for multiple groups (when unique-predictions flag is true)`() {
+            val request = SubmitAwardPredictionRequest(
+                champions = listOf(UUID.randomUUID()),
+                topScorers = listOf(UUID.randomUUID()),
+                bestPlayers = listOf(UUID.randomUUID()),
+                bestGoalkeepers = emptyList(),
+                bestYoungPlayers = emptyList(),
+            )
+
+            val user = testUser.copy(hasUniquePredictions = true)
+            mockMembership(user = user)
+            every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
+
+            val userGroups = listOf(
+                GroupUser(user = user, group = testGroup),
+                GroupUser(user = user, group = testGroup.copy(id = UUID.randomUUID(), name = "Another Group")),
+            )
+            every { membershipRepository.findUserGroups(testUserId) } returns userGroups
+            every { awardPredictionRepository.deleteAwardPredictionsForMultipleGroups(testUserId, userGroups.map { it.group.id!! }) } returns 0
+            every { awardPredictionRepository.saveAll(any<List<AwardPrediction>>()) } answers { firstArg() }
+
+            every { teamRepository.getReferenceById(request.champions[0]) } returns
+                    testTeam.copy(id = request.champions[0], name = "Team 1")
+            every { playerRepository.getReferenceById(request.topScorers[0]) } returns
+                    testPlayer.copy(id = request.topScorers[0], name = "Player 1")
+            every { playerRepository.getReferenceById(request.bestPlayers[0]) } returns
+                    testPlayer.copy(id = request.bestPlayers[0], name = "Player 2")
+
+            val result = awardPredictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
+            assertEquals(request.champions[0], result.champions[0].id)
+            assertEquals("Team 1", result.champions[0].name)
+            assertEquals(request.topScorers[0], result.topScorers[0].id)
+            assertEquals("Player 1", result.topScorers[0].name)
+            assertEquals(request.bestPlayers[0], result.bestPlayers[0].id)
+            assertEquals("Player 2", result.bestPlayers[0].name)
+
+            val slot = slot<List<AwardPrediction>>()
+            verify(exactly = 1) { awardPredictionRepository.saveAll(capture(slot)) }
+            val savedPredictions = slot.captured
+            assertEquals(6, savedPredictions.size)
+            assertEquals(userGroups[0].group.id, savedPredictions[0].group.id)
+            assertEquals(AwardType.CHAMPION, savedPredictions[0].awardType)
+            assertEquals(request.champions[0], savedPredictions[0].team!!.id!!)
+            assertEquals(userGroups[0].group.id, savedPredictions[1].group.id)
+            assertEquals(AwardType.BEST_PLAYER, savedPredictions[1].awardType)
+            assertEquals(request.bestPlayers[0], savedPredictions[1].player!!.id!!)
+            assertEquals(userGroups[0].group.id, savedPredictions[2].group.id)
+            assertEquals(AwardType.TOP_SCORER, savedPredictions[2].awardType)
+            assertEquals(request.topScorers[0], savedPredictions[2].player!!.id!!)
+            assertEquals(userGroups[1].group.id, savedPredictions[3].group.id)
+            assertEquals(AwardType.CHAMPION, savedPredictions[3].awardType)
+            assertEquals(request.champions[0], savedPredictions[3].team!!.id!!)
+            assertEquals(userGroups[1].group.id, savedPredictions[4].group.id)
+            assertEquals(AwardType.BEST_PLAYER, savedPredictions[4].awardType)
+            assertEquals(request.bestPlayers[0], savedPredictions[4].player!!.id!!)
+            assertEquals(userGroups[1].group.id, savedPredictions[5].group.id)
+            assertEquals(AwardType.TOP_SCORER, savedPredictions[5].awardType)
+            assertEquals(request.topScorers[0], savedPredictions[5].player!!.id!!)
         }
 
         @Test

@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional
 class UserService(
     private val jwtService: JwtService,
     private val userRepository: UserRepository,
+    private val predictionService: PredictionService,
     private val membershipRepository: MembershipRepository,
 ) {
 
@@ -103,11 +104,10 @@ class UserService(
     fun updateUser(authenticatedUserId: UUID, request: UpdateUserRequest): UserResponse {
         logger.info("Updating user: userId={}", authenticatedUserId)
 
-        val user =
-            userRepository.findById(authenticatedUserId).orElseThrow {
-                logger.warn("User not found for update: userId={}", authenticatedUserId)
-                NotFoundException("User not found")
-            }
+        val user = userRepository.findById(authenticatedUserId).orElseThrow {
+            logger.warn("User not found for update: userId={}", authenticatedUserId)
+            NotFoundException("User not found")
+        }
 
         request.fullname?.let { user.fullname = it }
 
@@ -128,7 +128,16 @@ class UserService(
         }
 
         request.password?.let { user.passwordHash = hashMD5(it) }
-        request.uniquePredictions?.let { user.uniquePredictions = it }
+
+        request.uniquePredictions?.let {
+            user.hasUniquePredictions = it
+            request.uniquePredictionsMaster?.let { masterGroupId ->
+                predictionService.clonePredictions(user.id!!, masterGroupId)
+            } ?: run {
+                logger.warn("User update failed: unique predictions master")
+                throw BadRequestException(message = "Cannot set the predictions-uniqueness flag to true without indicating a master")
+            }
+        }
 
         user.updatedAt = LocalDateTime.now()
 

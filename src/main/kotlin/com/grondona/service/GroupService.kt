@@ -108,7 +108,7 @@ class GroupService(
             NotFoundException("Group not found")
         }
 
-        membershipRepository.findGroupUsers(groupId).forEach { membershipRepository.delete(it) }
+        membershipRepository.findEveryGroupUser(groupId).forEach { membershipRepository.delete(it) }
         groupRepository.delete(group)
         logger.info("Group deleted successfully: id={}, name='{}'", groupId, group.name)
     }
@@ -127,7 +127,7 @@ class GroupService(
             return GroupResponse.from(group)
         }
 
-        val groupUsers = membershipRepository.findGroupUsers(groupId)
+        val groupUsers = membershipRepository.findEveryGroupUser(groupId)
         val members = groupUsers.filter { it.role != GroupRole.CANDIDATE }
         val standings = when {
             // Hasn't started

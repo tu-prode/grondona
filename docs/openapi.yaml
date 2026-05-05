@@ -95,9 +95,6 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/UpdateUserRequest"
-            example:
-              fullname: John Smith
-              email: john.smith@example.com
       responses:
         "200":
           description: User updated successfully
@@ -1705,6 +1702,13 @@ components:
           description: New password (min 6 characters)
           minLength: 6
           example: newsecret123
+        unique_predictions:
+          type: boolean
+          description: Flag indicating if a user will use the same predictions for every group or not
+        unique_predictions_master:
+          type: string
+          format: uuid
+          description: Identifier of the group to use to copy the predictions from.
 
     AuthResponse:
       type: object

@@ -145,7 +145,7 @@ class MembershipService(
     @Transactional(readOnly = true)
     fun getMyGroups(userId: UUID): List<MembershipResponse> {
         logger.info("Fetching groups for user {}", userId)
-        val memberships = membershipRepository.findUserGroups(userId)
+        val memberships = membershipRepository.findUserMemberships(userId)
         logger.info("User {} belongs to {} groups", userId, memberships.size)
 
         return memberships.map(MembershipResponse::fromMembershipView)

@@ -259,7 +259,7 @@ class GroupServiceTest {
         @Test
         fun `getGroupById should return GroupResponse when group exists`() {
             every { groupRepository.findById(testGroup.id!!) } returns Optional.of(testGroup)
-            every { membershipRepository.findGroupUsers(testGroup.id!!) } returns emptyList()
+            every { membershipRepository.findEveryGroupUser(testGroup.id!!) } returns emptyList()
 
             val result = groupService.getGroupById(testGroup.id!!)
 
@@ -294,7 +294,7 @@ class GroupServiceTest {
                 group = testGroup, joinedAt = LocalDateTime.now()
             )
             every { groupRepository.findById(testGroup.id!!) } returns Optional.of(testGroup)
-            every { membershipRepository.findGroupUsers(testGroup.id!!) } returns listOf(member1, member2, candidate1)
+            every { membershipRepository.findEveryGroupUser(testGroup.id!!) } returns listOf(member1, member2, candidate1)
 
             val result = groupService.getGroupById(testGroup.id!!)
 
@@ -318,7 +318,7 @@ class GroupServiceTest {
             )
 
             every { groupRepository.findById(testGroup.id!!) } returns Optional.of(testGroup)
-            every { membershipRepository.findGroupUsers(testGroup.id!!) } returns listOf(member1, member2)
+            every { membershipRepository.findEveryGroupUser(testGroup.id!!) } returns listOf(member1, member2)
 
             val result = groupService.getGroupById(testGroup.id!!)
 
@@ -346,7 +346,7 @@ class GroupServiceTest {
             )
 
             every { groupRepository.findById(testGroup.id!!) } returns Optional.of(testGroup)
-            every { membershipRepository.findGroupUsers(testGroup.id!!) } returns listOf(member1, member2)
+            every { membershipRepository.findEveryGroupUser(testGroup.id!!) } returns listOf(member1, member2)
 
             val result = groupService.getGroupById(testGroup.id!!)
 
@@ -393,7 +393,7 @@ class GroupServiceTest {
             )
 
             every { groupRepository.findById(testGroup.id!!) } returns Optional.of(testGroup)
-            every { membershipRepository.findGroupUsers(testGroup.id!!) } returns listOf(member1, member2)
+            every { membershipRepository.findEveryGroupUser(testGroup.id!!) } returns listOf(member1, member2)
             every { matchPredictionRepository.findGroupPredictions(testGroup.id!!) } returns listOf(prediction1, prediction2)
 
             val result = groupService.getGroupById(testGroup.id!!, liveStandings = true)
@@ -422,7 +422,7 @@ class GroupServiceTest {
             )
 
             every { groupRepository.findById(testGroup.id!!) } returns Optional.of(testGroup)
-            every { membershipRepository.findGroupUsers(testGroup.id!!) } returns listOf(member, candidate)
+            every { membershipRepository.findEveryGroupUser(testGroup.id!!) } returns listOf(member, candidate)
 
             val result = groupService.getGroupById(testGroup.id!!)
 

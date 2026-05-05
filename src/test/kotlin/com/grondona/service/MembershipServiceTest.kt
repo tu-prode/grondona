@@ -239,14 +239,14 @@ class MembershipServiceTest {
 
         @Test
         fun `getMyGroups should return empty list when user has no memberships`() {
-            every { membershipRepository.findUserGroups(testUserId) } returns emptyList()
+            every { membershipRepository.findUserMemberships(testUserId) } returns emptyList()
             val result = membershipService.getMyGroups(testUserId)
             assertTrue(result.isEmpty())
         }
 
         @Test
         fun `getMyGroups should return membership response with standing data`() {
-            every { membershipRepository.findUserGroups(testUserId) } returns listOf(testMembershipView)
+            every { membershipRepository.findUserMemberships(testUserId) } returns listOf(testMembershipView)
 
             val result = membershipService.getMyGroups(testUserId)
             assertEquals(1, result.size)
@@ -265,7 +265,7 @@ class MembershipServiceTest {
             val membership1 = testMembershipView.copy(rank = 1, points = 7.5f, membersCount = 6)
             val membership2 = testMembershipView.copy(group = secondGroup, role = GroupRole.ADMIN, rank = 2, points = 13.4f)
 
-            every { membershipRepository.findUserGroups(testUserId) } returns listOf(membership1, membership2)
+            every { membershipRepository.findUserMemberships(testUserId) } returns listOf(membership1, membership2)
 
             val result = membershipService.getMyGroups(testUserId)
 

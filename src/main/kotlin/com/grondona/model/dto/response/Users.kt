@@ -30,7 +30,7 @@ data class UserResponse(
             username = user.username,
             email = user.email,
             permissions = user.permissions,
-            uniquePredictions = user.uniquePredictions,
+            uniquePredictions = user.hasUniquePredictions,
         )
 
         fun withJoinRequests(user: User, joinRequests: List<GroupUser>): UserResponse = UserResponse(
@@ -39,7 +39,7 @@ data class UserResponse(
             username = user.username,
             email = user.email,
             permissions = user.permissions,
-            uniquePredictions = user.uniquePredictions,
+            uniquePredictions = user.hasUniquePredictions,
             joinRequests = joinRequests.groupBy { it.group }.map { (group, users) ->
                 JoinRequestResponse.from(group, users.map { it.user })
             }

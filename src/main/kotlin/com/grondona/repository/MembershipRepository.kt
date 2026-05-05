@@ -54,7 +54,7 @@ interface MembershipRepository : JpaRepository<GroupUser, UUID> {
         FROM GroupUser u
         WHERE u.group.id = :groupId
     """)
-    fun findGroupUsers(@Param("groupId") groupId: UUID): List<GroupUser>
+    fun findEveryGroupUser(@Param("groupId") groupId: UUID): List<GroupUser>
 
     @Query("""
         SELECT new com.grondona.model.MembershipView(
@@ -66,11 +66,18 @@ interface MembershipRepository : JpaRepository<GroupUser, UUID> {
             (SELECT COUNT(m) FROM GroupUser m WHERE m.group.id = gu.group.id AND m.role = 'CANDIDATE' AND m.deletedAt IS NULL)
         )
         FROM GroupUser gu
-        WHERE gu.user.id = :userId AND gu.role <>  'CANDIDATE'
+        WHERE gu.user.id = :userId AND gu.role <> 'CANDIDATE'
         ORDER BY gu.joinedAt DESC
     """
     )
-    fun findUserGroups(@Param("userId") userId: UUID): List<MembershipView>
+    fun findUserMemberships(@Param("userId") userId: UUID): List<MembershipView>
+
+    @Query("""
+        SELECT u
+        FROM GroupUser u
+        WHERE u.user.id = :userId AND u.role <>  'CANDIDATE'
+    """)
+    fun findUserGroups(@Param("userId") userId: UUID): List<GroupUser>
 
     @Query("""
         SELECT COUNT(u)

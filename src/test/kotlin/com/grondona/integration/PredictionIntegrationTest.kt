@@ -71,7 +71,7 @@ class PredictionIntegrationTest {
             post("/api/tournaments")
                 .header("Authorization", "Bearer $adminToken")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(createTestingTournamentRequest(name = "Prediction Test")))
+                .content(objectMapper.writeValueAsString(createTestingTournamentRequest(name = "PredictionTest Tournament")))
         ).andReturn()
         tournamentId = objectMapper.readValue(tournamentResult.response.contentAsString, TournamentResponse::class.java).id.toString()
 

@@ -9,6 +9,7 @@ import com.grondona.model.User
 import jakarta.persistence.EntityManager
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
@@ -17,6 +18,28 @@ import java.util.UUID
 
 @Repository
 interface MatchPredictionRepository : JpaRepository<MatchPrediction, UUID>, JpaSpecificationExecutor<MatchPrediction>, MatchPredictionRepositoryCustom {
+
+    @Modifying
+    @Query(
+        value = """
+        INSERT INTO match_predictions (user_id, group_id, match_id,home_goals, away_goals, status,created_at, updated_at)
+        SELECT mp.user_id, g.group_id, mp.match_id, mp.home_goals, mp.away_goals, mp.status, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+        FROM match_predictions mp
+        CROSS JOIN UNNEST(:otherGroupIds) AS g(group_id)
+        WHERE mp.user_id = :userId AND mp.group_id = :masterGroupId AND mp.deleted_at IS NULL
+        ON CONFLICT (user_id, group_id, match_id)
+        DO UPDATE SET 
+            home_goals = EXCLUDED.home_goals,
+            away_goals = EXCLUDED.away_goals,
+            status = EXCLUDED.status,
+            updated_at = CURRENT_TIMESTAMP,
+            deleted_at = NULL
+    """, nativeQuery = true)
+    fun cloneUserPredictions(
+        @Param("userId") userId: UUID,
+        @Param("masterGroupId") masterGroupId: UUID,
+        @Param("otherGroupIds") otherGroupIds: List<UUID>
+    )
 
     @Query(
         """
@@ -28,9 +51,7 @@ interface MatchPredictionRepository : JpaRepository<MatchPrediction, UUID>, JpaS
         away_goals = EXCLUDED.away_goals,
         updated_at = CURRENT_TIMESTAMP
     RETURNING *
-    """,
-        nativeQuery = true
-    )
+    """, nativeQuery = true)
     fun upsert(@Param("prediction") prediction: MatchPrediction): MatchPrediction
 
     @Query(
@@ -59,8 +80,7 @@ interface MatchPredictionRepository : JpaRepository<MatchPrediction, UUID>, JpaS
             AND p.match.id = m.id
         WHERE gu.group.id = :groupId AND gu.user.id = :userId
         ORDER BY CASE WHEN m.startedAt IS NULL THEN 1 ELSE 0 END, m.startedAt ASC
-    """
-    )
+    """)
     fun findGroupPredictionsForUser(groupId: UUID, userId: UUID): List<MatchPredictionView>
 
     @Query(
@@ -74,8 +94,7 @@ interface MatchPredictionRepository : JpaRepository<MatchPrediction, UUID>, JpaS
             AND p.match.id = :matchId
         WHERE gu.group.id = :groupId
         ORDER BY CASE WHEN gu.rank IS NULL THEN 1 ELSE 0 END, gu.rank ASC
-    """
-    )
+    """)
     fun findGroupPredictionsForMatch(groupId: UUID, matchId: UUID): List<MatchPredictionView>
 
     fun findByStatusAndMatchIdIn(status: PredictionStatus, matchIds: List<UUID>): List<MatchPrediction>

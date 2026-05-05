@@ -78,23 +78,32 @@ class PredictionService(
         logger.info("Submitting prediction for user={}, match={} at group={}", userId, request.matchId, groupId)
 
         val (user, group) = checkMembership(userId, groupId)
-        var prediction = MatchPrediction(
-            user = user,
-            group = group,
-            homeGoals = request.homeGoals,
-            awayGoals = request.awayGoals,
-            createdAt = LocalDateTime.now(),
-            updatedAt = LocalDateTime.now(),
-            match = matchRepository.findById(request.matchId).orElseThrow { NotFoundException("Match not found") },
-        )
+        val match = matchRepository.findById(request.matchId).orElseThrow { NotFoundException("Match not found") }
 
-        if (!isMatchUnlocked(prediction.match)) {
+        if (!isMatchUnlocked(match)) {
             logger.warn("Trying to submit a prediction for a match that is locked, user={}, match={} at group={}", userId, request.matchId, groupId)
             throw BadRequestException(message = "Cannot submit predictions for this match")
         }
 
-        prediction = matchPredictionRepository.upsert(prediction)
-        return MatchPredictionResponse.from(prediction)
+        val predictionToSave = MatchPrediction(
+            user = user,
+            group = group,
+            match = match,
+            homeGoals = request.homeGoals,
+            awayGoals = request.awayGoals,
+            createdAt = LocalDateTime.now(),
+            updatedAt = LocalDateTime.now(),
+        )
+
+        val savedPrediction = if (user.hasUniquePredictions) {
+            val predictionsToSave = membershipRepository.findUserGroups(userId).map { predictionToSave.copy(group = it.group) }
+            val savedPredictions = matchPredictionRepository.upsertAll(predictionsToSave)
+            savedPredictions.first { it.group.id == group.id }
+        } else {
+            matchPredictionRepository.upsert(predictionToSave)
+        }
+
+        return MatchPredictionResponse.from(savedPrediction)
     }
 
     @Transactional
@@ -106,14 +115,13 @@ class PredictionService(
         logger.info("Submitting {} predictions for user={} at group={}", request.predictions.size, userId, groupId)
 
         val (user, group) = checkMembership(userId, groupId)
-        var predictions = request.predictions.map { prediction ->
+        val basePredictions = request.predictions.map { prediction ->
             MatchPrediction(
                 user = user,
                 group = group,
                 homeGoals = prediction.homeGoals,
                 awayGoals = prediction.awayGoals,
-                match = matchRepository.findById(prediction.matchId)
-                    .orElseThrow { NotFoundException("Match not found") },
+                match = matchRepository.findById(prediction.matchId).orElseThrow { NotFoundException("Match not found") },
             )
         }.filter {
             if (isMatchUnlocked(it.match)) true else {
@@ -121,8 +129,15 @@ class PredictionService(
             }
         }
 
-        predictions = matchPredictionRepository.upsertAll(predictions)
-        return GroupMatchPredictionsResponse.fromPredictions(group, predictions)
+        val predictions = if (user.hasUniquePredictions) {
+            val userGroups = membershipRepository.findUserGroups(userId)
+            userGroups.flatMap { basePredictions.map { prediction -> prediction.copy(group = it.group) } }
+        } else {
+            basePredictions
+        }
+
+        val savedPredictions = matchPredictionRepository.upsertAll(predictions)
+        return GroupMatchPredictionsResponse.fromPredictions(group, savedPredictions.filter { it.group.id == groupId })
     }
 
     fun getMatchPredictionsForGroup(userId: UUID, groupId: UUID): GroupMatchPredictionsResponse {
@@ -167,9 +182,7 @@ class PredictionService(
         if (tournament.status == TournamentStatus.IN_PROGRESS) {
             logger.warn(
                 "User={} trying to submit award predictions for the tournament={} at group={}, but it has already started",
-                userId,
-                tournamentId,
-                groupId
+                userId, tournamentId, groupId
             )
             throw BadRequestException("Tournament has already started")
         }
@@ -225,7 +238,7 @@ class PredictionService(
             }
         }
 
-        var predictions = awardPredictions.champions.map {
+        val predictions = awardPredictions.champions.map {
             AwardPrediction(user = user, group = group, awardType = AwardType.CHAMPION, team = teamRepository.getReferenceById(it))
         } + awardPredictions.topScorers.map {
             AwardPrediction(user = user, group = group, awardType = AwardType.TOP_SCORER, player = playerRepository.getReferenceById(it))
@@ -237,10 +250,19 @@ class PredictionService(
             AwardPrediction(user = user, group = group, awardType = AwardType.BEST_YOUNG_PLAYER, player = it)
         }
 
-        val deletedAwards = awardPredictionRepository.deleteByUserId(userId)
-        logger.debug("Deleted {} previous awards from user={}", deletedAwards, userId)
-        predictions = awardPredictionRepository.saveAll(predictions)
-        return AwardPredictionsResponse.fromAwardPredictions(user, predictions)
+        val savedPredictions = if (user.hasUniquePredictions) {
+            val userGroups = membershipRepository.findUserGroups(userId)
+            val userGroupsIds = userGroups.map { it.group.id!! }
+            val deletedAwards = awardPredictionRepository.deleteAwardPredictionsForMultipleGroups(userId, userGroupsIds)
+            logger.debug("Deleted {} previous awards from user={} in {} groups", deletedAwards, userId, userGroups.size)
+            val predictionsToSave = userGroups.flatMap { predictions.map { prediction -> prediction.copy(group = it.group) } }
+            awardPredictionRepository.saveAll(predictionsToSave)
+        } else {
+            val deletedAwards = awardPredictionRepository.deleteAwardPredictionsForGroup(userId, groupId)
+            logger.debug("Deleted {} previous awards from user={} in group={}", deletedAwards, userId, groupId)
+            awardPredictionRepository.saveAll(predictions)
+        }
+        return AwardPredictionsResponse.fromAwardPredictions(user, savedPredictions.filter { it.group.id == groupId })
     }
 
     fun getAwardPredictionsForGroup(userId: UUID, groupId: UUID, tournamentId: UUID): GroupAwardPredictionsResponse {
@@ -277,5 +299,23 @@ class PredictionService(
         val predictions = awardPredictionRepository.findByUserIdAndGroupId(user.id!!, group.id!!)
 
         return AwardPredictionsResponse.fromAwardPredictions(user, predictions)
+    }
+
+    @Transactional
+    fun clonePredictions(userId: UUID, masterGroupId: UUID) {
+        logger.info("Cloning predictions for user={} using master={}", userId, masterGroupId)
+
+        val userGroups = membershipRepository.findUserGroups(userId)
+        val userGroupsIds = userGroups.map { it.group.id!! }
+        if (!userGroupsIds.contains(masterGroupId)) {
+            logger.error("User={} trying to clone predictions from group={}, but it does not belong to it", userId, masterGroupId)
+            throw BadRequestException("Invalid group for cloning predictions")
+        }
+
+        val otherGroupsIds = userGroupsIds.filter { it != masterGroupId }
+        matchPredictionRepository.cloneUserPredictions(userId, masterGroupId, otherGroupsIds)
+        awardPredictionRepository.deleteAwardPredictionsForMultipleGroups(userId, otherGroupsIds)
+        awardPredictionRepository.cloneAwardPredictionsIntoGroups(userId, masterGroupId, otherGroupsIds)
+        logger.info("User={} cloned predictions from group={} to other {} groups", userId, masterGroupId, otherGroupsIds.size)
     }
 }
