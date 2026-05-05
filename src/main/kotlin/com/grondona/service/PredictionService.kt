@@ -313,9 +313,18 @@ class PredictionService(
         }
 
         val otherGroupsIds = userGroupsIds.filter { it != masterGroupId }
-        matchPredictionRepository.cloneUserPredictions(userId, masterGroupId, otherGroupsIds)
+        val masterGroupMatchPredictions = matchPredictionRepository.findByUserIdAndGroupId(userId, masterGroupId)
+        val matchPredictionsToClone = userGroups
+            .filter { it.group.id in otherGroupsIds }
+            .flatMap { membership -> masterGroupMatchPredictions.map { it.copy(id = null, group = membership.group) } }
+        matchPredictionRepository.upsertAll(matchPredictionsToClone)
+
+        val masterGroupAwardPredictions = awardPredictionRepository.findByUserIdAndGroupId(userId, masterGroupId)
         awardPredictionRepository.deleteAwardPredictionsForMultipleGroups(userId, otherGroupsIds)
-        awardPredictionRepository.cloneAwardPredictionsIntoGroups(userId, masterGroupId, otherGroupsIds)
+        val awardPredictionsToClone = userGroups
+            .filter { it.group.id in otherGroupsIds }
+            .flatMap { membership -> masterGroupAwardPredictions.map { it.copy(id = null, group = membership.group) } }
+        awardPredictionRepository.saveAll(awardPredictionsToClone)
         logger.info("User={} cloned predictions from group={} to other {} groups", userId, masterGroupId, otherGroupsIds.size)
     }
 }

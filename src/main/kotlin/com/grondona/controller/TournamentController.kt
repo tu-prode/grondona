@@ -130,7 +130,7 @@ class TournamentController(
         }
     }
 
-    @GetMapping("/{tournamentId}/matches")
+    @PostMapping("/{tournamentId}/matches")
     fun createTournamentMatch(
         @AuthenticationPrincipal principal: JwtUserPrincipal?,
         @PathVariable tournamentId: UUID,
@@ -144,7 +144,7 @@ class TournamentController(
         }
     }
 
-    @GetMapping("/{tournamentId}/teams")
+    @PostMapping("/{tournamentId}/teams")
     fun createTournamentTeam(
         @AuthenticationPrincipal principal: JwtUserPrincipal?,
         @PathVariable tournamentId: UUID,
@@ -158,7 +158,7 @@ class TournamentController(
         }
     }
 
-    @GetMapping("/{tournamentId}/players")
+    @PostMapping("/{tournamentId}/players")
     fun createTournamentPlayer(
         @AuthenticationPrincipal principal: JwtUserPrincipal?,
         @PathVariable tournamentId: UUID,
