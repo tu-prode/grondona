@@ -91,8 +91,7 @@ class PredictionIntegrationTest {
 
         val adminResponse = createUser("admin")
         val adminUser = userRepository.findById(adminResponse.userId).get()
-        adminUser.permissions = UserPermissions.SUPERUSER
-        userRepository.save(adminUser)
+        userRepository.save(adminUser.copy(permissions = UserPermissions.SUPERUSER))
         adminToken = adminResponse.token
 
         tournamentId = createTournament()

@@ -20,30 +20,30 @@ data class User(
     val id: UUID? = null,
 
     @Column(nullable = false)
-    var fullname: String,
+    val fullname: String,
 
     @Column(nullable = false, unique = true)
-    var username: String,
+    val username: String,
 
     @Column(nullable = false, unique = true)
-    var email: String,
+    val email: String,
 
     @Column(name = "password_hash", nullable = false)
-    var passwordHash: String,
+    val passwordHash: String,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    var permissions: UserPermissions = UserPermissions.USER,
+    val permissions: UserPermissions = UserPermissions.USER,
 
     @Column(name = "unique_predictions", nullable = false)
-    var hasUniquePredictions: Boolean = false,
+    val hasUniquePredictions: Boolean = false,
 
     @Column(name = "created_at", nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now(),
+    val updatedAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "deleted_at")
-    var deletedAt: LocalDateTime? = null
+    val deletedAt: LocalDateTime? = null
 )

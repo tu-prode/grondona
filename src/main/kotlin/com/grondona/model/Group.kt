@@ -42,10 +42,10 @@ data class Group(
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now(),
+    val updatedAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "deleted_at")
-    var deletedAt: LocalDateTime? = null,
+    val deletedAt: LocalDateTime? = null,
 
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
     val members: MutableList<GroupUser> = emptyList<GroupUser>().toMutableList()

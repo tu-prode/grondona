@@ -109,28 +109,21 @@ class UserService(
             NotFoundException("User not found")
         }
 
-        request.fullname?.let { user.fullname = it }
-
-        request.username?.let { newUsername ->
-            if (newUsername != user.username && userRepository.existsByUsername(newUsername)) {
-                logger.warn("User update failed: username '{}' already exists", newUsername)
-                throw ConflictException(message = "Username already exists", field = "username", rejectedValue = newUsername)
+        if (request.username != null) {
+            if (request.username != user.username && userRepository.existsByUsername(request.username)) {
+                logger.warn("User update failed: username '{}' already exists", request.username)
+                throw ConflictException(message = "Username already exists", field = "username", rejectedValue = request.username)
             }
-            user.username = newUsername
         }
 
-        request.email?.let { newEmail ->
-            if (newEmail != user.email && userRepository.existsByEmail(newEmail)) {
-                logger.warn("User update failed: email '{}' already exists", newEmail)
-                throw ConflictException(message = "Email already exists", field = "email", rejectedValue = newEmail)
+        if (request.email != null) {
+            if (request.email != user.email && userRepository.existsByEmail(request.email)) {
+                logger.warn("User update failed: email '{}' already exists", request.email)
+                throw ConflictException(message = "Email already exists", field = "email", rejectedValue = request.email)
             }
-            user.email = newEmail
         }
 
-        request.password?.let { user.passwordHash = hashMD5(it) }
-
-        request.uniquePredictions?.let {
-            user.hasUniquePredictions = it
+        if (request.uniquePredictions == true && membershipRepository.findUserGroups(authenticatedUserId).size > 1) {
             request.uniquePredictionsMaster?.let { masterGroupId ->
                 predictionService.clonePredictions(user.id!!, masterGroupId)
             } ?: run {
@@ -139,9 +132,19 @@ class UserService(
             }
         }
 
-        user.updatedAt = LocalDateTime.now()
+        val userToSave = user.copy(
+            username = request.username ?: user.username,
+            fullname = request.fullname ?: user.fullname,
+            email = request.email ?: user.email,
+            passwordHash = request.password?.let { hashMD5(it) } ?: user.passwordHash,
+            hasUniquePredictions = request.uniquePredictions ?: user.hasUniquePredictions,
+            updatedAt = LocalDateTime.now(),
+        )
 
-        val savedUser = userRepository.save(user)
+
+
+
+        val savedUser = userRepository.save(userToSave)
         logger.info("User updated successfully: userId={}", savedUser.id)
         return UserResponse.from(savedUser)
     }

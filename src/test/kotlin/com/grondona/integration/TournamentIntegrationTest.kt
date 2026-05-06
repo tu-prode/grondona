@@ -55,8 +55,7 @@ class TournamentIntegrationTest {
         ).andReturn()
         val adminResponse = objectMapper.readValue(adminResult.response.contentAsString, AuthenticatedUserResponse::class.java)
         val adminUser = userRepository.findById(adminResponse.userId).get()
-        adminUser.permissions = UserPermissions.SUPERUSER
-        userRepository.save(adminUser)
+        userRepository.save(adminUser.copy(permissions = UserPermissions.SUPERUSER))
         superuserToken = adminResponse.token
 
         // Create regular user
