@@ -81,12 +81,12 @@ class GroupService(
             NotFoundException("Group not found")
         }
 
-        group = request.name?.let { newName ->
+        request.name?.let { newName ->
             if (newName != group.name && groupRepository.existsByName(newName)) {
                 logger.warn("Group update failed: name '{}' already exists", newName)
                 throw ConflictException(message = "Group name already exists", field = "name", rejectedValue = newName)
             }
-            group.copy(name = newName)
+            group = group.copy(name = newName)
         }
 
         group = group.copy(
@@ -109,7 +109,7 @@ class GroupService(
             NotFoundException("Group not found")
         }
 
-        membershipRepository.findEveryGroupUser(groupId).forEach { membershipRepository.delete(it) }
+        membershipRepository.clearGroup(groupId)
         groupRepository.delete(group)
         logger.info("Group deleted successfully: id={}, name='{}'", groupId, group.name)
     }

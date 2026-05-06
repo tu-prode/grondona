@@ -4,6 +4,7 @@ import com.grondona.model.AwardPrediction
 import com.grondona.model.GroupUser
 import com.grondona.model.MembershipView
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
@@ -19,6 +20,13 @@ interface MembershipRepository : JpaRepository<GroupUser, UUID> {
         WHERE u.user.id = :userId AND u.group.id = :groupId AND u.role <>  'CANDIDATE'
     """)
     fun isMember(@Param("userId") userId: UUID, @Param("groupId") groupId: UUID): Boolean
+
+    @Modifying
+    @Query("""
+        DELETE FROM GroupUser u
+        WHERE u.group.id = :groupId
+    """)
+    fun clearGroup(@Param("groupId") groupId: UUID)
 
     @Query("""
         SELECT u

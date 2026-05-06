@@ -388,7 +388,7 @@ class GroupIntegrationTest {
                     .header("Authorization", "Bearer $user2Token")
             )
                 .andExpect(status().isBadRequest)
-                .andExpect(jsonPath("$.message").value("You are already member of this group"))
+                .andExpect(jsonPath("$.message").value("You are already candidate to this group"))
         }
 
         @Test

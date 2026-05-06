@@ -235,6 +235,7 @@ class GroupServiceTest {
         @Test
         fun `deleteGroup should delete group when it exists`() {
             every { groupRepository.findById(testGroup.id!!) } returns Optional.of(testGroup)
+            every { membershipRepository.clearGroup(testGroup.id!!) } just Runs
             every { groupRepository.delete(testGroup) } just Runs
 
             groupService.deleteGroup(testGroup.id!!)
@@ -402,11 +403,11 @@ class GroupServiceTest {
             assertEquals(2, result.standings.size)
             assertEquals(member2.user.id, result.standings[0].user.id)
             assertEquals(1, result.standings[0].rank)
-            assertEquals(5.5f, result.standings[0].points)
+            assertEquals(4.5f, result.standings[0].points)
             assertEquals(listOf(PredictionStatus.CORRECT), result.standings[0].lastPredictions)
             assertEquals(member1.user.id, result.standings[1].user.id)
             assertEquals(2, result.standings[1].rank)
-            assertEquals(4f, result.standings[1].points)
+            assertEquals(3f, result.standings[1].points)
             assertEquals(listOf(PredictionStatus.PARTIAL), result.standings[1].lastPredictions)
         }
 

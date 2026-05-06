@@ -352,7 +352,6 @@ class UserIntegrationTest {
     inner class AuthenticationTests {
 
         @Test
-        @Ignore
         fun `should reject request with invalid token`() {
             // Spring Security returns 403 when token is invalid (authentication fails)
             mockMvc.perform(
@@ -363,7 +362,6 @@ class UserIntegrationTest {
         }
 
         @Test
-        @Ignore
         fun `should reject request with malformed authorization header`() {
             // Spring Security returns 403 when no valid Bearer token is provided
             mockMvc.perform(

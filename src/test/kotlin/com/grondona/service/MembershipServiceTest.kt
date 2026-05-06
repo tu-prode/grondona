@@ -98,6 +98,7 @@ class MembershipServiceTest {
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
             every { membershipRepository.isMember(testUserId, testGroupId) } returns false
+            every { membershipRepository.findCandidate(testUserId, testGroupId) } returns Optional.empty()
             every { membershipRepository.countMembers(testGroupId) } returns 5L
             every { membershipRepository.save(any()) } returns testMembership
 
@@ -111,6 +112,7 @@ class MembershipServiceTest {
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup.copy(isPrivate = true))
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
             every { membershipRepository.isMember(testUserId, testGroupId) } returns false
+            every { membershipRepository.findCandidate(testUserId, testGroupId) } returns Optional.empty()
             every { membershipRepository.countMembers(testGroupId) } returns 0L
             every { membershipRepository.save(any()) } answers { firstArg() }
 
@@ -124,6 +126,7 @@ class MembershipServiceTest {
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup.copy(isPrivate = false))
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
             every { membershipRepository.isMember(testUserId, testGroupId) } returns false
+            every { membershipRepository.findCandidate(testUserId, testGroupId) } returns Optional.empty()
             every { membershipRepository.countMembers(testGroupId) } returns 0L
             every { membershipRepository.save(any()) } answers { firstArg() }
 
@@ -169,10 +172,26 @@ class MembershipServiceTest {
         }
 
         @Test
+        fun `joinGroup should throw BadRequestException when user is already a candidate`() {
+            every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
+            every { userRepository.findById(testUserId) } returns Optional.of(testUser)
+            every { membershipRepository.isMember(testUserId, testGroupId) } returns false
+            every { membershipRepository.findCandidate(testUserId, testGroupId) } returns
+                    Optional.of(testMembership.copy(role = GroupRole.CANDIDATE))
+
+            val exception = assertThrows<BadRequestException> {
+                membershipService.joinGroup(testUserId, testGroupId)
+            }
+            assertEquals("You are already candidate to this group", exception.message)
+            verify(exactly = 0) { membershipRepository.save(any()) }
+        }
+
+        @Test
         fun `joinGroup should throw BadRequestException when group is full`() {
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
             every { membershipRepository.isMember(testUserId, testGroupId) } returns false
+            every { membershipRepository.findCandidate(testUserId, testGroupId) } returns Optional.empty()
             every { membershipRepository.countMembers(testGroupId) } returns 10L
 
             val exception = assertThrows<BadRequestException> {
@@ -187,6 +206,7 @@ class MembershipServiceTest {
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
             every { membershipRepository.isMember(testUserId, testGroupId) } returns false
+            every { membershipRepository.findCandidate(testUserId, testGroupId) } returns Optional.empty()
             every { membershipRepository.countMembers(testGroupId) } returns 9L
             every { membershipRepository.save(any()) } returns testMembership
 

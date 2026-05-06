@@ -28,13 +28,16 @@ import java.util.*
 class UserServiceTest {
 
     @MockK
+    private lateinit var jwtService: JwtService
+
+    @MockK
     private lateinit var userRepository: UserRepository
 
     @MockK
-    private lateinit var membershipRepository: MembershipRepository
+    private lateinit var predictionService: PredictionService
 
     @MockK
-    private lateinit var jwtService: JwtService
+    private lateinit var membershipRepository: MembershipRepository
 
     @InjectMockKs
     private lateinit var userService: UserService
@@ -275,6 +278,33 @@ class UserServiceTest {
             }
             assertEquals("email", exception.field)
             assertEquals("taken@example.com", exception.rejectedValue)
+        }
+
+        @Test
+        fun `updateUser should throw BadRequestException when setting uniqueness for predictions without master group`() {
+            // Given
+            val request = UpdateUserRequest(uniquePredictions = true)
+            every { userRepository.findById(testUserId) } returns Optional.of(testUser.copy())
+
+            // When/Then
+            val exception = assertThrows<BadRequestException> {
+                userService.updateUser(testUserId, request)
+            }
+            assertEquals("Cannot set the predictions-uniqueness flag to true without indicating a master", exception.message)
+        }
+
+        @Test
+        fun `updateUser should clone all the predictions when setting uniqueness flag and save the updated user`() {
+            // Given
+            val masterGroupId = UUID.randomUUID()
+            val request = UpdateUserRequest(uniquePredictions = true, uniquePredictionsMaster = masterGroupId)
+            every { userRepository.findById(testUserId) } returns Optional.of(testUser.copy())
+            every { predictionService.clonePredictions(testUserId, masterGroupId) } just Runs
+            every { userRepository.save(any()) } answers { firstArg() }
+
+            // When/Then
+            val result = userService.updateUser(testUserId, request)
+            assertTrue(result.uniquePredictions)
         }
     }
 

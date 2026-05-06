@@ -41,9 +41,14 @@ class MembershipService(
             NotFoundException("User not found")
         }
 
-        if (membershipRepository.isMember(userId, groupId) || membershipRepository.findCandidate(userId, groupId).isPresent) {
+        if (membershipRepository.isMember(userId, groupId)) {
             logger.warn("Join failed: user {} is already a member of group {}", userId, groupId)
             throw BadRequestException("You are already member of this group")
+        }
+
+        if (membershipRepository.findCandidate(userId, groupId).isPresent) {
+            logger.warn("Join failed: user {} is already a candidate of group {}", userId, groupId)
+            throw BadRequestException("You are already candidate to this group")
         }
 
         val memberCount = membershipRepository.countMembers(groupId)
