@@ -36,7 +36,7 @@ data class User(
     var permissions: UserPermissions = UserPermissions.USER,
 
     @Column(name = "unique_predictions", nullable = false)
-    var uniquePredictions: Boolean = false,
+    var hasUniquePredictions: Boolean = false,
 
     @Column(name = "created_at", nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),

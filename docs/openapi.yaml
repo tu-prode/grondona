@@ -95,9 +95,6 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/UpdateUserRequest"
-            example:
-              fullname: John Smith
-              email: john.smith@example.com
       responses:
         "200":
           description: User updated successfully
@@ -294,7 +291,7 @@ paths:
         Create a new tournament by its name
       operationId: createTournament
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: [ SUPERUSER ]
       requestBody:
         required: true
         content:
@@ -330,6 +327,45 @@ paths:
                 data:
                   field: name
                   rejectedValue: Copa del Mundo 20206
+
+  /api/tournaments/points:
+    put:
+      tags:
+        - Tournaments
+      summary: Recalculates points for a tournament
+      description: |
+        Recheck every match and award prediction, and then recalculates the points for each user in each group within that tournament
+      operationId: recalculateTournamentPoints
+      security:
+        - bearerAuth: [ SUPERUSER ]
+      responses:
+        "200":
+          description: Points recalculated successfully
+        "401":
+          description: Credentials missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: User has no access for performing this action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Tournament not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Some detailed error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 
   /api/tournaments/{tournamentId}:
     get:
@@ -370,7 +406,7 @@ paths:
         Partially update a tournament. Only provided fields will be updated.
       operationId: updateTournament
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: [ SUPERUSER ]
       parameters:
         - name: tournamentId
           in: path
@@ -429,7 +465,7 @@ paths:
         Delete a tournament by its UUID.
       operationId: deleteTournament
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: [ SUPERUSER ]
       parameters:
         - name: tournamentId
           in: path
@@ -475,6 +511,60 @@ paths:
                 $ref: "#/components/schemas/TournamentTeamsResponse"
         "404":
           description: Tournament not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      tags:
+        - Tournaments
+      summary: Create a team for a tournament
+      description: |
+        Create a new team that participates in the given tournament
+      operationId: createTournamentTeam
+      security:
+        - bearerAuth: [ SUPERUSER ]
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTeamRequest"
+      responses:
+        "201":
+          description: Team created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamResponse"
+        "401":
+          description: Credentials missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: User has no access for performing this action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Tournament not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Some detailed error
           content:
             application/json:
               schema:
@@ -529,6 +619,60 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+    post:
+      tags:
+        - Tournaments
+      summary: Create a player for a tournament
+      description: |
+        Create a new player that participates in the given tournament through a team
+      operationId: createTournamentPlayer
+      security:
+        - bearerAuth: [ SUPERUSER ]
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePlayerRequest"
+      responses:
+        "201":
+          description: Player created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerResponse"
+        "401":
+          description: Credentials missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: User has no access for performing this action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Tournament or team not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Some detailed error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/tournaments/{tournamentId}/matches:
     get:
@@ -578,6 +722,60 @@ paths:
                 $ref: "#/components/schemas/TournamentMatchesResponse"
         "404":
           description: Tournament not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      tags:
+        - Tournaments
+      summary: Create a match for a tournament
+      description: |
+        Create a new tournament match
+      operationId: createTournamentMatch
+      security:
+        - bearerAuth: [ SUPERUSER ]
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMatchRequest"
+      responses:
+        "201":
+          description: Match created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerResponse"
+        "401":
+          description: Credentials missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: User has no access for performing this action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Tournament or teams not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Some detailed error
           content:
             application/json:
               schema:
@@ -777,6 +975,140 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Group not found or user is not a member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/tournaments/{tournamentId}/groups/{groupId}/accept/{candidateId}:
+    put:
+      tags:
+        - Groups
+      summary: Accept a user in a group
+      description: |
+        Authenticated admin user accepts another user in the group
+      operationId: acceptCandidate
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
+        - name: groupId
+          in: path
+          required: true
+          description: UUID of the group to join
+          schema:
+            type: string
+            format: uuid
+        - name: candidateId
+          in: path
+          required: true
+          description: UUID of the user to accept
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User accepted successfully
+        '400':
+          description: Already a member or group is full
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                alreadyMember:
+                  summary: User is already a member
+                  value:
+                    status: 400
+                    error: Bad Request
+                    message: You are already member of this group
+                groupFull:
+                  summary: Group has reached max members
+                  value:
+                    status: 400
+                    error: Bad Request
+                    message: Group is full
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/tournaments/{tournamentId}/groups/{groupId}/reject/{candidateId}:
+    delete:
+      tags:
+        - Groups
+      summary: Reject a user in a group
+      description: |
+        Authenticated admin user rejects another user in the group
+      operationId: rejectCandidate
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          description: UUID of the tournament
+          schema:
+            type: string
+            format: uuid
+        - name: groupId
+          in: path
+          required: true
+          description: UUID of the group to join
+          schema:
+            type: string
+            format: uuid
+        - name: candidateId
+          in: path
+          required: true
+          description: UUID of the user to accept
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User rejected successfully
+        '400':
+          description: Already a member or group is full
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                alreadyMember:
+                  summary: User is already a member
+                  value:
+                    status: 400
+                    error: Bad Request
+                    message: You are already member of this group
+                groupFull:
+                  summary: Group has reached max members
+                  value:
+                    status: 400
+                    error: Bad Request
+                    message: Group is full
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Group not found
           content:
             application/json:
               schema:
@@ -1227,7 +1559,7 @@ paths:
       summary: Post a single predictions for a certain group and tournament.
       description: |
         Publish a user predictions for a certain group and tournament.
-      operationId: submitSingleGroupMatchPredictions
+      operationId: submitGroupSingleMatchPredictions
       security:
         - bearerAuth: [ ]
       parameters:
@@ -1409,6 +1741,13 @@ components:
           description: New password (min 6 characters)
           minLength: 6
           example: newsecret123
+        unique_predictions:
+          type: boolean
+          description: Flag indicating if a user will use the same predictions for every group or not
+        unique_predictions_master:
+          type: string
+          format: uuid
+          description: Identifier of the group to use to copy the predictions from.
 
     AuthResponse:
       type: object
@@ -1479,27 +1818,31 @@ components:
         permissions:
           $ref: '#/components/schemas/UserPermissions'
 
+    CurrentUserResponse:
+      allOf:
+        - $ref: '#/components/schemas/UserResponse'
+        - type: object
+          required:
+            - join_requests
+          properties:
+            join_requests:
+              type: array
+              items:
+                $ref: '#/components/schemas/JoinGroupRequest'
+
     UserGroupResponse:
       type: object
       description: A group the authenticated user has joined, with current member count
       required:
         - group
-        - tournament_id
         - points
         - rank
         - role
+        - total_members
+        - total_candidates
       properties:
         group:
           $ref: '#/components/schemas/GroupResponse'
-        tournament_id:
-          type: string
-          format: uuid
-          description: Unique tournament identifier
-          example: c0773be5-a5aa-4b88-9a3d-3143fae8d48f
-        tournament_name:
-          type: string
-          description: Group name
-          example: Copa del Mundo 2026
         points:
           type: number
           format: float16
@@ -1514,6 +1857,16 @@ components:
           type: string
           description: Role in the group
           example: MEMBER
+        total_members:
+          type: integer
+          format: int32
+          description: Amount of members in the group
+          example: 17
+        total_candidates:
+          type: integer
+          format: int32
+          description: Amount of candidates for the group
+          example: 4
 
     CreateGroupRequest:
       type: object
@@ -1558,6 +1911,20 @@ components:
           minimum: 1
           example: 30
 
+    JoinGroupRequest:
+      type: object
+      required:
+        - group
+        - users
+      description: All fields are optional. Only provided fields will be updated.
+      properties:
+        group:
+          $ref: '#/components/schemas/GroupResponse'
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserResponse'
+
     GroupStanding:
       type: object
       required:
@@ -1594,6 +1961,7 @@ components:
         - max_members
         - has_started
         - standings
+        - candidates
       properties:
         id:
           type: string
@@ -1625,6 +1993,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GroupStanding'
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserResponse'
 
     TournamentStatus:
       description: The status of a tournament
@@ -1707,6 +2079,26 @@ components:
         status:
           $ref: '#/components/schemas/TournamentStatus'
 
+    CreateTeamRequest:
+      type: object
+      required:
+        - name
+        - code
+        - icon
+      properties:
+        name:
+          type: string
+          description: Team name
+          example: Argentina
+        code:
+          type: string
+          description: Team code
+          example: ARG
+        icon:
+          type: string
+          description: URL of the team icon
+          example: https://flagcdn.com/w40/ar.png
+
     TeamResponse:
       type: object
       required:
@@ -1755,6 +2147,30 @@ components:
         - MIDFIELDER
         - FORWARD
 
+    CreatePlayerRequest:
+      type: object
+      required:
+        - name
+        - position
+        - team
+        - birthdate
+      properties:
+        name:
+          type: string
+          description: Player name
+          example: Lionel Messi
+        position:
+          $ref: '#/components/schemas/PlayerPosition'
+        team:
+          type: string
+          format: string
+          description: 5bb432a4-57d2-4d75-b8db-1df2eeb86a9e
+        birthdate:
+          type: string
+          format: date
+          description: Birthdate of the player
+          example: '1994-04-09'
+
     PlayerResponse:
       type: object
       required:
@@ -1779,9 +2195,9 @@ components:
           $ref: '#/components/schemas/PlayerPosition'
         birthdate:
           type: string
-          format: date-time
+          format: date
           description: Birthdate of the player
-          example: '1994-04-09 16:12:55 +03:00'
+          example: '1994-04-09'
 
     TournamentPlayersResponse:
       type: object
@@ -1801,6 +2217,39 @@ components:
         - IN_PROGRESS
         - FINISHED
 
+    CreateMatchRequest:
+      description: A match to be created
+      type: object
+      required:
+        - code
+        - home_team
+        - away_team
+        - started_at
+      properties:
+        code:
+          type: string
+          description: Unique identifier for the match within the tournament
+          example: "QF2"
+        home_team:
+          type: string
+          format: uuid
+          description: Unique identifier for the home team
+          example : 878cb6ff-2e03-4e84-935c-efcf2251a607
+        away_team:
+          type: string
+          format: uuid
+          description: Unique identifier for the away team
+          example : 346aa525-f1d9-437f-81e4-5db1de6f5866
+        started_at:
+          type: string
+          format: date-time
+          description: The timestamp for the match start
+          example: '2026-06-12 13:30:00 +03:00'
+        has_multiplier:
+          type: boolean
+          description: Flag indicating if the match is a special match with a multiplier bonus
+          example: false
+
     MatchResponse:
       description: A match of a tournament
       type: object
@@ -1813,6 +2262,7 @@ components:
         - away_quota
         - draw_quota
         - status
+        - started_at
         - has_multiplier
       properties:
         id:
@@ -1879,6 +2329,8 @@ components:
           example: 7
         has_multiplier:
           type: boolean
+          description: Flag indicating if the match is a special match with a multiplier bonus
+          example: false
 
     TournamentMatchesResponse:
       description: All the matches of the tournament

@@ -56,13 +56,13 @@ data class Match(
     val awayTeam: Team,
 
     @Column(name = "home_quota", nullable = false)
-    var homeQuota: Float = 1F,
+    var homeQuota: Float = 0F,
 
     @Column(name = "away_quota", nullable = false)
-    var awayQuota: Float = 1F,
+    var awayQuota: Float = 0F,
 
     @Column(name = "draw_quota", nullable = false)
-    var drawQuota: Float = 1F,
+    var drawQuota: Float = 0F,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -72,7 +72,7 @@ data class Match(
     var substatus: String? = null,
 
     @Column(name = "started_at")
-    var startedAt: LocalDateTime? = null,
+    var startedAt: LocalDateTime,
 
     @Column(name = "finished_at")
     var finishedAt: LocalDateTime? = null,

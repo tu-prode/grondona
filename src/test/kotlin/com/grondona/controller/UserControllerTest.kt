@@ -265,7 +265,7 @@ class UserControllerTest {
             setAuthenticatedUser(testUserId, "testuser")
             val groupId = UUID.randomUUID()
             val groups = listOf(MembershipResponse.fromMembershipView(MembershipView(
-                membersCount = 5L, points = 100f, rank = 1, role = GroupRole.MEMBER,
+                candidatesCount = 2L , membersCount = 5L, points = 100f, rank = 1, role = GroupRole.MEMBER,
                 group = Group(id = groupId, name = "My Group", tournament = testTournament),
             )))
             every { groupMembershipService.getMyGroups(testUserId) } returns groups

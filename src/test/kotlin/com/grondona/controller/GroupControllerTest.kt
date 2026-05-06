@@ -91,8 +91,8 @@ class GroupControllerTest {
     inner class CreateGroupEndpointTests {
         @Test
         fun `POST api groups should return 201 when group created successfully`() {
-            every { groupService.createGroup(any(), any()) } returns testGroupResponse.copy(name = "New Group")
-            every { groupMembershipService.joinGroup(any(), any(), any()) } just Runs
+            every { groupService.createGroup(any(), any(), any()) } returns testGroupResponse.copy(name = "New Group")
+            every { groupMembershipService.joinGroup(any(), any()) } just Runs
 
             setAuthenticatedUser(testUserId)
             val request = CreateGroupRequest(name = "New Group", isPrivate = false, maxMembers = 10)
@@ -110,7 +110,7 @@ class GroupControllerTest {
 
         @Test
         fun `POST api groups should return 409 when group name already exists`() {
-            every { groupService.createGroup(any(), any()) } throws ConflictException(
+            every { groupService.createGroup(any(), any(), any()) } throws ConflictException(
                 message = "Group name already exists",
                 field = "name",
                 rejectedValue = "Duplicate"
@@ -217,7 +217,7 @@ class GroupControllerTest {
 
         @Test
         fun `DELETE api groups groupId should return 403 when user is not group admin`() {
-            every { groupService.getGroupById(testGroupId) } returns testGroupResponse
+            every { groupService.getGroupById(testGroupId, omitStandings = true) } returns testGroupResponse
             every { groupMembershipService.isAdmin(testUserId, testGroupId) } returns false
 
             setAuthenticatedUser(testUserId)
@@ -227,7 +227,7 @@ class GroupControllerTest {
 
         @Test
         fun `DELETE api groups groupId should return 204 when group deleted successfully`() {
-            every { groupService.getGroupById(testGroupId) } returns testGroupResponse
+            every { groupService.getGroupById(testGroupId, omitStandings = true) } returns testGroupResponse
             every { groupMembershipService.isAdmin(testUserId, testGroupId) } returns true
             every { groupService.deleteGroup(testGroupId) } just Runs
 
@@ -238,7 +238,7 @@ class GroupControllerTest {
 
         @Test
         fun `DELETE api groups groupId should return 404 when group not found`() {
-            every { groupService.getGroupById(testGroupId) } throws NotFoundException("Group not found")
+            every { groupService.getGroupById(testGroupId, omitStandings = true) } throws NotFoundException("Group not found")
 
             setAuthenticatedUser(testUserId)
             mockMvc.perform(delete("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, testGroupId))

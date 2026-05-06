@@ -2,10 +2,10 @@ package com.grondona.model.dto.response
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.grondona.model.Group
+import com.grondona.model.GroupUser
 import com.grondona.model.PredictionStatus
 import com.grondona.model.Standing
 import com.grondona.model.TournamentStatus
-import com.grondona.model.User
 import com.grondona.utils.round
 import java.util.UUID
 
@@ -24,7 +24,8 @@ data class GroupResponse(
     val isPrivate: Boolean,
     val maxMembers: Int,
     val hasStarted: Boolean,
-    val standings: List<StandingResponse> = emptyList()
+    val standings: List<StandingResponse> = emptyList(),
+    val candidates: List<UserResponse> = emptyList()
 ) {
     companion object {
         fun from(group: Group): GroupResponse = GroupResponse(
@@ -37,7 +38,7 @@ data class GroupResponse(
             standings = emptyList(),
         )
 
-        fun from(group: Group, standings: List<Standing>): GroupResponse = GroupResponse(
+        fun from(group: Group, standings: List<Standing>, candidates: List<GroupUser>): GroupResponse = GroupResponse(
             id = group.id!!,
             tournamentId = group.tournament.id!!,
             name = group.name,
@@ -51,7 +52,8 @@ data class GroupResponse(
                     rank = standing.rank,
                     lastPredictions = standing.lastPredictions,
                 )
-            }
+            },
+            candidates = candidates.map { UserResponse.from(it.user) }
         )
     }
 }

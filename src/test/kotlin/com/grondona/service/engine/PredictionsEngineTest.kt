@@ -242,7 +242,6 @@ class PredictionsEngineTest {
         @Test
         fun `awardPoints() returns 10 for correct single-prediction (champion)`() {
             // winner is champion=A, predictions is champion=A
-            val winners = testWinners(champion = UUID.randomUUID())
             val prediction = testAwardPrediction(AwardType.CHAMPION, status = PredictionStatus.CORRECT)
             val result = PredictionsEngine.awardPoints(listOf(prediction))
             Assertions.assertEquals(10f, result)
@@ -251,7 +250,6 @@ class PredictionsEngineTest {
         @Test
         fun `awardPoints() returns 5 for correct double-prediction (champion)`() {
             // winner is champion=A, predictions is champion=A+B
-            val winners = testWinners(champion = UUID.randomUUID())
             val prediction1 = testAwardPrediction(AwardType.CHAMPION, status = PredictionStatus.CORRECT)
             val prediction2 = testAwardPrediction(AwardType.CHAMPION, status = PredictionStatus.INCORRECT)
             val result = PredictionsEngine.awardPoints(listOf(prediction1, prediction2))
@@ -261,7 +259,6 @@ class PredictionsEngineTest {
         @Test
         fun `awardPoints() returns 0 for incorrect single-prediction (top-scorer)`() {
             // winner is top-scorer=A, predictions is top-scorer=B
-            val winners = testWinners(topScorer = UUID.randomUUID())
             val prediction = testAwardPrediction(AwardType.TOP_SCORER, status = PredictionStatus.INCORRECT)
             val result = PredictionsEngine.awardPoints(listOf(prediction))
             Assertions.assertEquals(0f, result)

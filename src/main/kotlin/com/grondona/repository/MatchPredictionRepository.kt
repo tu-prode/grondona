@@ -1,11 +1,8 @@
 package com.grondona.repository
 
-import com.grondona.model.Group
-import com.grondona.model.Match
 import com.grondona.model.MatchPrediction
 import com.grondona.model.PredictionStatus
 import com.grondona.model.MatchPredictionView
-import com.grondona.model.User
 import jakarta.persistence.EntityManager
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
@@ -18,20 +15,7 @@ import java.util.UUID
 @Repository
 interface MatchPredictionRepository : JpaRepository<MatchPrediction, UUID>, JpaSpecificationExecutor<MatchPrediction>, MatchPredictionRepositoryCustom {
 
-    @Query(
-        """
-    INSERT INTO match_predictions (id, user_id, group_id, match_id, home_goals, away_goals)
-    VALUES (gen_random_uuid(), :#{#prediction.user.id}, :#{#prediction.group.id}, :#{#prediction.match.id}, :#{#prediction.homeGoals}, :#{#prediction.awayGoals})
-    ON CONFLICT (user_id, group_id, match_id) WHERE deleted_at IS NULL
-    DO UPDATE SET
-        home_goals = EXCLUDED.home_goals,
-        away_goals = EXCLUDED.away_goals,
-        updated_at = CURRENT_TIMESTAMP
-    RETURNING *
-    """,
-        nativeQuery = true
-    )
-    fun upsert(@Param("prediction") prediction: MatchPrediction): MatchPrediction
+    fun findByUserIdAndGroupId(userId: UUID, groupId: UUID): List<MatchPrediction>
 
     @Query(
         """
@@ -46,7 +30,7 @@ interface MatchPredictionRepository : JpaRepository<MatchPrediction, UUID>, JpaS
         ORDER BY CASE WHEN m.startedAt IS NULL THEN 1 ELSE 0 END, m.startedAt ASC
     """
     )
-    fun findGroupPredictions(groupId: UUID): List<MatchPredictionView>
+    fun findGroupPredictions(@Param("groupId") groupId: UUID): List<MatchPredictionView>
 
     @Query(
         """
@@ -59,9 +43,8 @@ interface MatchPredictionRepository : JpaRepository<MatchPrediction, UUID>, JpaS
             AND p.match.id = m.id
         WHERE gu.group.id = :groupId AND gu.user.id = :userId
         ORDER BY CASE WHEN m.startedAt IS NULL THEN 1 ELSE 0 END, m.startedAt ASC
-    """
-    )
-    fun findGroupPredictionsForUser(groupId: UUID, userId: UUID): List<MatchPredictionView>
+    """)
+    fun findGroupPredictionsForUser(@Param("groupId") groupId: UUID, @Param("userId") userId: UUID): List<MatchPredictionView>
 
     @Query(
         """
@@ -74,14 +57,22 @@ interface MatchPredictionRepository : JpaRepository<MatchPrediction, UUID>, JpaS
             AND p.match.id = :matchId
         WHERE gu.group.id = :groupId
         ORDER BY CASE WHEN gu.rank IS NULL THEN 1 ELSE 0 END, gu.rank ASC
-    """
-    )
-    fun findGroupPredictionsForMatch(groupId: UUID, matchId: UUID): List<MatchPredictionView>
+    """)
+    fun findGroupPredictionsForMatch(@Param("groupId") groupId: UUID, @Param("matchId")matchId: UUID): List<MatchPredictionView>
 
     fun findByStatusAndMatchIdIn(status: PredictionStatus, matchIds: List<UUID>): List<MatchPrediction>
+
+    @Query(
+        """
+        SELECT mp
+        FROM MatchPrediction mp
+        WHERE mp.group.tournament.id = :tournamentId
+    """)
+    fun findByTournamentId(@Param("tournamentId") tournamentId: UUID): List<MatchPrediction>
 }
 
 interface MatchPredictionRepositoryCustom {
+    fun upsert(prediction: MatchPrediction): MatchPrediction
     fun upsertAll(predictions: List<MatchPrediction>): List<MatchPrediction>
 }
 
@@ -91,65 +82,37 @@ class MatchPredictionRepositoryImpl(
 ) : MatchPredictionRepositoryCustom {
 
     @Transactional
+    override fun upsert(prediction: MatchPrediction): MatchPrediction =
+        upsertAll(listOf(prediction)).first()
+
+    @Transactional
     override fun upsertAll(predictions: List<MatchPrediction>): List<MatchPrediction> {
         if (predictions.isEmpty()) return emptyList()
 
-        val valuesClause = predictions.joinToString(",") { "(gen_random_uuid(), ?, ?, ?, ?, ?, ?)" }
-        val sql = """
-            INSERT INTO match_predictions (id, user_id, group_id, match_id, home_goals, away_goals, status)
-            VALUES $valuesClause
-            ON CONFLICT (user_id, group_id, match_id) WHERE deleted_at IS NULL
-            DO UPDATE SET
-                home_goals = EXCLUDED.home_goals,
-                away_goals = EXCLUDED.away_goals,
-                updated_at = CURRENT_TIMESTAMP
-            RETURNING *
-        """
+        val results = predictions.map { prediction ->
+            val existing = entityManager.createQuery(
+                """
+                SELECT mp FROM MatchPrediction mp
+                WHERE mp.user.id = :userId
+                AND mp.group.id = :groupId
+                AND mp.match.id = :matchId
+                """.trimIndent(),
+                MatchPrediction::class.java
+            )
+                .setParameter("userId", prediction.user.id)
+                .setParameter("groupId", prediction.group.id)
+                .setParameter("matchId", prediction.match.id)
+                .resultList
+                .firstOrNull()
 
-        val session = entityManager.unwrap(org.hibernate.Session::class.java)
-
-        return session.doReturningWork { connection ->
-            connection.prepareStatement(sql).use { stmt ->
-                var i = 1
-                for (p in predictions) {
-                    stmt.setObject(i++, p.user.id)
-                    stmt.setObject(i++, p.group.id)
-                    stmt.setObject(i++, p.match.id)
-                    stmt.setInt(i++, p.homeGoals)
-                    stmt.setInt(i++, p.awayGoals)
-                    stmt.setString(i++, p.status.name)
-                }
-
-                val rs = stmt.executeQuery()
-                val results = mutableListOf<MatchPrediction>()
-
-                while (rs.next()) {
-                    results.add(
-                        MatchPrediction(
-                            id = rs.getObject("id", UUID::class.java),
-                            user = entityManager.getReference(
-                                User::class.java,
-                                rs.getObject("user_id", UUID::class.java)
-                            ),
-                            group = entityManager.getReference(
-                                Group::class.java,
-                                rs.getObject("group_id", UUID::class.java)
-                            ),
-                            match = entityManager.getReference(
-                                Match::class.java,
-                                rs.getObject("match_id", UUID::class.java)
-                            ),
-                            homeGoals = rs.getInt("home_goals"),
-                            awayGoals = rs.getInt("away_goals"),
-                            status = PredictionStatus.valueOf(rs.getString("status")),
-                            createdAt = rs.getTimestamp("created_at").toLocalDateTime(),
-                            updatedAt = rs.getTimestamp("updated_at").toLocalDateTime(),
-                            deletedAt = rs.getTimestamp("deleted_at")?.toLocalDateTime()
-                        )
-                    )
-                }
-                results
-            }
+            existing?.also {
+                it.homeGoals = prediction.homeGoals
+                it.awayGoals = prediction.awayGoals
+                it.status = prediction.status
+            } ?: prediction.also(entityManager::persist)
         }
+
+        entityManager.flush()
+        return results
     }
 }

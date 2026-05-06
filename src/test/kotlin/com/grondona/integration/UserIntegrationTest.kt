@@ -347,30 +347,4 @@ class UserIntegrationTest {
                 .andExpect(status().isBadRequest)
         }
     }
-
-    @Nested
-    inner class AuthenticationTests {
-
-        @Test
-        @Ignore
-        fun `should reject request with invalid token`() {
-            // Spring Security returns 403 when token is invalid (authentication fails)
-            mockMvc.perform(
-                get("/api/users/me")
-                    .header("Authorization", "Bearer invalid.token.here")
-            )
-                .andExpect(status().isForbidden)
-        }
-
-        @Test
-        @Ignore
-        fun `should reject request with malformed authorization header`() {
-            // Spring Security returns 403 when no valid Bearer token is provided
-            mockMvc.perform(
-                get("/api/users/me")
-                    .header("Authorization", "NotBearer sometoken")
-            )
-                .andExpect(status().isForbidden)
-        }
-    }
 }

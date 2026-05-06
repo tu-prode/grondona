@@ -11,7 +11,6 @@ import com.grondona.utils.round
 import org.slf4j.LoggerFactory
 import java.util.UUID
 import kotlin.collections.get
-import kotlin.collections.plus
 
 object PredictionsEngine {
 
@@ -36,18 +35,16 @@ object PredictionsEngine {
             val matchScore = prediction.match.score()
             if (matchScore == null) {
                 logger.error("Trying to calculate the PredictionStatus of match with id={}, but has no goals submitted", prediction.match.id)
+                prediction.copy()
             } else {
                 val predictionScore = prediction.score()
-
                 when {
-                    matchScore == predictionScore && matchScore.goals() >= 5 -> prediction.status = PredictionStatus.BONUS
-                    matchScore == predictionScore -> prediction.status = PredictionStatus.CORRECT
-                    matchScore.outcome() == predictionScore.outcome() -> prediction.status = PredictionStatus.PARTIAL
-                    else -> prediction.status = PredictionStatus.INCORRECT
+                    matchScore == predictionScore && matchScore.goals() >= 5 -> prediction.copy(status = PredictionStatus.BONUS)
+                    matchScore == predictionScore -> prediction.copy(status = PredictionStatus.CORRECT)
+                    matchScore.outcome() == predictionScore.outcome() -> prediction.copy(status = PredictionStatus.PARTIAL)
+                    else -> prediction.copy(status = PredictionStatus.INCORRECT)
                 }
             }
-
-            prediction
         }
 
     fun checkAwardPredictions(predictions: List<AwardPrediction>): List<AwardPrediction> {
@@ -59,19 +56,24 @@ object PredictionsEngine {
         return awards?.let {
             predictions.toMutableList().map { prediction ->
                 when (prediction.awardType) {
-                    AwardType.CHAMPION -> prediction.status = awardStatus(awards.champion == prediction.team!!.id)
-                    AwardType.TOP_SCORER -> prediction.status = awardStatus(awards.topScorer == prediction.player!!.id)
-                    AwardType.BEST_PLAYER -> prediction.status = awardStatus(awards.bestPlayer == prediction.player!!.id)
-                    AwardType.BEST_GOALKEEPER -> prediction.status = awardStatus(awards.bestGoalkeeper == prediction.player!!.id)
-                    AwardType.BEST_YOUNG_PLAYER -> prediction.status = awardStatus(awards.bestYoungPlayer == prediction.player!!.id)
+                    AwardType.CHAMPION -> prediction.copy(status = awardStatus(awards.champion == prediction.team!!.id))
+                    AwardType.TOP_SCORER -> prediction.copy(status = awardStatus(awards.topScorer == prediction.player!!.id))
+                    AwardType.BEST_PLAYER -> prediction.copy(status = awardStatus(awards.bestPlayer == prediction.player!!.id))
+                    AwardType.BEST_GOALKEEPER -> prediction.copy(status = awardStatus(awards.bestGoalkeeper == prediction.player!!.id))
+                    AwardType.BEST_YOUNG_PLAYER -> prediction.copy(status = awardStatus(awards.bestYoungPlayer == prediction.player!!.id))
                 }
-                prediction
             }
         } ?: emptyList()
     }
 
     fun updateMatchPoints(members: List<GroupUser>, newPredictions: Map<UUID, List<MatchPrediction?>>): List<GroupUser> =
         members.map { member ->
+            val updatedLast = member.lastPredictions.toMutableList()
+            var updatedPoints = member.points
+            var updatedBonus = 0
+            var updatedCorrect = 0
+            var updatedPartial = 0
+
             val matchesApplied: MutableSet<UUID> = mutableSetOf()
             newPredictions[member.user.id].orEmpty().also {
                 if (it.isEmpty()) {
@@ -79,37 +81,40 @@ object PredictionsEngine {
                 }
             }.forEach { prediction ->
                 if (prediction == null) {
-                    member.lastPredictions + PredictionStatus.MISSING
+                    updatedLast += PredictionStatus.MISSING
                 } else {
                     if (!matchesApplied.contains(prediction.match.id)) {
                         matchesApplied.add(prediction.match.id!!)
-                        member.lastPredictions += prediction.status
+                        updatedLast += prediction.status
                         when (prediction.status) {
-                            PredictionStatus.BONUS -> member.amountBonus++
-                            PredictionStatus.CORRECT -> member.amountCorrect++
-                            PredictionStatus.PARTIAL -> member.amountPartial++
+                            PredictionStatus.BONUS -> updatedBonus++
+                            PredictionStatus.CORRECT -> updatedCorrect++
+                            PredictionStatus.PARTIAL -> updatedPartial++
                             else -> {}
                         }
 
-                        member.points += matchPoints(prediction)
+                        updatedPoints += matchPoints(prediction)
                     }
                 }
             }
 
-            member.lastPredictions = member.lastPredictions.takeLast(5)
-            member
+            member.copy(
+                points = updatedPoints, amountPartial = updatedPartial, amountCorrect = updatedCorrect, amountBonus = updatedBonus,
+                lastPredictions = updatedLast.takeLast(5)
+            )
         }.rank()
 
     fun updateAwardPoints(members: List<GroupUser>, predictions: Map<UUID, List<AwardPrediction>>): List<GroupUser> =
         members.map { member ->
+            var points = 0f
             if (member.group.tournament.status != TournamentStatus.FINISHED) {
                 val memberPredictions = predictions[member.user.id].orEmpty()
                 if (memberPredictions.isEmpty()) {
                     logger.debug("No awards predictions for user={} in group={}", member.user, member.group)
                 }
-                member.points += awardPoints(memberPredictions)
+                points = member.points + awardPoints(memberPredictions)
             }
-            member
+            member.copy(points = points)
         }.rank()
 
     internal fun matchPoints(prediction: MatchPrediction): Float {
@@ -198,5 +203,5 @@ object PredictionsEngine {
             .thenByDescending { it.amountBonus + it.amountCorrect }
             .thenByDescending { it.amountBonus }
             .thenBy { it.joinedAt }
-    ).mapIndexed { index, member -> member.rank = index + 1; member }
+    ).mapIndexed { index, member -> member.copy(rank = index + 1) }
 }

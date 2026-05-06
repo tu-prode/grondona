@@ -5,11 +5,14 @@ import com.grondona.createTestingTournamentRequest
 import com.grondona.createTestingUserRequest
 import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.CreateGroupRequest
+import com.grondona.model.dto.request.SubmitMatchPredictionRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
 import com.grondona.model.dto.response.GroupResponse
 import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.repository.GroupRepository
+import com.grondona.repository.MembershipRepository
+import com.grondona.repository.TournamentRepository
 import com.grondona.repository.UserRepository
 import org.junit.jupiter.api.*
 import org.springframework.beans.factory.annotation.Autowired
@@ -39,6 +42,12 @@ class GroupIntegrationTest {
     private lateinit var groupRepository: GroupRepository
 
     @Autowired
+    private lateinit var membershipRepository: MembershipRepository
+
+    @Autowired
+    private lateinit var tournamentRepository: TournamentRepository
+
+    @Autowired
     private lateinit var userRepository: UserRepository
 
     private var authToken: String? = null
@@ -49,6 +58,7 @@ class GroupIntegrationTest {
     fun setUp() {
         groupRepository.deleteAll()
         userRepository.deleteAll()
+        tournamentRepository.deleteAll()
 
         // Create an admin user to create the first tournament
         val adminResult = mockMvc.perform(
@@ -84,6 +94,7 @@ class GroupIntegrationTest {
 
     @AfterAll
     fun tearDown() {
+        membershipRepository.deleteAll()
         groupRepository.deleteAll()
         userRepository.deleteAll()
     }
@@ -303,6 +314,327 @@ class GroupIntegrationTest {
                     .header("Authorization", "Bearer $authToken")
             )
                 .andExpect(status().isNotFound)
+        }
+    }
+
+    /**
+     * Case 1: Private group flow where User 2's join request is accepted.
+     *
+     * 1. User 1 creates a private group and is assigned as owner.
+     * 2. User 2 requests to join.
+     * 3. User 2 requests to join a second time and fails (already requested).
+     * 4. User 2 cannot access the group standings while pending.
+     * 5. User 2 cannot submit predictions while pending.
+     * 6. User 1 accepts User 2.
+     * 7. User 2 can now access the group standings.
+     * 8. User 2 can now submit predictions.
+     */
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
+    inner class PrivateGroupAcceptanceFlowTests {
+
+        private var user2Token: String? = null
+        private var user2Id: String? = null
+        private var privateGroupId: String? = null
+        private val matchId: UUID = UUID.randomUUID()
+
+        @BeforeAll
+        fun setUp() {
+            val user2Result = mockMvc.perform(
+                post("/api/users")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(createTestingUserRequest()))
+            ).andReturn()
+            val user2Response = objectMapper.readValue(user2Result.response.contentAsString, AuthenticatedUserResponse::class.java)
+            user2Token = user2Response.token
+            user2Id = user2Response.userId.toString()
+
+            val groupResult = mockMvc.perform(
+                post("/api/tournaments/{tournamentId}/groups", testTournamentId)
+                    .header("Authorization", "Bearer $authToken")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(CreateGroupRequest(name = "Private Group Case 1", isPrivate = true, maxMembers = 10)))
+            ).andReturn()
+            privateGroupId = objectMapper.readValue(groupResult.response.contentAsString, GroupResponse::class.java).id.toString()
+        }
+
+        @Test
+        @Order(1)
+        fun `user 1 is assigned as group owner upon creation`() {
+            mockMvc.perform(
+                get("/api/users/me/groups")
+                    .header("Authorization", "Bearer $authToken")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$[?(@.group.id == '$privateGroupId')].role").value("OWNER"))
+        }
+
+        @Test
+        @Order(2)
+        fun `user 2 requests to join the private group`() {
+            mockMvc.perform(
+                post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, privateGroupId)
+                    .header("Authorization", "Bearer $user2Token")
+            )
+                .andExpect(status().isCreated)
+        }
+
+        @Test
+        @Order(3)
+        fun `user 2 requests to join again and fails because already requested`() {
+            mockMvc.perform(
+                post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, privateGroupId)
+                    .header("Authorization", "Bearer $user2Token")
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.message").value("You are already candidate to this group"))
+        }
+
+        @Test
+        @Order(4)
+        fun `user 2 request its groups and check its role in the private group is CANDIDATE`() {
+            mockMvc.perform(
+                get("/api/users/me/groups")
+                    .header("Authorization", "Bearer $user2Token")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$[?(@.group.id == '$privateGroupId')].role").value("CANDIDATE"))
+        }
+
+        @Test
+        @Order(5)
+        fun `user 2 cannot get group standings while join request is pending`() {
+            mockMvc.perform(
+                get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, privateGroupId)
+                    .header("Authorization", "Bearer $user2Token")
+            )
+                .andExpect(status().isForbidden)
+        }
+
+        @Test
+        @Order(6)
+        fun `user 2 cannot submit predictions while join request is pending`() {
+            val request = SubmitMatchPredictionRequest(matchId = matchId, homeGoals = 1, awayGoals = 0)
+            mockMvc.perform(
+                post(
+                    "/api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches/{matchId}",
+                    testTournamentId, privateGroupId, matchId
+                )
+                    .header("Authorization", "Bearer $user2Token")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isForbidden)
+                .andExpect(jsonPath("$.message").value("User doesn't belong to the group"))
+        }
+
+        @Test
+        @Order(7)
+        fun `user 1 accepts user 2 into the group`() {
+            mockMvc.perform(
+                put("/api/tournaments/{tournamentId}/groups/{groupId}/accept/{candidateId}", testTournamentId, privateGroupId, user2Id)
+                    .header("Authorization", "Bearer $authToken")
+            )
+                .andExpect(status().isOk)
+        }
+
+        @Test
+        @Order(8)
+        fun `user 2 can get group standings after being accepted`() {
+            mockMvc.perform(
+                get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, privateGroupId)
+                    .header("Authorization", "Bearer $user2Token")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.id").value(privateGroupId))
+        }
+
+        @Test
+        @Order(9)
+        fun `user 2 can submit predictions after being accepted`() {
+            val request = SubmitMatchPredictionRequest(matchId = matchId, homeGoals = 1, awayGoals = 0)
+            mockMvc.perform(
+                post(
+                    "/api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches/{matchId}",
+                    testTournamentId, privateGroupId, matchId
+                )
+                    .header("Authorization", "Bearer $user2Token")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.message").value("Match not found"))
+        }
+    }
+
+    /**
+     * Case 2: Private group flow where User 2's join request is rejected, then re-requested.
+     *
+     * 1. User 1 creates a private group and is assigned as owner.
+     * 2. User 2 requests to join.
+     * 3. User 2 cannot access the group standings while pending.
+     * 4. User 2 cannot submit predictions while pending.
+     * 5. User 1 rejects User 2.
+     * 6. User 2 still cannot access the group standings after rejection.
+     * 7. User 2 still cannot submit predictions after rejection.
+     * 8. User 2 requests to join again (succeeds, becomes CANDIDATE again).
+     * 9. User 2 still cannot access the group standings (pending again, no access yet).
+     * 10. User 2 still cannot submit predictions (pending again, no access yet).
+     */
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
+    inner class PrivateGroupRejectionFlowTests {
+
+        private var user2Token: String? = null
+        private var user2Id: String? = null
+        private var privateGroupId: String? = null
+        private val matchId: UUID = UUID.randomUUID()
+
+        @BeforeAll
+        fun setUp() {
+            val user2Result = mockMvc.perform(
+                post("/api/users")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(createTestingUserRequest()))
+            ).andReturn()
+            val user2Response = objectMapper.readValue(user2Result.response.contentAsString, AuthenticatedUserResponse::class.java)
+            user2Token = user2Response.token
+            user2Id = user2Response.userId.toString()
+
+            val groupResult = mockMvc.perform(
+                post("/api/tournaments/{tournamentId}/groups", testTournamentId)
+                    .header("Authorization", "Bearer $authToken")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(CreateGroupRequest(name = "Private Group Case 2", isPrivate = true, maxMembers = 10)))
+            ).andReturn()
+            privateGroupId = objectMapper.readValue(groupResult.response.contentAsString, GroupResponse::class.java).id.toString()
+        }
+
+        @Test
+        @Order(1)
+        fun `user 1 is assigned as group owner upon creation`() {
+            mockMvc.perform(
+                get("/api/users/me/groups")
+                    .header("Authorization", "Bearer $authToken")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$[?(@.group.id == '$privateGroupId')].role").value("OWNER"))
+        }
+
+        @Test
+        @Order(2)
+        fun `user 2 requests to join the private group`() {
+            mockMvc.perform(
+                post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, privateGroupId)
+                    .header("Authorization", "Bearer $user2Token")
+            )
+                .andExpect(status().isCreated)
+        }
+
+        @Test
+        @Order(3)
+        fun `user 2 cannot get group standings while join request is pending`() {
+            mockMvc.perform(
+                get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, privateGroupId)
+                    .header("Authorization", "Bearer $user2Token")
+            )
+                .andExpect(status().isForbidden)
+        }
+
+        @Test
+        @Order(4)
+        fun `user 2 cannot submit predictions while join request is pending`() {
+            val request = SubmitMatchPredictionRequest(matchId = matchId, homeGoals = 1, awayGoals = 0)
+            mockMvc.perform(
+                post(
+                    "/api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches/{matchId}",
+                    testTournamentId, privateGroupId, matchId
+                )
+                    .header("Authorization", "Bearer $user2Token")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isForbidden)
+                .andExpect(jsonPath("$.message").value("User doesn't belong to the group"))
+        }
+
+        @Test
+        @Order(5)
+        fun `user 1 rejects user 2 from the group`() {
+            mockMvc.perform(
+                delete(
+                    "/api/tournaments/{tournamentId}/groups/{groupId}/reject/{candidateId}",
+                    testTournamentId, privateGroupId, user2Id
+                )
+                    .header("Authorization", "Bearer $authToken")
+            )
+                .andExpect(status().isNoContent)
+        }
+
+        @Test
+        @Order(6)
+        fun `user 2 cannot get group standings after being rejected`() {
+            mockMvc.perform(
+                get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, privateGroupId)
+                    .header("Authorization", "Bearer $user2Token")
+            )
+                .andExpect(status().isForbidden)
+        }
+
+        @Test
+        @Order(7)
+        fun `user 2 cannot submit predictions after being rejected`() {
+            val request = SubmitMatchPredictionRequest(matchId = matchId, homeGoals = 1, awayGoals = 0)
+            mockMvc.perform(
+                post(
+                    "/api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches/{matchId}",
+                    testTournamentId, privateGroupId, matchId
+                )
+                    .header("Authorization", "Bearer $user2Token")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isForbidden)
+                .andExpect(jsonPath("$.message").value("User doesn't belong to the group"))
+        }
+
+        @Test
+        @Order(8)
+        fun `user 2 can request to join again after being rejected`() {
+            mockMvc.perform(
+                post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, privateGroupId)
+                    .header("Authorization", "Bearer $user2Token")
+            )
+                .andExpect(status().isCreated)
+        }
+
+        @Test
+        @Order(9)
+        fun `user 2 still cannot get group standings after re-requesting`() {
+            mockMvc.perform(
+                get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, privateGroupId)
+                    .header("Authorization", "Bearer $user2Token")
+            )
+                .andExpect(status().isForbidden)
+        }
+
+        @Test
+        @Order(10)
+        fun `user 2 still cannot submit predictions after re-requesting`() {
+            val request = SubmitMatchPredictionRequest(matchId = matchId, homeGoals = 1, awayGoals = 0)
+            mockMvc.perform(
+                post(
+                    "/api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches/{matchId}",
+                    testTournamentId, privateGroupId, matchId
+                )
+                    .header("Authorization", "Bearer $user2Token")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isForbidden)
+                .andExpect(jsonPath("$.message").value("User doesn't belong to the group"))
         }
     }
 

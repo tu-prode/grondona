@@ -2,7 +2,6 @@ package com.grondona.repository
 
 import com.grondona.model.AwardPrediction
 import com.grondona.model.AwardPredictionView
-import com.grondona.model.MatchPredictionView
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.jpa.repository.Modifying
@@ -32,7 +31,24 @@ interface AwardPredictionRepository : JpaRepository<AwardPrediction, UUID>, JpaS
 
     @Modifying
     @Transactional
-    @Query("DELETE FROM AwardPrediction ap WHERE ap.user.id = :userId")
-    fun deleteByUserId(@Param("userId") userId: UUID): Int
+    @Query("DELETE FROM AwardPrediction ap WHERE ap.user.id = :userId AND ap.group.id = :groupId")
+    fun deleteAwardPredictionsForGroup(@Param("userId") userId: UUID, @Param("groupId") groupId: UUID): Int
 
+    @Query("""
+        SELECT ap
+        FROM AwardPrediction ap
+        WHERE ap.group.tournament.id = :tournamentId
+    """)
+    fun findByTournamentId(@Param("tournamentId") tournamentId: UUID): List<AwardPrediction>
+
+    @Modifying
+    @Query("""
+        DELETE FROM AwardPrediction ap
+        WHERE ap.user.id = :userId
+        AND ap.group.id IN :groupIds
+    """)
+    fun deleteAwardPredictionsForMultipleGroups(
+        @Param("userId") userId: UUID,
+        @Param("groupIds") groupIds: List<UUID>
+    ): Int
 }

@@ -11,8 +11,10 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 enum class GroupRole {
-    MEMBER, ADMIN, OWNER,
+    OWNER, ADMIN, MEMBER, CANDIDATE
 }
+
+fun GroupRole.hasAdminAccess() = this == GroupRole.ADMIN || this == GroupRole.OWNER
 
 @Entity
 @Table(name = "group_users")
@@ -35,39 +37,51 @@ data class GroupUser(
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    var role: GroupRole = GroupRole.MEMBER,
+    val role: GroupRole = GroupRole.MEMBER,
 
     @Column(nullable = false)
-    var points: Float = 0F,
+    val points: Float = 0F,
 
     @Column(nullable = true)
-    var rank: Int? = null,
+    val rank: Int? = null,
 
-    @Column(name = "joined_at", nullable = false)
-    val joinedAt: LocalDateTime = LocalDateTime.now(),
+    @Column(name = "joined_at", nullable = true)
+    val joinedAt: LocalDateTime? = null,
 
     @Column(name = "amount_bonus", nullable = false)
-    var amountBonus: Int = 0,
+    val amountBonus: Int = 0,
 
     @Column(name = "amount_correct", nullable = false)
-    var amountCorrect: Int = 0,
+    val amountCorrect: Int = 0,
 
     @Column(name = "amount_partial", nullable = false)
-    var amountPartial: Int = 0,
+    val amountPartial: Int = 0,
 
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Enumerated(EnumType.STRING)
-    @Column(name = "last_predictions", nullable = false, columnDefinition = "varchar(20) array")
-    var lastPredictions: List<PredictionStatus> = emptyList(),
+    @Column(name = "last_predictions", nullable = false)
+    val lastPredictions: List<PredictionStatus> = emptyList(),
+
+    @Column(name = "created_at")
+    val createdAt: LocalDateTime = LocalDateTime.now(),
+
+    @Column(name = "updated_at")
+    val updatedAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "deleted_at")
     val deletedAt: LocalDateTime? = null
-)
+) {
+    fun clear() = this.copy(
+        points = 0F, rank = null, lastPredictions = emptyList(),
+        amountBonus = 0, amountCorrect = 0, amountPartial = 0,
+    )
+}
 
 data class MembershipView(
     val group: Group,
-    val membersCount: Long,
     val points: Float,
     val rank: Int? = null,
     val role: GroupRole,
+    val membersCount: Long,
+    val candidatesCount: Long,
 )

@@ -3,6 +3,7 @@ package com.grondona.model.dto.request
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
+import java.util.UUID
 import kotlin.text.trim
 
 data class CreateUserRequest(
@@ -41,7 +42,8 @@ data class UpdateUserRequest(
     @field:Size(min = 6, message = "Password must be at least 6 characters")
     val password: String? = null,
 
-    val uniquePredictions: Boolean? = null
+    val uniquePredictions: Boolean? = null,
+    val uniquePredictionsMaster: UUID? = null
 ) {
     fun sanitized() = UpdateUserRequest(
         fullname = fullname?.trim(),
@@ -49,6 +51,7 @@ data class UpdateUserRequest(
         email = email?.trim()?.lowercase(),
         password = password?.trim(),
         uniquePredictions = uniquePredictions,
+        uniquePredictionsMaster = uniquePredictionsMaster,
     )
 }
 

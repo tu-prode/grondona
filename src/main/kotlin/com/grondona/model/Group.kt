@@ -30,13 +30,13 @@ data class Group(
     val tournament: Tournament,
 
     @Column(nullable = false, unique = true, length = 100)
-    var name: String,
+    val name: String,
 
     @Column(name = "is_private", nullable = false)
-    var isPrivate: Boolean = false,
+    val isPrivate: Boolean = false,
 
     @Column(name = "max_members", nullable = false)
-    var maxMembers: Int = 128,
+    val maxMembers: Int = 128,
 
     @Column(name = "created_at", nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),

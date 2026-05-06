@@ -1,5 +1,6 @@
 package com.grondona.model.dto.response
 
+import com.grondona.model.GroupUser
 import com.grondona.model.User
 import com.grondona.model.UserPermissions
 import java.util.UUID
@@ -20,6 +21,7 @@ data class UserResponse(
     val email: String,
     val permissions: UserPermissions,
     val uniquePredictions: Boolean,
+    val joinRequests: List<JoinRequestResponse> = emptyList(),
 ) {
     companion object {
         fun from(user: User): UserResponse = UserResponse(
@@ -28,7 +30,19 @@ data class UserResponse(
             username = user.username,
             email = user.email,
             permissions = user.permissions,
-            uniquePredictions = user.uniquePredictions,
+            uniquePredictions = user.hasUniquePredictions,
+        )
+
+        fun withJoinRequests(user: User, joinRequests: List<GroupUser>): UserResponse = UserResponse(
+            id = user.id!!,
+            fullname = user.fullname,
+            username = user.username,
+            email = user.email,
+            permissions = user.permissions,
+            uniquePredictions = user.hasUniquePredictions,
+            joinRequests = joinRequests.groupBy { it.group }.map { (group, users) ->
+                JoinRequestResponse.from(group, users.map { it.user })
+            }
         )
     }
 }

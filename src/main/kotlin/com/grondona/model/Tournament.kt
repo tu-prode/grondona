@@ -45,7 +45,7 @@ data class Tournament(
     var status: TournamentStatus = TournamentStatus.NOT_STARTED,
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb", nullable = true)
+    @Column(nullable = true)
     var awards: Awards? = null,
 
     @Column(name = "created_at", nullable = false)
