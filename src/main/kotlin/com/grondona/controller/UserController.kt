@@ -22,7 +22,7 @@ import java.util.UUID
 @RequestMapping("/api/users")
 class UserController(
     private val userService: UserService,
-    private val groupMembershipService: MembershipService
+    private val membershipService: MembershipService
 ) {
 
     companion object {
@@ -92,7 +92,7 @@ class UserController(
         val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
 
         logger.info("GET /api/users/me/groups - Fetching groups for userId={}", userId)
-        val response = groupMembershipService.getMyGroups(userId)
+        val response = membershipService.getMyGroups(userId)
         logger.info("GET /api/users/me/groups - Returning {} groups for userId={}", response.size, userId)
         return ResponseEntity.ok(response)
     }

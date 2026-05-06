@@ -393,6 +393,17 @@ class GroupIntegrationTest {
 
         @Test
         @Order(4)
+        fun `user 2 request its groups and check its role in the private group is CANDIDATE`() {
+            mockMvc.perform(
+                get("/api/users/me/groups")
+                    .header("Authorization", "Bearer $user2Token")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$[?(@.group.id == '$privateGroupId')].role").value("CANDIDATE"))
+        }
+
+        @Test
+        @Order(5)
         fun `user 2 cannot get group standings while join request is pending`() {
             mockMvc.perform(
                 get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, privateGroupId)
@@ -402,7 +413,7 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(5)
+        @Order(6)
         fun `user 2 cannot submit predictions while join request is pending`() {
             val request = SubmitMatchPredictionRequest(matchId = matchId, homeGoals = 1, awayGoals = 0)
             mockMvc.perform(
@@ -419,7 +430,7 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(6)
+        @Order(7)
         fun `user 1 accepts user 2 into the group`() {
             mockMvc.perform(
                 put("/api/tournaments/{tournamentId}/groups/{groupId}/accept/{candidateId}", testTournamentId, privateGroupId, user2Id)
@@ -429,7 +440,7 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(7)
+        @Order(8)
         fun `user 2 can get group standings after being accepted`() {
             mockMvc.perform(
                 get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, privateGroupId)
@@ -440,7 +451,7 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(8)
+        @Order(9)
         fun `user 2 can submit predictions after being accepted`() {
             val request = SubmitMatchPredictionRequest(matchId = matchId, homeGoals = 1, awayGoals = 0)
             mockMvc.perform(

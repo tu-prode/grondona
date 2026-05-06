@@ -66,7 +66,7 @@ interface MembershipRepository : JpaRepository<GroupUser, UUID> {
             (SELECT COUNT(m) FROM GroupUser m WHERE m.group.id = gu.group.id AND m.role = 'CANDIDATE' AND m.deletedAt IS NULL)
         )
         FROM GroupUser gu
-        WHERE gu.user.id = :userId AND gu.role <> 'CANDIDATE'
+        WHERE gu.user.id = :userId
         ORDER BY gu.joinedAt DESC
     """
     )

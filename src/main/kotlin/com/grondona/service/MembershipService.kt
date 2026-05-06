@@ -98,7 +98,7 @@ class MembershipService(
             throw BadRequestException("Group is full")
         }
 
-        val newMember = candidate.copy(role = GroupRole.MEMBER)
+        val newMember = candidate.copy(role = GroupRole.MEMBER, joinedAt = LocalDateTime.now())
         membershipRepository.save(newMember)
         logger.info("Candidate={} accepted into group={} successfully ({}/{} members)", candidateId, groupId, memberCount + 1, newMember.group.maxMembers)
     }

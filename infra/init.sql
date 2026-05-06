@@ -114,11 +114,11 @@ COMMENT ON COLUMN groups.deleted_at IS 'Timestamp when the group was deleted';
 
 -- Seed default groups
 INSERT INTO groups (id, tournament_id, name, is_private, max_members) VALUES
-    ('f47ac10b-58cc-4372-a567-0e02b2c3d479', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'General', FALSE, 50),
-    ('7c9e6679-7425-40de-944b-e07fc1f90ae7', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'EPO', FALSE, 25),
-    ('b5d4c3a2-1e0f-4d9c-8b7a-6f5e4d3c2b1a', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'Baldosa', FALSE, 27),
-    ('e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'Maldolar', FALSE, 12),
-    ('8158a607-97b3-47db-8382-92d878358b9c', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'Familia', FALSE, 20)
+    ('f47ac10b-58cc-4372-a567-0e02b2c3d479', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'General', TRUE, 50),
+    ('7c9e6679-7425-40de-944b-e07fc1f90ae7', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'EPO', TRUE, 25),
+    ('b5d4c3a2-1e0f-4d9c-8b7a-6f5e4d3c2b1a', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'Baldosa', TRUE, 27),
+    ('e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'Maldolar', TRUE, 12),
+    ('8158a607-97b3-47db-8382-92d878358b9c', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'Familia', TRUE, 20)
 ON CONFLICT (id) DO NOTHING;
 
 -- Create group_users table (membership)
@@ -129,12 +129,14 @@ CREATE TABLE IF NOT EXISTS group_users (
     role VARCHAR(20) NOT NULL DEFAULT 'MEMBER',
     rank INTEGER DEFAULT NULL,
     points FLOAT NOT NULL DEFAULT 0,
-    joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    joined_at TIMESTAMP DEFAULT NULL,
     amount_bonus INTEGER DEFAULT 0,
     amount_correct INTEGER DEFAULT 0,
     amount_partial INTEGER DEFAULT 0,
     last_predictions VARCHAR(20)[] NOT NULL DEFAULT '{}',
     predicted_awards JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP DEFAULT NULL
 );
 
@@ -157,7 +159,9 @@ COMMENT ON COLUMN group_users.amount_correct IS 'Amount of CORRECT predictions';
 COMMENT ON COLUMN group_users.amount_partial IS 'Amount of PARTIAL predictions';
 COMMENT ON COLUMN group_users.last_predictions IS 'Status of the last 5 predictions';
 COMMENT ON COLUMN group_users.predicted_awards IS 'Awards predicted for the tournament';
-COMMENT ON COLUMN group_users.deleted_at IS 'Timestamp when the user left the group';
+COMMENT ON COLUMN group_users.created_at IS 'Timestamp when the membership was created';
+COMMENT ON COLUMN group_users.updated_at IS 'Timestamp when the membership was updated';
+COMMENT ON COLUMN group_users.deleted_at IS 'Timestamp when the membership was deleted';
 
 -- Seed default members
 INSERT INTO group_users (user_id, group_id, role) VALUES

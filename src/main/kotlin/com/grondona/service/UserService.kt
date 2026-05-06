@@ -184,19 +184,4 @@ class UserService(
             logger.warn("User not found: userId={}", userId)
             NotFoundException("User not found")
         }
-
-    fun validateCronUser(apiKey: String) {
-        logger.debug("Validating CRON user attempt")
-
-        val user = userRepository.findByPermissions(UserPermissions.CRON).orElseThrow {
-            logger.error("Failed to retrieve CRON user, not found")
-            GeneralException("Couldn't retrieve CRON user")
-        }
-
-        val hashedPassword = hashSHA256(apiKey)
-        if (user.passwordHash != hashedPassword) {
-            logger.error("Failed to validate CRON user API Key, invalid")
-            throw GeneralException("Couldn't validate CRON API key")
-        }
-    }
 }
