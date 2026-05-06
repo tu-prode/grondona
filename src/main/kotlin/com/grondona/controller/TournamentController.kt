@@ -181,7 +181,7 @@ class TournamentController(
     ): ResponseEntity<Void> {
         return withSuperuserValidation(principal) {
             logger.info("PUT /api/tournaments/{}/points - Triggering points recalculation", tournamentId)
-            predictionService.recalculatePoints(tournamentId)
+            predictionService.recalculateTournamentPoints(tournamentId)
             logger.info("PUT /api/tournaments/{}/points - Points recalculated", tournamentId)
             ResponseEntity.noContent().build()
         }

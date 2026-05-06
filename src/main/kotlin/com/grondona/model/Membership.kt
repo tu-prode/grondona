@@ -37,30 +37,30 @@ data class GroupUser(
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    var role: GroupRole = GroupRole.MEMBER,
+    val role: GroupRole = GroupRole.MEMBER,
 
     @Column(nullable = false)
-    var points: Float = 0F,
+    val points: Float = 0F,
 
     @Column(nullable = true)
-    var rank: Int? = null,
+    val rank: Int? = null,
 
     @Column(name = "joined_at", nullable = true)
     val joinedAt: LocalDateTime? = null,
 
     @Column(name = "amount_bonus", nullable = false)
-    var amountBonus: Int = 0,
+    val amountBonus: Int = 0,
 
     @Column(name = "amount_correct", nullable = false)
-    var amountCorrect: Int = 0,
+    val amountCorrect: Int = 0,
 
     @Column(name = "amount_partial", nullable = false)
-    var amountPartial: Int = 0,
+    val amountPartial: Int = 0,
 
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Enumerated(EnumType.STRING)
     @Column(name = "last_predictions", nullable = false)
-    var lastPredictions: List<PredictionStatus> = emptyList(),
+    val lastPredictions: List<PredictionStatus> = emptyList(),
 
     @Column(name = "created_at")
     val createdAt: LocalDateTime = LocalDateTime.now(),

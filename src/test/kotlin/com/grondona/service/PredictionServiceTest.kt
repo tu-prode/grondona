@@ -6,6 +6,7 @@ import com.grondona.exception.NotFoundException
 import com.grondona.model.AwardPrediction
 import com.grondona.model.AwardPredictionView
 import com.grondona.model.AwardType
+import com.grondona.model.Awards
 import com.grondona.model.Group
 import com.grondona.model.GroupUser
 import com.grondona.model.Match
@@ -14,6 +15,7 @@ import com.grondona.model.MatchPrediction
 import com.grondona.model.MatchPredictionView
 import com.grondona.model.Player
 import com.grondona.model.PlayerPosition
+import com.grondona.model.PredictionStatus
 import com.grondona.model.Team
 import com.grondona.model.Tournament
 import com.grondona.model.TournamentStatus
@@ -30,6 +32,7 @@ import com.grondona.repository.PlayerRepository
 import com.grondona.repository.TeamRepository
 import com.grondona.repository.TournamentRepository
 import com.grondona.repository.UserRepository
+import com.grondona.service.engine.PredictionsEngine
 import com.grondona.service.engine.WorldCupEngine
 import io.mockk.*
 import io.mockk.impl.annotations.InjectMockKs
@@ -73,7 +76,7 @@ class PredictionServiceTest {
     private lateinit var awardPredictionRepository: AwardPredictionRepository
 
     @InjectMockKs
-    private lateinit var awardPredictionService: PredictionService
+    private lateinit var predictionService: PredictionService
 
     private val testUserId = UUID.randomUUID()
     private val testGroupId = UUID.randomUUID()
@@ -192,14 +195,14 @@ class PredictionServiceTest {
         @Test
         fun `checkMembership should throw NotFoundException when user not found`() {
             every { userRepository.findById(testUserId) } returns Optional.empty()
-            assertThrows<NotFoundException> { awardPredictionService.checkMembership(testUserId, testGroupId) }
+            assertThrows<NotFoundException> { predictionService.checkMembership(testUserId, testGroupId) }
         }
 
         @Test
         fun `checkMembership should throw NotFoundException when group not found`() {
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
             every { groupRepository.findById(testGroupId) } returns Optional.empty()
-            assertThrows<NotFoundException> { awardPredictionService.checkMembership(testUserId, testGroupId) }
+            assertThrows<NotFoundException> { predictionService.checkMembership(testUserId, testGroupId) }
         }
 
         @Test
@@ -208,7 +211,7 @@ class PredictionServiceTest {
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
             every { membershipRepository.isMember(testUserId, testGroupId) } returns false
 
-            val exception = assertThrows<ForbiddenException> { awardPredictionService.getUserMatchPredictionsForGroup(testUserId, testGroupId) }
+            val exception = assertThrows<ForbiddenException> { predictionService.getUserMatchPredictionsForGroup(testUserId, testGroupId) }
             assertEquals("User doesn't belong to the group", exception.message)
         }
     }
@@ -224,7 +227,7 @@ class PredictionServiceTest {
             every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchOpen)
             every { matchPredictionRepository.upsert(any()) } returns testPrediction
 
-            val result = awardPredictionService.submitSingleMatchPrediction(testUserId, testGroupId, request)
+            val result = predictionService.submitSingleMatchPrediction(testUserId, testGroupId, request)
 
             assertEquals(testUserId, result.user.id)
             assertEquals(testMatchId, result.match.id)
@@ -244,7 +247,7 @@ class PredictionServiceTest {
             every { membershipRepository.findUserGroups(testUserId) } returns userGroups
             every { matchPredictionRepository.upsertAll(any()) } answers { firstArg() }
 
-            val result = awardPredictionService.submitSingleMatchPrediction(testUserId, testGroupId, request)
+            val result = predictionService.submitSingleMatchPrediction(testUserId, testGroupId, request)
 
             assertEquals(testUserId, result.user.id)
             assertEquals(testMatchId, result.match.id)
@@ -270,7 +273,7 @@ class PredictionServiceTest {
             every { matchRepository.findById(testMatchId) } returns Optional.empty()
 
             assertThrows<NotFoundException> {
-                awardPredictionService.submitSingleMatchPrediction(testUserId, testGroupId, request)
+                predictionService.submitSingleMatchPrediction(testUserId, testGroupId, request)
             }
             verify(exactly = 0) { matchPredictionRepository.upsert(any()) }
         }
@@ -283,7 +286,7 @@ class PredictionServiceTest {
             every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchLocked)
 
             val exception = assertThrows<BadRequestException> {
-                awardPredictionService.submitSingleMatchPrediction(testUserId, testGroupId, request)
+                predictionService.submitSingleMatchPrediction(testUserId, testGroupId, request)
             }
             assertEquals("Cannot submit predictions for this match", exception.message)
             verify(exactly = 0) { matchPredictionRepository.upsert(any()) }
@@ -313,7 +316,7 @@ class PredictionServiceTest {
             every { matchRepository.findById(matchId2) } returns Optional.of(openMatch2)
             every { matchPredictionRepository.upsertAll(any()) } returns savedPredictions
 
-            val result = awardPredictionService.submitMatchPredictions(testUserId, testGroupId, request)
+            val result = predictionService.submitMatchPredictions(testUserId, testGroupId, request)
 
             assertEquals(testGroupId, result.group.id)
             assertEquals(2, result.predictions.size)
@@ -341,7 +344,7 @@ class PredictionServiceTest {
             every { membershipRepository.findUserGroups(testUserId) } returns userGroups
             every { matchPredictionRepository.upsertAll(any()) } answers { firstArg() }
 
-            val result = awardPredictionService.submitMatchPredictions(testUserId, testGroupId, request)
+            val result = predictionService.submitMatchPredictions(testUserId, testGroupId, request)
 
             assertEquals(testGroupId, result.group.id)
             assertEquals(2, result.predictions.size)
@@ -378,7 +381,7 @@ class PredictionServiceTest {
             every { matchRepository.findById(matchId2) } returns Optional.of(lockedMatch2)
             every { matchPredictionRepository.upsertAll(any()) } returns listOf(testPrediction)
 
-            val result = awardPredictionService.submitMatchPredictions(testUserId, testGroupId, request)
+            val result = predictionService.submitMatchPredictions(testUserId, testGroupId, request)
 
             assertEquals(1, result.predictions.size)
             verify { matchPredictionRepository.upsertAll(match { it.size == 1 }) }
@@ -394,7 +397,7 @@ class PredictionServiceTest {
             every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchLocked)
             every { matchPredictionRepository.upsertAll(emptyList()) } returns emptyList()
 
-            val result = awardPredictionService.submitMatchPredictions(testUserId, testGroupId, request)
+            val result = predictionService.submitMatchPredictions(testUserId, testGroupId, request)
 
             assertEquals(0, result.predictions.size)
         }
@@ -412,7 +415,7 @@ class PredictionServiceTest {
             mockMembership()
             every { matchPredictionRepository.findGroupPredictionsForUser(testGroupId, testUserId) } returns listOf(predictionView)
 
-            val result = awardPredictionService.getUserMatchPredictionsForGroup(testUserId, testGroupId)
+            val result = predictionService.getUserMatchPredictionsForGroup(testUserId, testGroupId)
             assertEquals(testGroupId, result.group.id)
             assertEquals(1, result.predictions.size)
         }
@@ -432,7 +435,7 @@ class PredictionServiceTest {
             mockMembership()
             every { matchPredictionRepository.findGroupPredictions(testGroupId) } returns predictionViews
 
-            val result = awardPredictionService.getMatchPredictionsForGroup(testUserId, testGroupId)
+            val result = predictionService.getMatchPredictionsForGroup(testUserId, testGroupId)
             assertEquals(testGroupId, result.group.id)
             assertEquals(2, result.predictions.size)
         }
@@ -451,7 +454,7 @@ class PredictionServiceTest {
             every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchLocked)
             every { matchPredictionRepository.findGroupPredictionsForMatch(testGroupId, testMatchId) } returns listOf(predictionView)
 
-            val result = awardPredictionService.getSingleMatchPredictionsForGroup(testUserId, testGroupId, testMatchId)
+            val result = predictionService.getSingleMatchPredictionsForGroup(testUserId, testGroupId, testMatchId)
             assertEquals(testGroupId, result.group.id)
             assertEquals(1, result.predictions.size)
         }
@@ -462,7 +465,7 @@ class PredictionServiceTest {
             every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchOpen)
 
             val exception = assertThrows<BadRequestException> {
-                awardPredictionService.getSingleMatchPredictionsForGroup(testUserId, testGroupId, testMatchId)
+                predictionService.getSingleMatchPredictionsForGroup(testUserId, testGroupId, testMatchId)
             }
             assertEquals("Match is still open", exception.message)
         }
@@ -472,7 +475,7 @@ class PredictionServiceTest {
             mockMembership()
             every { matchRepository.findById(testMatchId) } returns Optional.empty()
 
-            assertThrows<NotFoundException> { awardPredictionService.getSingleMatchPredictionsForGroup(testUserId, testGroupId, testMatchId) }
+            assertThrows<NotFoundException> { predictionService.getSingleMatchPredictionsForGroup(testUserId, testGroupId, testMatchId) }
         }
     }
 
@@ -523,7 +526,7 @@ class PredictionServiceTest {
             every { playerRepository.findById(request.bestYoungPlayers[2]) } returns
                     Optional.of(testPlayer.copy(id = request.bestYoungPlayers[2], name = "Player 12", birthdate = LocalDate.now()))
 
-            val result = awardPredictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
+            val result = predictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
             assertEquals(request.champions[0], result.champions[0].id)
             assertEquals("Team 1", result.champions[0].name)
             assertEquals(request.champions[1], result.champions[1].id)
@@ -615,7 +618,7 @@ class PredictionServiceTest {
             every { playerRepository.getReferenceById(request.topScorers[2]) } returns
                     testPlayer.copy(id = request.topScorers[2], name = "Player 5")
 
-            val result = awardPredictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
+            val result = predictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
             assertEquals(request.champions[0], result.champions[0].id)
             assertEquals("Team 1", result.champions[0].name)
             assertEquals(request.bestPlayers[0], result.bestPlayers[0].id)
@@ -676,7 +679,7 @@ class PredictionServiceTest {
             every { playerRepository.getReferenceById(request.bestPlayers[0]) } returns
                     testPlayer.copy(id = request.bestPlayers[0], name = "Player 2")
 
-            val result = awardPredictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
+            val result = predictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
             assertEquals(request.champions[0], result.champions[0].id)
             assertEquals("Team 1", result.champions[0].name)
             assertEquals(request.topScorers[0], result.topScorers[0].id)
@@ -721,7 +724,7 @@ class PredictionServiceTest {
             mockMembership()
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament.copy(status = TournamentStatus.IN_PROGRESS))
             val exception = assertThrows<BadRequestException> {
-                awardPredictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
+                predictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
             }
             assertEquals("Tournament has already started", exception.message)
         }
@@ -739,7 +742,7 @@ class PredictionServiceTest {
             mockMembership()
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
             val exception = assertThrows<BadRequestException> {
-                awardPredictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
+                predictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
             }
             assertEquals("Invalid amount of awards", exception.message)
         }
@@ -757,7 +760,7 @@ class PredictionServiceTest {
             mockMembership()
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
             val exception = assertThrows<BadRequestException> {
-                awardPredictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
+                predictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
             }
             assertEquals("Invalid amount of awards", exception.message)
         }
@@ -775,7 +778,7 @@ class PredictionServiceTest {
             mockMembership()
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
             val exception = assertThrows<BadRequestException> {
-                awardPredictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
+                predictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
             }
             assertEquals("Invalid amount of awards", exception.message)
         }
@@ -793,7 +796,7 @@ class PredictionServiceTest {
             mockMembership()
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
             val exception = assertThrows<BadRequestException> {
-                awardPredictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
+                predictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
             }
             assertEquals("Invalid amount of awards", exception.message)
         }
@@ -811,7 +814,7 @@ class PredictionServiceTest {
             mockMembership()
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
             val exception = assertThrows<BadRequestException> {
-                awardPredictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
+                predictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
             }
             assertEquals("Invalid amount of awards", exception.message)
         }
@@ -832,7 +835,7 @@ class PredictionServiceTest {
                     Optional.of(testPlayer.copy(position = PlayerPosition.MIDFIELDER))
 
             val exception = assertThrows<BadRequestException> {
-                awardPredictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
+                predictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
             }
             assertEquals("Player is not suitable for the best goalkeeper award", exception.message)
         }
@@ -853,7 +856,7 @@ class PredictionServiceTest {
                     Optional.of(testPlayer.copy(birthdate = LocalDate.parse("1987-06-24")))
 
             val exception = assertThrows<BadRequestException> {
-                awardPredictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
+                predictionService.submitAwardPredictions(testUserId, testGroupId, testTournamentId, request)
             }
             assertEquals("Player is not suitable for the best young player award", exception.message)
         }
@@ -874,7 +877,7 @@ class PredictionServiceTest {
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
             every { awardPredictionRepository.findByUserIdAndGroupId(testUserId, testGroupId) } returns predictions
 
-            val result = awardPredictionService.getUserAwardPredictionsForGroup(testUserId, testGroupId)
+            val result = predictionService.getUserAwardPredictionsForGroup(testUserId, testGroupId)
             assertEquals(2, result.champions.size)
             assertEquals(predictions[0].team!!.id, result.champions[0].id)
             assertEquals(predictions[1].team!!.id, result.champions[1].id)
@@ -895,7 +898,7 @@ class PredictionServiceTest {
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
 
             val exception = assertThrows<BadRequestException> {
-                awardPredictionService.getAwardPredictionsForGroup(testUserId, testGroupId, testTournamentId)
+                predictionService.getAwardPredictionsForGroup(testUserId, testGroupId, testTournamentId)
             }
             assertEquals("Tournament hasn't started yet", exception.message)
         }
@@ -918,7 +921,7 @@ class PredictionServiceTest {
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament.copy(status = TournamentStatus.IN_PROGRESS))
             every { awardPredictionRepository.findGroupAwardPredictions(testGroupId) } returns predictions
 
-            val result = awardPredictionService.getAwardPredictionsForGroup(testUserId, testGroupId, testTournamentId)
+            val result = predictionService.getAwardPredictionsForGroup(testUserId, testGroupId, testTournamentId)
             assertEquals(testGroupId, result.group.id)
             assertEquals(2, result.predictions.size)
             assertEquals(testUser.id, result.predictions[0].user.id)
@@ -927,6 +930,778 @@ class PredictionServiceTest {
             assertEquals(testUser2.id, result.predictions[1].user.id)
             assertEquals(1, result.predictions[1].bestPlayers.size)
             assertEquals(testPlayer.id, result.predictions[1].bestPlayers[0].id)
+        }
+    }
+
+    @Nested
+    inner class RecalculateTournamentPointsTests {
+
+        private val testUser1 = testUser.copy(id = UUID.randomUUID(), username = "Test User 1")
+        private val testUser2 = testUser.copy(id = UUID.randomUUID(), username = "Test User 2")
+        private val testUser3 = testUser.copy(id = UUID.randomUUID(), username = "Test User 3")
+        private val testGroup1 = testGroup.copy(id = UUID.randomUUID(), name = "Test Group 1")
+        private val testGroup2 = testGroup.copy(id = UUID.randomUUID(), name = "Test Group 2")
+        private val testGroup3 = testGroup.copy(id = UUID.randomUUID(), name = "Test Group 3")
+
+        private val winners = Awards(
+            champion = UUID.randomUUID(), topScorer = UUID.randomUUID(), bestPlayer = UUID.randomUUID(),
+            bestGoalkeeper = UUID.randomUUID(), bestYoungPlayer = UUID.randomUUID()
+        )
+
+        private fun awardPrediction(user: User, group: Group, awardType: AwardType, awardId: UUID) = AwardPrediction(
+            group = group.copy(tournament = testTournament.copy(status = TournamentStatus.FINISHED, awards = winners)),
+            user = user, awardType = awardType, team = testTeam.copy(id = awardId).takeIf { awardType == AwardType.CHAMPION },
+            player = testPlayer.copy(id = awardId).takeIf { awardType != AwardType.CHAMPION }
+        )
+
+        @Test
+        fun `recalculateTournamentPoints should properly recalculate the match-predictions points for every group and user`() {
+            mockkObject(PredictionsEngine)
+
+            val members = listOf(
+                GroupUser(
+                    user = testUser1, group = testGroup1, points = 150F, rank = 1, amountCorrect = 10, amountPartial = 10,
+                    amountBonus = 10, lastPredictions = listOf(PredictionStatus.BONUS, PredictionStatus.BONUS, PredictionStatus.BONUS)
+                ),
+                GroupUser(
+                    user = testUser2, group = testGroup1, points = 100F, rank = 2, amountCorrect = 5, amountPartial = 5,
+                    amountBonus = 5, lastPredictions = listOf(PredictionStatus.CORRECT, PredictionStatus.CORRECT, PredictionStatus.CORRECT)
+                ),
+                GroupUser(
+                    user = testUser3, group = testGroup1, points = 50F, rank = 3, amountCorrect = 1, amountPartial = 1,
+                    amountBonus = 1, lastPredictions = listOf(PredictionStatus.PARTIAL, PredictionStatus.PARTIAL, PredictionStatus.PARTIAL)
+                ),
+                GroupUser(
+                    user = testUser1, group = testGroup2, points = 1500F, rank = 2, amountCorrect = 100, amountPartial = 100,
+                    amountBonus = 100, lastPredictions = listOf(PredictionStatus.INCORRECT, PredictionStatus.INCORRECT, PredictionStatus.INCORRECT)
+                ),
+                GroupUser(
+                    user = testUser2, group = testGroup2, points = 1000F, rank = 1, amountCorrect = 50, amountPartial = 50,
+                    amountBonus = 50, lastPredictions = listOf(PredictionStatus.INCORRECT, PredictionStatus.INCORRECT, PredictionStatus.INCORRECT)
+                ),
+                GroupUser(
+                    user = testUser1, group = testGroup3, points = 15000F, rank = 2, amountCorrect = 0, amountPartial = 0,
+                    amountBonus = 0, lastPredictions = listOf(PredictionStatus.BONUS, PredictionStatus.INCORRECT)
+                ),
+                GroupUser(
+                    user = testUser3, group = testGroup3, points = 10000F, rank = 1, amountCorrect = 14, amountPartial = 15,
+                    amountBonus = 16, lastPredictions = listOf(PredictionStatus.PARTIAL)
+                ),
+            )
+
+            val testMatch1 = Match(
+                id = UUID.randomUUID(), code = "X1", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
+                homeGoals = 0, awayGoals = 0, startedAt = LocalDateTime.now().minusDays(7)
+            )
+            val testMatch2 = Match(
+                id = UUID.randomUUID(), code = "X2", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
+                homeGoals = 1, awayGoals = 0, startedAt = LocalDateTime.now().minusDays(6)
+            )
+            val testMatch3 = Match(
+                id = UUID.randomUUID(), code = "X3", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
+                homeGoals = 0, awayGoals = 1, startedAt = LocalDateTime.now().minusDays(5)
+            )
+
+            val matchPredictions = listOf(
+                MatchPrediction(
+                    user = testUser1, group = testGroup1, match = testMatch1,
+                    homeGoals = 0, awayGoals = 0, status = PredictionStatus.BONUS
+                ),
+                MatchPrediction(
+                    user = testUser1, group = testGroup1, match = testMatch2,
+                    homeGoals = 1, awayGoals = 0, status = PredictionStatus.BONUS
+                ),
+                MatchPrediction(
+                    user = testUser1, group = testGroup1, match = testMatch3,
+                    homeGoals = 0, awayGoals = 1, status = PredictionStatus.BONUS
+                ),
+                MatchPrediction(
+                    user = testUser2, group = testGroup1, match = testMatch1,
+                    homeGoals = 0, awayGoals = 0, status = PredictionStatus.BONUS
+                ),
+                MatchPrediction(
+                    user = testUser2, group = testGroup1, match = testMatch2,
+                    homeGoals = 0, awayGoals = 0, status = PredictionStatus.BONUS
+                ),
+                MatchPrediction(
+                    user = testUser3, group = testGroup1, match = testMatch2,
+                    homeGoals = 0, awayGoals = 0, status = PredictionStatus.BONUS
+                ),
+                MatchPrediction(
+                    user = testUser3, group = testGroup1, match = testMatch3,
+                    homeGoals = 0, awayGoals = 2, status = PredictionStatus.BONUS
+                ),
+                MatchPrediction(
+                    user = testUser1, group = testGroup2, match = testMatch1,
+                    homeGoals = 0, awayGoals = 0, status = PredictionStatus.BONUS
+                ),
+                MatchPrediction(
+                    user = testUser1, group = testGroup2, match = testMatch2,
+                    homeGoals = 0, awayGoals = 0, status = PredictionStatus.BONUS
+                ),
+                MatchPrediction(
+                    user = testUser2, group = testGroup2, match = testMatch1,
+                    homeGoals = 1, awayGoals = 1, status = PredictionStatus.BONUS
+                ),
+                MatchPrediction(
+                    user = testUser2, group = testGroup2, match = testMatch2,
+                    homeGoals = 1, awayGoals = 1, status = PredictionStatus.BONUS
+                ),
+                MatchPrediction(
+                    user = testUser1, group = testGroup3, match = testMatch1,
+                    homeGoals = 0, awayGoals = 0, status = PredictionStatus.BONUS
+                ),
+                MatchPrediction(
+                    user = testUser1, group = testGroup3, match = testMatch2,
+                    homeGoals = 0, awayGoals = 0, status = PredictionStatus.BONUS
+                ),
+                MatchPrediction(
+                    user = testUser3, group = testGroup3, match = testMatch1,
+                    homeGoals = 1, awayGoals = 1, status = PredictionStatus.BONUS
+                ),
+                MatchPrediction(
+                    user = testUser3, group = testGroup3, match = testMatch2,
+                    homeGoals = 1, awayGoals = 1, status = PredictionStatus.BONUS
+                ),
+            )
+
+            every { matchRepository.findByTournamentId(testTournamentId) } returns listOf(testMatch1, testMatch2, testMatch3)
+            every { membershipRepository.findByTournamentId(testTournamentId) } returns members
+            every { matchPredictionRepository.findByTournamentId(testTournamentId) } returns matchPredictions
+            every { awardPredictionRepository.findByTournamentId(testTournamentId) } returns emptyList()
+
+            every { membershipRepository.saveAll(any<List<GroupUser>>()) } answers { firstArg() }
+            every { matchPredictionRepository.saveAll(any<List<MatchPrediction>>()) } answers { firstArg() }
+            every { awardPredictionRepository.saveAll(emptyList<AwardPrediction>()) } answers { firstArg() }
+
+            predictionService.recalculateTournamentPoints(testTournamentId)
+
+            val slot1 = slot<List<GroupUser>>()
+            verify(exactly = 1) { membershipRepository.saveAll(capture(slot1)) }
+            val membersSaved = slot1.captured
+            assertEquals(7, membersSaved.size)
+            assertTrue {
+                membersSaved.any {
+                    it.user == testUser1 && it.group == testGroup1 &&
+                            it.points == 9F && it.rank == 1 && it.amountBonus == 0 && it.amountCorrect == 3 && it.amountPartial == 0 &&
+                            it.lastPredictions == listOf(PredictionStatus.CORRECT, PredictionStatus.CORRECT, PredictionStatus.CORRECT)
+                }
+            }
+            assertTrue {
+                membersSaved.any {
+                    it.user == testUser2 && it.group == testGroup1 &&
+                            it.points == 3F && it.rank == 2 && it.amountBonus == 0 && it.amountCorrect == 1 && it.amountPartial == 0 &&
+                            it.lastPredictions == listOf(PredictionStatus.CORRECT, PredictionStatus.INCORRECT, PredictionStatus.MISSING)
+                }
+            }
+            assertTrue {
+                membersSaved.any {
+                    it.user == testUser3 && it.group == testGroup1 &&
+                            it.points == 1F && it.rank == 3 && it.amountBonus == 0 && it.amountCorrect == 0 && it.amountPartial == 1 &&
+                            it.lastPredictions == listOf(PredictionStatus.MISSING, PredictionStatus.INCORRECT, PredictionStatus.PARTIAL)
+                }
+            }
+            assertTrue {
+                membersSaved.any {
+                    it.user == testUser1 && it.group == testGroup2 &&
+                            it.points == 3F && it.rank == 1 && it.amountBonus == 0 && it.amountCorrect == 1 && it.amountPartial == 0 &&
+                            it.lastPredictions == listOf(PredictionStatus.CORRECT, PredictionStatus.INCORRECT, PredictionStatus.MISSING)
+                }
+            }
+            assertTrue {
+                membersSaved.any {
+                    it.user == testUser2 && it.group == testGroup2 &&
+                            it.points == 1F && it.rank == 2 && it.amountBonus == 0 && it.amountCorrect == 0 && it.amountPartial == 1 &&
+                            it.lastPredictions == listOf(PredictionStatus.PARTIAL, PredictionStatus.INCORRECT, PredictionStatus.MISSING)
+                }
+            }
+            assertTrue {
+                membersSaved.any {
+                    it.user == testUser1 && it.group == testGroup3 &&
+                            it.points == 3F && it.rank == 1 && it.amountBonus == 0 && it.amountCorrect == 1 && it.amountPartial == 0 &&
+                            it.lastPredictions == listOf(PredictionStatus.CORRECT, PredictionStatus.INCORRECT, PredictionStatus.MISSING)
+                }
+            }
+            assertTrue {
+                membersSaved.any {
+                    it.user == testUser3 && it.group == testGroup3 &&
+                            it.points == 1F && it.rank == 2 && it.amountBonus == 0 && it.amountCorrect == 0 && it.amountPartial == 1 &&
+                            it.lastPredictions == listOf(PredictionStatus.PARTIAL, PredictionStatus.INCORRECT, PredictionStatus.MISSING)
+                }
+            }
+
+            val slot2 = slot<List<MatchPrediction>>()
+            verify(exactly = 1) { matchPredictionRepository.saveAll(capture(slot2)) }
+            val matchPredictionsSaved = slot2.captured
+            assertEquals(15, matchPredictionsSaved.size)
+            assertTrue {
+                matchPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup1.id
+                            && it.match.id == testMatch1.id && it.status == PredictionStatus.CORRECT
+                }
+            }
+            assertTrue {
+                matchPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup1.id
+                            && it.match.id == testMatch2.id && it.status == PredictionStatus.CORRECT
+                }
+            }
+            assertTrue {
+                matchPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup1.id
+                            && it.match.id == testMatch3.id && it.status == PredictionStatus.CORRECT
+                }
+            }
+            assertTrue {
+                matchPredictionsSaved.any {
+                    it.user.id == testUser2.id && it.group.id == testGroup1.id
+                            && it.match.id == testMatch1.id && it.status == PredictionStatus.CORRECT
+                }
+            }
+            assertTrue {
+                matchPredictionsSaved.any {
+                    it.user.id == testUser2.id && it.group.id == testGroup1.id
+                            && it.match.id == testMatch2.id && it.status == PredictionStatus.INCORRECT
+                }
+            }
+            assertTrue {
+                matchPredictionsSaved.any {
+                    it.user.id == testUser3.id && it.group.id == testGroup1.id
+                            && it.match.id == testMatch2.id && it.status == PredictionStatus.INCORRECT
+                }
+            }
+            assertTrue {
+                matchPredictionsSaved.any {
+                    it.user.id == testUser3.id && it.group.id == testGroup1.id
+                            && it.match.id == testMatch3.id && it.status == PredictionStatus.PARTIAL
+                }
+            }
+            assertTrue {
+                matchPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup2.id
+                            && it.match.id == testMatch1.id && it.status == PredictionStatus.CORRECT
+                }
+            }
+            assertTrue {
+                matchPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup2.id
+                            && it.match.id == testMatch2.id && it.status == PredictionStatus.INCORRECT
+                }
+            }
+            assertTrue {
+                matchPredictionsSaved.any {
+                    it.user.id == testUser2.id && it.group.id == testGroup2.id
+                            && it.match.id == testMatch1.id && it.status == PredictionStatus.PARTIAL
+                }
+            }
+            assertTrue {
+                matchPredictionsSaved.any {
+                    it.user.id == testUser2.id && it.group.id == testGroup2.id
+                            && it.match.id == testMatch2.id && it.status == PredictionStatus.INCORRECT
+                }
+            }
+            assertTrue {
+                matchPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup3.id
+                            && it.match.id == testMatch1.id && it.status == PredictionStatus.CORRECT
+                }
+            }
+            assertTrue {
+                matchPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup3.id
+                            && it.match.id == testMatch2.id && it.status == PredictionStatus.INCORRECT
+                }
+            }
+            assertTrue {
+                matchPredictionsSaved.any {
+                    it.user.id == testUser3.id && it.group.id == testGroup3.id
+                            && it.match.id == testMatch1.id && it.status == PredictionStatus.PARTIAL
+                }
+            }
+            assertTrue {
+                matchPredictionsSaved.any {
+                    it.user.id == testUser3.id && it.group.id == testGroup3.id && it.match.id == testMatch2.id && it.status == PredictionStatus.INCORRECT
+                }
+            }
+        }
+
+        @Test
+        fun `recalculateTournamentPoints should properly recalculate the award-predictions points for every group and user`() {
+            mockkObject(PredictionsEngine)
+
+            val members = listOf(
+                GroupUser(user = testUser1, group = testGroup1, points = 150F, rank = 1, joinedAt = LocalDateTime.now().minusDays(3)),
+                GroupUser(user = testUser2, group = testGroup1, points = 100F, rank = 2, joinedAt = LocalDateTime.now().minusDays(2)),
+                GroupUser(user = testUser3, group = testGroup1, points = 500F, rank = 3, joinedAt = LocalDateTime.now().minusDays(1)),
+                GroupUser(user = testUser1, group = testGroup2, points = 1500F, rank = 2, joinedAt = LocalDateTime.now().minusDays(3)),
+                GroupUser(user = testUser2, group = testGroup2, points = 1000F, rank = 1, joinedAt = LocalDateTime.now().minusDays(2)),
+                GroupUser(user = testUser3, group = testGroup2, points = 5000F, rank = 1, joinedAt = LocalDateTime.now().minusDays(1)),
+            )
+
+            val awardPredictions = listOf(
+                awardPrediction(user = testUser1, group = testGroup1, awardType = AwardType.CHAMPION, awardId = winners.champion),
+                awardPrediction(user = testUser1, group = testGroup1, awardType = AwardType.TOP_SCORER, awardId = winners.topScorer),
+                awardPrediction(user = testUser1, group = testGroup1, awardType = AwardType.BEST_PLAYER, awardId = winners.bestPlayer),
+                awardPrediction(user = testUser1, group = testGroup1, awardType = AwardType.BEST_GOALKEEPER, awardId = winners.bestGoalkeeper),
+                awardPrediction(user = testUser1, group = testGroup1, awardType = AwardType.BEST_YOUNG_PLAYER, awardId = winners.bestYoungPlayer),
+                awardPrediction(user = testUser2, group = testGroup1, awardType = AwardType.CHAMPION, awardId = winners.champion),
+                awardPrediction(user = testUser2, group = testGroup1, awardType = AwardType.CHAMPION, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser2, group = testGroup1, awardType = AwardType.TOP_SCORER, awardId = winners.topScorer),
+                awardPrediction(user = testUser2, group = testGroup1, awardType = AwardType.TOP_SCORER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser2, group = testGroup1, awardType = AwardType.TOP_SCORER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser2, group = testGroup1, awardType = AwardType.BEST_PLAYER, awardId = winners.bestPlayer),
+                awardPrediction(user = testUser2, group = testGroup1, awardType = AwardType.BEST_PLAYER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser2, group = testGroup1, awardType = AwardType.BEST_PLAYER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser2, group = testGroup1, awardType = AwardType.BEST_GOALKEEPER, awardId = winners.bestGoalkeeper),
+                awardPrediction(user = testUser2, group = testGroup1, awardType = AwardType.BEST_GOALKEEPER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser2, group = testGroup1, awardType = AwardType.BEST_GOALKEEPER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser2, group = testGroup1, awardType = AwardType.BEST_YOUNG_PLAYER, awardId = winners.bestYoungPlayer),
+                awardPrediction(user = testUser2, group = testGroup1, awardType = AwardType.BEST_YOUNG_PLAYER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser2, group = testGroup1, awardType = AwardType.BEST_YOUNG_PLAYER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser3, group = testGroup1, awardType = AwardType.CHAMPION, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser3, group = testGroup1, awardType = AwardType.TOP_SCORER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser3, group = testGroup1, awardType = AwardType.TOP_SCORER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser3, group = testGroup1, awardType = AwardType.BEST_PLAYER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser3, group = testGroup1, awardType = AwardType.BEST_PLAYER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser3, group = testGroup1, awardType = AwardType.BEST_GOALKEEPER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser3, group = testGroup1, awardType = AwardType.BEST_GOALKEEPER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser3, group = testGroup1, awardType = AwardType.BEST_YOUNG_PLAYER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser3, group = testGroup1, awardType = AwardType.BEST_YOUNG_PLAYER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser1, group = testGroup2, awardType = AwardType.CHAMPION, awardId = winners.champion),
+                awardPrediction(user = testUser1, group = testGroup2, awardType = AwardType.CHAMPION, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser1, group = testGroup2, awardType = AwardType.TOP_SCORER, awardId = winners.topScorer),
+                awardPrediction(user = testUser1, group = testGroup2, awardType = AwardType.TOP_SCORER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser1, group = testGroup2, awardType = AwardType.BEST_PLAYER, awardId = winners.bestPlayer),
+                awardPrediction(user = testUser1, group = testGroup2, awardType = AwardType.BEST_PLAYER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser1, group = testGroup2, awardType = AwardType.BEST_GOALKEEPER, awardId = winners.bestGoalkeeper),
+                awardPrediction(user = testUser1, group = testGroup2, awardType = AwardType.BEST_GOALKEEPER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser1, group = testGroup2, awardType = AwardType.BEST_YOUNG_PLAYER, awardId = winners.bestYoungPlayer),
+                awardPrediction(user = testUser1, group = testGroup2, awardType = AwardType.BEST_YOUNG_PLAYER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser3, group = testGroup2, awardType = AwardType.CHAMPION, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser3, group = testGroup2, awardType = AwardType.TOP_SCORER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser3, group = testGroup2, awardType = AwardType.BEST_PLAYER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser3, group = testGroup2, awardType = AwardType.BEST_GOALKEEPER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser3, group = testGroup2, awardType = AwardType.BEST_YOUNG_PLAYER, awardId = UUID.randomUUID()),
+            )
+
+            every { matchRepository.findByTournamentId(testTournamentId) } returns listOf(testMatchLocked)
+            every { membershipRepository.findByTournamentId(testTournamentId) } returns members
+            every { matchPredictionRepository.findByTournamentId(testTournamentId) } returns emptyList()
+            every { awardPredictionRepository.findByTournamentId(testTournamentId) } returns awardPredictions
+
+            every { membershipRepository.saveAll(any<List<GroupUser>>()) } answers { firstArg() }
+            every { matchPredictionRepository.saveAll(emptyList<MatchPrediction>()) } answers { firstArg() }
+            every { awardPredictionRepository.saveAll(any<List<AwardPrediction>>()) } answers { firstArg() }
+
+            predictionService.recalculateTournamentPoints(testTournamentId)
+
+            val slot1 = slot<List<GroupUser>>()
+            verify(exactly = 1) { membershipRepository.saveAll(capture(slot1)) }
+            val membersSaved = slot1.captured
+            assertEquals(6, membersSaved.size)
+            assertTrue { membersSaved.any { it.user == testUser1 && it.group == testGroup1 && it.points == 58F && it.rank == 1 } }
+            assertTrue { membersSaved.any { it.user == testUser2 && it.group == testGroup1 && it.points == 21F && it.rank == 2 } }
+            assertTrue { membersSaved.any { it.user == testUser3 && it.group == testGroup1 && it.points == 0F && it.rank == 3 } }
+            assertTrue { membersSaved.any { it.user == testUser1 && it.group == testGroup2 && it.points == 37F && it.rank == 1 } }
+            assertTrue { membersSaved.any { it.user == testUser2 && it.group == testGroup2 && it.points == 0F && it.rank == 2 } }
+            assertTrue { membersSaved.any { it.user == testUser3 && it.group == testGroup2 && it.points == 0F && it.rank == 3 } }
+
+            val slot2 = slot<List<AwardPrediction>>()
+            verify(exactly = 1) { awardPredictionRepository.saveAll(capture(slot2)) }
+            val awardPredictionsSaved = slot2.captured
+            assertEquals(43, awardPredictionsSaved.size)
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup1.id && it.status == PredictionStatus.CORRECT &&
+                            it.awardType == AwardType.CHAMPION && it.team!!.id == awardPredictions[0].team!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup1.id && it.status == PredictionStatus.CORRECT &&
+                            it.awardType == AwardType.TOP_SCORER && it.player!!.id == awardPredictions[1].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup1.id && it.status == PredictionStatus.CORRECT &&
+                            it.awardType == AwardType.BEST_PLAYER && it.player!!.id == awardPredictions[2].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup1.id && it.status == PredictionStatus.CORRECT &&
+                            it.awardType == AwardType.BEST_GOALKEEPER && it.player!!.id == awardPredictions[3].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup1.id && it.status == PredictionStatus.CORRECT &&
+                            it.awardType == AwardType.BEST_YOUNG_PLAYER && it.player!!.id == awardPredictions[4].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser2 && it.group.id == testGroup1.id && it.status == PredictionStatus.CORRECT &&
+                            it.awardType == AwardType.CHAMPION && it.team!!.id == awardPredictions[5].team!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser2 && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.CHAMPION && it.team!!.id == awardPredictions[6].team!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser2 && it.group.id == testGroup1.id && it.status == PredictionStatus.CORRECT &&
+                            it.awardType == AwardType.TOP_SCORER && it.player!!.id == awardPredictions[7].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser2 && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.TOP_SCORER && it.player!!.id == awardPredictions[8].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser2 && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.TOP_SCORER && it.player!!.id == awardPredictions[9].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser2 && it.group.id == testGroup1.id && it.status == PredictionStatus.CORRECT &&
+                            it.awardType == AwardType.BEST_PLAYER && it.player!!.id == awardPredictions[10].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser2 && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_PLAYER && it.player!!.id == awardPredictions[11].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser2 && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_PLAYER && it.player!!.id == awardPredictions[12].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser2 && it.group.id == testGroup1.id && it.status == PredictionStatus.CORRECT &&
+                            it.awardType == AwardType.BEST_GOALKEEPER && it.player!!.id == awardPredictions[13].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser2 && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_GOALKEEPER && it.player!!.id == awardPredictions[14].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser2 && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_GOALKEEPER && it.player!!.id == awardPredictions[15].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser2 && it.group.id == testGroup1.id && it.status == PredictionStatus.CORRECT &&
+                            it.awardType == AwardType.BEST_YOUNG_PLAYER && it.player!!.id == awardPredictions[16].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser2 && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_YOUNG_PLAYER && it.player!!.id == awardPredictions[17].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser2 && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_YOUNG_PLAYER && it.player!!.id == awardPredictions[18].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser3 && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.CHAMPION && it.team!!.id == awardPredictions[19].team!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser3 && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.TOP_SCORER && it.player!!.id == awardPredictions[20].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser3 && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.TOP_SCORER && it.player!!.id == awardPredictions[21].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser3 && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_PLAYER && it.player!!.id == awardPredictions[22].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser3 && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_PLAYER && it.player!!.id == awardPredictions[23].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser3 && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_GOALKEEPER && it.player!!.id == awardPredictions[24].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser3 && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_GOALKEEPER && it.player!!.id == awardPredictions[25].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser3 && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_YOUNG_PLAYER && it.player!!.id == awardPredictions[26].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser3 && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_YOUNG_PLAYER && it.player!!.id == awardPredictions[27].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup2.id && it.status == PredictionStatus.CORRECT &&
+                            it.awardType == AwardType.CHAMPION && it.team!!.id == awardPredictions[28].team!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup2.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.CHAMPION && it.team!!.id == awardPredictions[29].team!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup2.id && it.status == PredictionStatus.CORRECT &&
+                            it.awardType == AwardType.TOP_SCORER && it.player!!.id == awardPredictions[30].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup2.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.TOP_SCORER && it.player!!.id == awardPredictions[31].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup2.id && it.status == PredictionStatus.CORRECT &&
+                            it.awardType == AwardType.BEST_PLAYER && it.player!!.id == awardPredictions[32].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup2.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_PLAYER && it.player!!.id == awardPredictions[33].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup2.id && it.status == PredictionStatus.CORRECT &&
+                            it.awardType == AwardType.BEST_GOALKEEPER && it.player!!.id == awardPredictions[34].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup2.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_GOALKEEPER && it.player!!.id == awardPredictions[35].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup2.id && it.status == PredictionStatus.CORRECT &&
+                            it.awardType == AwardType.BEST_YOUNG_PLAYER && it.player!!.id == awardPredictions[36].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup2.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_YOUNG_PLAYER && it.player!!.id == awardPredictions[37].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser3 && it.group.id == testGroup2.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.CHAMPION && it.team!!.id == awardPredictions[38].team!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser3 && it.group.id == testGroup2.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.TOP_SCORER && it.player!!.id == awardPredictions[39].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser3 && it.group.id == testGroup2.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_PLAYER && it.player!!.id == awardPredictions[40].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser3 && it.group.id == testGroup2.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_GOALKEEPER && it.player!!.id == awardPredictions[41].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user == testUser3 && it.group.id == testGroup2.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_YOUNG_PLAYER && it.player!!.id == awardPredictions[42].player!!.id
+                }
+            }
+        }
+
+        @Test
+        fun `recalculateTournamentPoints with matches and awards predictions for a user within a group`() {
+            mockkObject(PredictionsEngine)
+
+            val members = listOf(
+                GroupUser(
+                    user = testUser1, group = testGroup1, points = 150F, rank = 1, amountCorrect = 10, amountPartial = 10,
+                    amountBonus = 10, lastPredictions = listOf(PredictionStatus.BONUS, PredictionStatus.BONUS, PredictionStatus.BONUS)
+                )
+            )
+
+            val testMatch1 = Match(
+                id = UUID.randomUUID(), code = "X1", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
+                homeGoals = 0, awayGoals = 0, startedAt = LocalDateTime.now().minusDays(7)
+            )
+            val testMatch2 = Match(
+                id = UUID.randomUUID(), code = "X2", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
+                homeGoals = 1, awayGoals = 0, startedAt = LocalDateTime.now().minusDays(6)
+            )
+            val testMatch3 = Match(
+                id = UUID.randomUUID(), code = "X3", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
+                homeGoals = 0, awayGoals = 1, startedAt = LocalDateTime.now().minusDays(6)
+            )
+
+            val matchPredictions = listOf(
+                MatchPrediction(
+                    user = testUser1, group = testGroup1, match = testMatch1,
+                    homeGoals = 0, awayGoals = 0, status = PredictionStatus.BONUS
+                ),
+                MatchPrediction(
+                    user = testUser1, group = testGroup1, match = testMatch2,
+                    homeGoals = 0, awayGoals = 0, status = PredictionStatus.BONUS
+                ),
+            )
+
+            val awardPredictions = listOf(
+                awardPrediction(user = testUser1, group = testGroup1, awardType = AwardType.CHAMPION, awardId = winners.champion),
+                awardPrediction(user = testUser1, group = testGroup1, awardType = AwardType.TOP_SCORER, awardId = winners.topScorer),
+                awardPrediction(user = testUser1, group = testGroup1, awardType = AwardType.BEST_PLAYER, awardId = winners.bestPlayer),
+                awardPrediction(user = testUser1, group = testGroup1, awardType = AwardType.BEST_PLAYER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser1, group = testGroup1, awardType = AwardType.BEST_GOALKEEPER, awardId = winners.bestGoalkeeper),
+                awardPrediction(user = testUser1, group = testGroup1, awardType = AwardType.BEST_GOALKEEPER, awardId = UUID.randomUUID()),
+                awardPrediction(user = testUser1, group = testGroup1, awardType = AwardType.BEST_GOALKEEPER, awardId = UUID.randomUUID()),
+            )
+
+            every { matchRepository.findByTournamentId(testTournamentId) } returns listOf(testMatch1, testMatch2, testMatch3)
+            every { membershipRepository.findByTournamentId(testTournamentId) } returns members
+            every { matchPredictionRepository.findByTournamentId(testTournamentId) } returns matchPredictions
+            every { awardPredictionRepository.findByTournamentId(testTournamentId) } returns awardPredictions
+
+            every { membershipRepository.saveAll(any<List<GroupUser>>()) } answers { firstArg() }
+            every { matchPredictionRepository.saveAll(any<List<MatchPrediction>>()) } answers { firstArg() }
+            every { awardPredictionRepository.saveAll(any<List<AwardPrediction>>()) } answers { firstArg() }
+
+            predictionService.recalculateTournamentPoints(testTournamentId)
+
+            val slot1 = slot<List<GroupUser>>()
+            verify(exactly = 1) { membershipRepository.saveAll(capture(slot1)) }
+            val membersSaved = slot1.captured
+            assertEquals(1, membersSaved.size)
+            assertEquals(testUser1, membersSaved[0].user)
+            assertEquals(testGroup1, membersSaved[0].group)
+            assertEquals(37F, membersSaved[0].points)
+            assertEquals(1, membersSaved[0].rank)
+            assertEquals(0, membersSaved[0].amountPartial)
+            assertEquals(1, membersSaved[0].amountCorrect)
+            assertEquals(0, membersSaved[0].amountBonus)
+            assertEquals(listOf(PredictionStatus.CORRECT, PredictionStatus.INCORRECT, PredictionStatus.MISSING), membersSaved[0].lastPredictions)
+
+            val slot2 = slot<List<MatchPrediction>>()
+            verify(exactly = 1) { matchPredictionRepository.saveAll(capture(slot2)) }
+            val matchPredictionsSaved = slot2.captured
+            assertEquals(2, matchPredictionsSaved.size)
+            assertTrue {
+                matchPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup1.id &&
+                            it.match.id == testMatch1.id && it.status == PredictionStatus.CORRECT
+                }
+            }
+            assertTrue {
+                matchPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup1.id &&
+                            it.match.id == testMatch2.id && it.status == PredictionStatus.INCORRECT
+                }
+            }
+
+            val slot3 = slot<List<AwardPrediction>>()
+            verify(exactly = 1) { awardPredictionRepository.saveAll(capture(slot3)) }
+            val awardPredictionsSaved = slot3.captured
+            assertEquals(7, awardPredictionsSaved.size)
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup1.id && it.status == PredictionStatus.CORRECT &&
+                            it.awardType == AwardType.CHAMPION && it.team!!.id == awardPredictions[0].team!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup1.id && it.status == PredictionStatus.CORRECT &&
+                            it.awardType == AwardType.TOP_SCORER && it.player!!.id == awardPredictions[1].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup1.id && it.status == PredictionStatus.CORRECT &&
+                            it.awardType == AwardType.BEST_PLAYER && it.player!!.id == awardPredictions[2].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_PLAYER && it.player!!.id == awardPredictions[3].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup1.id && it.status == PredictionStatus.CORRECT &&
+                            it.awardType == AwardType.BEST_GOALKEEPER && it.player!!.id == awardPredictions[4].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_GOALKEEPER && it.player!!.id == awardPredictions[5].player!!.id
+                }
+            }
+            assertTrue {
+                awardPredictionsSaved.any {
+                    it.user.id == testUser1.id && it.group.id == testGroup1.id && it.status == PredictionStatus.INCORRECT &&
+                            it.awardType == AwardType.BEST_GOALKEEPER && it.player!!.id == awardPredictions[6].player!!.id
+                }
+            }
         }
     }
 }

@@ -32,6 +32,7 @@ import com.grondona.repository.TournamentRepository
 import com.grondona.repository.UserRepository
 import com.grondona.service.engine.PredictionsEngine
 import com.grondona.service.engine.WorldCupEngine
+import com.grondona.utils.consolidateGroupMatchPredictions
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -331,9 +332,10 @@ class PredictionService(
     }
 
     @Transactional
-    fun recalculatePoints(tournamentId: UUID) {
+    fun recalculateTournamentPoints(tournamentId: UUID) {
         logger.info("Fetching members and predictions for tournament={} to recalculate points", tournamentId)
 
+        val matches = matchRepository.findByTournamentId(tournamentId)
         val members = membershipRepository.findByTournamentId(tournamentId)
         val matchPredictions = matchPredictionRepository.findByTournamentId(tournamentId)
         val awardPredictions = awardPredictionRepository.findByTournamentId(tournamentId)
@@ -356,8 +358,8 @@ class PredictionService(
                 .filter { (old, new) -> old != new }.map { it.second }
             matchPredictionsToSave.addAll(updatedGroupMatchPredictions)
 
-            val groupMatchPredictionsPerUser = groupMatchPredictions.groupBy { it.user.id!! }
-            recalculatedMembers = PredictionsEngine.updateMatchPoints(recalculatedMembers, groupMatchPredictionsPerUser)
+            val newGroupMatchPredictionsPerUser = newGroupMatchPredictions.consolidateGroupMatchPredictions(matches)
+            recalculatedMembers = PredictionsEngine.updateMatchPoints(recalculatedMembers, newGroupMatchPredictionsPerUser)
 
             val groupAwardPredictions = awardPredictionsPerGroup[groupId] ?: emptyList()
             val newGroupAwardPredictions = PredictionsEngine.checkAwardPredictions(groupAwardPredictions)
@@ -366,8 +368,8 @@ class PredictionService(
                 .filter { (old, new) -> old != new }.map { it.second }
             awardPredictionsToSave.addAll(updatedGroupAwardPredictions)
 
-            val groupAwardPredictionsPerUser = groupAwardPredictions.groupBy { it.user.id!! }
-            recalculatedMembers = PredictionsEngine.updateAwardPoints(recalculatedMembers, groupAwardPredictionsPerUser)
+            val newGroupAwardPredictionsPerUser = newGroupAwardPredictions.groupBy { it.user.id!! }
+            recalculatedMembers = PredictionsEngine.updateAwardPoints(recalculatedMembers, newGroupAwardPredictionsPerUser)
 
             val updatedMembers = members.zip(recalculatedMembers).filter { (old, new) -> old != new }.map { it.second }
             membersToSave.addAll(updatedMembers)

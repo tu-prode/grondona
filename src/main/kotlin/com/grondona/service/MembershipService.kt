@@ -93,9 +93,9 @@ class MembershipService(
             throw BadRequestException("Group is full")
         }
 
-        candidate.role = GroupRole.MEMBER
-        membershipRepository.save(candidate)
-        logger.info("Candidate={} accepted into group={} successfully ({}/{} members)", candidateId, groupId, memberCount + 1, candidate.group.maxMembers)
+        val newMember = candidate.copy(role = GroupRole.MEMBER)
+        membershipRepository.save(newMember)
+        logger.info("Candidate={} accepted into group={} successfully ({}/{} members)", candidateId, groupId, memberCount + 1, newMember.group.maxMembers)
     }
 
     @Transactional
@@ -109,7 +109,7 @@ class MembershipService(
 
     @Transactional(readOnly = true)
     private fun retrieveJoinRequest(userId: UUID, groupId: UUID, candidateId: UUID): GroupUser {
-        val group = groupRepository.findById(groupId).orElseThrow {
+        groupRepository.findById(groupId).orElseThrow {
             logger.warn("Reject failed: group {} not found", groupId)
             NotFoundException("Group not found")
         }

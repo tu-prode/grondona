@@ -76,23 +76,24 @@ class GroupService(
     fun updateGroup(groupId: UUID, request: UpdateGroupRequest): GroupResponse {
         logger.info("Updating group id={} with {}", groupId, request)
 
-        val group = groupRepository.findById(groupId).orElseThrow {
+        var group = groupRepository.findById(groupId).orElseThrow {
             logger.warn("Group not found: id={}", groupId)
             NotFoundException("Group not found")
         }
 
-        request.name?.let { newName ->
+        group = request.name?.let { newName ->
             if (newName != group.name && groupRepository.existsByName(newName)) {
                 logger.warn("Group update failed: name '{}' already exists", newName)
                 throw ConflictException(message = "Group name already exists", field = "name", rejectedValue = newName)
             }
-            group.name = newName
+            group.copy(name = newName)
         }
 
-        request.isPrivate?.let { group.isPrivate = it }
-        request.maxMembers?.let { group.maxMembers = it }
-
-        group.updatedAt = LocalDateTime.now()
+        group = group.copy(
+            isPrivate = request.isPrivate ?: group.isPrivate,
+            maxMembers = request.maxMembers ?: group.maxMembers,
+            updatedAt = LocalDateTime.now(),
+        )
 
         val savedGroup = groupRepository.save(group)
         logger.info("Group updated successfully: id={}, name='{}'", savedGroup.id, savedGroup.name)

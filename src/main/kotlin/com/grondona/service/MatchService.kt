@@ -12,6 +12,7 @@ import com.grondona.repository.MatchPredictionRepository
 import com.grondona.repository.TournamentRepository
 import com.grondona.service.engine.TournamentEngine
 import com.grondona.service.engine.PredictionsEngine
+import com.grondona.utils.consolidateGroupMatchPredictions
 import java.util.UUID
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -101,10 +102,7 @@ class MatchService(
 
         predictionsToUpdate.groupBy { it.group }.forEach { (group, groupPredictions) ->
             var members = membershipRepository.findMembers(group.id!!)
-            val newPredictions = groupPredictions.groupBy { it.user.id!! }.mapValues { (_, userPredictions) ->
-                val matchPredictions = userPredictions.groupBy { it.match.id }
-                matchesToUpdate.map { match -> matchPredictions[match.id!!]?.firstOrNull() }
-            }
+            val newPredictions = groupPredictions.consolidateGroupMatchPredictions(matchesToUpdate)
 
             members = PredictionsEngine.updateMatchPoints(members, newPredictions)
             logger.debug("Group={} new standings saved, after applying matches points", group.id)
