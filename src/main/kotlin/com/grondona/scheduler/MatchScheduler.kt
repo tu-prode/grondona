@@ -22,7 +22,7 @@ import java.util.concurrent.ScheduledFuture
 class MatchScheduler(
     private val matchService: MatchService,
     private val taskScheduler: TaskScheduler,
-    @Value("\${app.matches.poll-interval-ms}")
+    @Value("\${external.matches.poll-interval-ms}")
     private val statusPollIntervalMs: Long,
     @Value("\${app.env}")
     private val rawEnv: String

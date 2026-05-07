@@ -100,12 +100,18 @@ class MatchServiceTest {
     @BeforeEach
     fun setUp() {
         MockKAnnotations.init(this)
-        val enginesList = listOf(engine)
-
         every { engine.tournamentId } returns testTournamentId
 
         matchService = spyk(
-            MatchService(matchClient, matchRepository, membershipRepository, tournamentRepository, matchPredictionRepository, enginesList)
+            MatchService(
+                matchClient,
+                matchRepository,
+                membershipRepository,
+                tournamentRepository,
+                matchPredictionRepository,
+                listOf(engine),
+                prepareNewMatches = true,
+            )
         )
     }
 

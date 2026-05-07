@@ -2,6 +2,7 @@ package com.grondona.service
 
 import com.grondona.client.MatchClient
 import com.grondona.exception.BadRequestException
+import com.grondona.model.Environments
 import com.grondona.model.Match
 import com.grondona.model.MatchStatus
 import com.grondona.model.MatchPrediction
@@ -15,6 +16,7 @@ import com.grondona.service.engine.PredictionsEngine
 import com.grondona.utils.consolidateGroupMatchPredictions
 import java.util.UUID
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -25,8 +27,9 @@ class MatchService(
     private val membershipRepository: MembershipRepository,
     private val tournamentRepository: TournamentRepository,
     private val matchPredictionRepository: MatchPredictionRepository,
-    // Engines
-    private val enginesList: List<TournamentEngine>
+    private val enginesList: List<TournamentEngine>,
+    @Value("\${external.api.matches.with-new-matches}")
+    private val prepareNewMatches: Boolean
 ) {
 
     companion object {
@@ -61,8 +64,10 @@ class MatchService(
             tournamentRepository.save(tournament.copy(status = newTournamentStatus))
         }
 
-        val newMatches = tournamentEngine.calculateNewMatches(consolidatedMatches, apiMatches)
-        val matchesToSave = matchesToUpdate + newMatches
+
+        val matchesToSave = matchesToUpdate + if (prepareNewMatches)
+            tournamentEngine.calculateNewMatches(consolidatedMatches, apiMatches)
+        else emptyList()
         if (matchesToSave.isNotEmpty()) {
             logger.debug("Matches to store in DB={}", matchesToSave.size)
             matchRepository.saveAll(matchesToSave)
