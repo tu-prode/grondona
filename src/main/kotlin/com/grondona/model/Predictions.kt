@@ -50,10 +50,10 @@ data class MatchPrediction(
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now(),
+    val updatedAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "deleted_at")
-    var deletedAt: LocalDateTime? = null
+    val deletedAt: LocalDateTime? = null
 ) {
     fun score() = Score(homeGoals, awayGoals)
 }

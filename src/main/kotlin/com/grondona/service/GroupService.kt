@@ -159,7 +159,7 @@ class GroupService(
         return GroupResponse.from(group, standings, groupUsers.filter { it.role == GroupRole.CANDIDATE })
     }
 
-    fun findOtherGroups(userId: UUID, tournamentId: UUID, search: String?, joined: Boolean?): List<GroupResponse> {
+    fun searchGroups(userId: UUID, tournamentId: UUID, search: String?, joined: Boolean?): List<GroupResponse> {
         return groupRepository.findAll { root, query, builder ->
             val predicates = mutableListOf<Predicate>()
 

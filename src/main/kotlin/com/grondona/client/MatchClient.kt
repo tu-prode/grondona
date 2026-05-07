@@ -19,9 +19,9 @@ import java.util.UUID
 @Component
 class MatchClient(
     private val matchWebClient: WebClient,
-    @Value("\${external.api.key}")
+    @Value("\${external.matches.api.key}")
     private val apiKey: String,
-    @Value("\${external.api.secret}")
+    @Value("\${external.matches.api.secret}")
     private val apiSecret: String
 ) {
 

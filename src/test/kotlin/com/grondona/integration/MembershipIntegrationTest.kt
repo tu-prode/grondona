@@ -70,8 +70,7 @@ class MembershipIntegrationTest {
         ).andReturn()
         val adminId = objectMapper.readValue(adminResult.response.contentAsString, AuthenticatedUserResponse::class.java).userId
         val adminUser = userRepository.findById(adminId).get()
-        adminUser.permissions = UserPermissions.SUPERUSER
-        userRepository.save(adminUser)
+        userRepository.save(adminUser.copy(permissions = UserPermissions.SUPERUSER))
         val adminToken = objectMapper.readValue(adminResult.response.contentAsString, AuthenticatedUserResponse::class.java).token
 
         // Create tournament

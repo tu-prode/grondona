@@ -77,7 +77,7 @@ object PredictionsEngine {
             val matchesApplied: MutableSet<UUID> = mutableSetOf()
             newPredictions[member.user.id].orEmpty().also {
                 if (it.isEmpty()) {
-                    logger.error("No match predictions for user={} in group={}", member.user, member.group)
+                    logger.error("No match predictions for user={} in group={}", member.user.id, member.group.id)
                 }
             }.forEach { prediction ->
                 if (prediction == null) {

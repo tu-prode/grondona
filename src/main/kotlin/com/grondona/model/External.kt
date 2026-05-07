@@ -46,13 +46,21 @@ data class ExternalMatch(
     fun toMatchUpdated(matches: List<Match>): Match? =
         matches.takeIf { status != Status.TO_START.name }
             ?.filter { it.status != MatchStatus.FINISHED }
-            ?.firstOrNull { it.homeTeam.code == home && it.awayTeam.code == away }?.also {
+            ?.firstOrNull { it.homeTeam.code == home && it.awayTeam.code == away }?.let {
+                var newHomeGoals = it.homeGoals
+                var newAwayGoals = it.awayGoals
+                var newHomePenalties = it.homePenalties
+                var newAwayPenalties = it.awayPenalties
+                var newStatus = it.status
+                var newSubstatus = it.substatus
+                var newFinishedAt = it.finishedAt
+
                 when (status) {
                     Status.IN_PLAY.name -> {
-                        it.homeGoals = homeGoals
-                        it.awayGoals = awayGoals
-                        it.status = MatchStatus.IN_PROGRESS
-                        it.substatus = when {
+                        newHomeGoals = homeGoals
+                        newAwayGoals = awayGoals
+                        newStatus = MatchStatus.IN_PROGRESS
+                        newSubstatus = when {
                             half == 1 && minutes <= 45 -> "$minutes' PT"
                             half == 1 && minutes > 45 -> "45+${minutes - 45}' PT"
                             half == 2 && minutes <= 90 -> "${minutes - 45}' ST"
@@ -66,40 +74,43 @@ data class ExternalMatch(
                     }
 
                     Status.HALF_TIME.name -> {
-                        it.homeGoals = homeGoals
-                        it.awayGoals = awayGoals
-                        it.substatus = "ET"
+                        newHomeGoals = homeGoals
+                        newAwayGoals = awayGoals
+                        newSubstatus = "ET"
                     }
 
                     Status.PENALTIES.name -> {
-                        it.homeGoals = homeGoals
-                        it.awayGoals = awayGoals
-                        it.homePenalties = homePenalties
-                        it.awayPenalties = awayPenalties
-                        it.substatus = "PEN"
+                        newHomeGoals = homeGoals
+                        newAwayGoals = awayGoals
+                        newHomePenalties = homePenalties
+                        newAwayPenalties = awayPenalties
+                        newSubstatus = "PEN"
                     }
 
                     Status.COMPLETED.name -> {
-                        it.homeGoals = homeGoals
-                        it.awayGoals = awayGoals
-                        it.homePenalties = homePenalties
-                        it.awayPenalties = awayPenalties
-                        it.status = MatchStatus.FINISHED
-                        it.finishedAt = endedAt ?: LocalDateTime.now()
-                        it.substatus = "FIN"
+                        newHomeGoals = homeGoals
+                        newAwayGoals = awayGoals
+                        newHomePenalties = homePenalties
+                        newAwayPenalties = awayPenalties
+                        newStatus = MatchStatus.FINISHED
+                        newFinishedAt = endedAt ?: LocalDateTime.now()
+                        newSubstatus = "FIN"
                     }
                 }
+
+                it.copy(
+                    homeGoals = newHomeGoals, awayGoals = newAwayGoals,
+                    homePenalties = newHomePenalties, awayPenalties = newAwayPenalties,
+                    status = newStatus, substatus = newSubstatus, finishedAt = newFinishedAt,
+                )
             }
 
     fun toQuotasUpdated(matches: List<Match>): Match? =
         matches.filter { it.status == MatchStatus.NOT_STARTED && PredictionService.isMatchUnlocked(it) }
-            .firstOrNull { it.homeTeam.name == home && it.awayTeam.name == away }?.also {
-                when (status) {
-                    Status.TO_START.name -> {
-                        it.homeQuota = homeOdds.oddsToQuota()
-                        it.drawQuota = drawOdds.oddsToQuota()
-                        it.awayQuota = awayOdds.oddsToQuota()
-                    }
-                }
-            }
+            .firstOrNull { it.homeTeam.name == home && it.awayTeam.name == away }
+            ?.takeUnless { status != Status.TO_START.name }?.copy(
+                homeQuota = homeOdds.oddsToQuota(),
+                drawQuota = drawOdds.oddsToQuota(),
+                awayQuota = awayOdds.oddsToQuota(),
+            )
 }

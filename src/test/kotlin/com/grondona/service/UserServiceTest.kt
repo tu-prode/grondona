@@ -4,6 +4,7 @@ import com.grondona.exception.BadRequestException
 import com.grondona.exception.ConflictException
 import com.grondona.exception.ForbiddenException
 import com.grondona.exception.NotFoundException
+import com.grondona.model.Group
 import com.grondona.model.GroupRole
 import com.grondona.model.GroupUser
 import com.grondona.model.User
@@ -14,6 +15,7 @@ import com.grondona.repository.MembershipRepository
 import com.grondona.repository.UserRepository
 import com.grondona.security.JwtService
 import com.grondona.testGroup
+import com.grondona.testTournament
 import io.mockk.*
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
@@ -191,6 +193,11 @@ class UserServiceTest {
     @Nested
     inner class UpdateUserTests {
 
+        val userGroups = listOf(
+            GroupUser(user = testUser, group = Group(name = "Test Group 1", tournament = testTournament)),
+            GroupUser(user = testUser, group = Group(name = "Test Group 2", tournament = testTournament))
+        )
+
         @Test
         fun `updateUser should update fullname when provided`() {
             // Given
@@ -281,10 +288,25 @@ class UserServiceTest {
         }
 
         @Test
-        fun `updateUser should throw BadRequestException when setting uniqueness for predictions without master group`() {
+        fun `updateUser should update the user when setting uniqueness flag for a user in a single group`() {
+            // Given
+            val masterGroupId = UUID.randomUUID()
+            val request = UpdateUserRequest(uniquePredictions = true, uniquePredictionsMaster = masterGroupId)
+            every { userRepository.findById(testUserId) } returns Optional.of(testUser.copy())
+            every { membershipRepository.findUserGroups(testUserId) } returns userGroups.subList(0, 0)
+            every { userRepository.save(any()) } answers { firstArg() }
+
+            // When/Then
+            val result = userService.updateUser(testUserId, request)
+            assertTrue(result.uniquePredictions)
+        }
+
+        @Test
+        fun `updateUser should throw BadRequestException when setting uniqueness for predictions without master group (and user has many groups)`() {
             // Given
             val request = UpdateUserRequest(uniquePredictions = true)
             every { userRepository.findById(testUserId) } returns Optional.of(testUser.copy())
+            every { membershipRepository.findUserGroups(testUserId) } returns userGroups
 
             // When/Then
             val exception = assertThrows<BadRequestException> {
@@ -294,11 +316,12 @@ class UserServiceTest {
         }
 
         @Test
-        fun `updateUser should clone all the predictions when setting uniqueness flag and save the updated user`() {
+        fun `updateUser should clone all the predictions when setting uniqueness flag for a user with multiple groups and save the updated user`() {
             // Given
             val masterGroupId = UUID.randomUUID()
             val request = UpdateUserRequest(uniquePredictions = true, uniquePredictionsMaster = masterGroupId)
             every { userRepository.findById(testUserId) } returns Optional.of(testUser.copy())
+            every { membershipRepository.findUserGroups(testUserId) } returns userGroups
             every { predictionService.clonePredictions(testUserId, masterGroupId) } just Runs
             every { userRepository.save(any()) } answers { firstArg() }
 

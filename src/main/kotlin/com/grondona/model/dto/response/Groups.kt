@@ -2,6 +2,7 @@ package com.grondona.model.dto.response
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.grondona.model.Group
+import com.grondona.model.GroupRole
 import com.grondona.model.GroupUser
 import com.grondona.model.PredictionStatus
 import com.grondona.model.Standing
@@ -14,7 +15,16 @@ data class StandingResponse(
     val points: Float,
     val rank: Int,
     val lastPredictions: List<PredictionStatus>
-)
+) {
+    companion object {
+        fun from(standing: Standing) = StandingResponse(
+            user = UserResponse.from(standing.user),
+            points = standing.points.round(),
+            rank = standing.rank,
+            lastPredictions = standing.lastPredictions,
+        )
+    }
+}
 
 data class GroupResponse(
     val id: UUID,
@@ -23,6 +33,7 @@ data class GroupResponse(
     @get:JsonProperty("private")
     val isPrivate: Boolean,
     val maxMembers: Int,
+    val totalMembers: Int,
     val hasStarted: Boolean,
     val standings: List<StandingResponse> = emptyList(),
     val candidates: List<UserResponse> = emptyList()
@@ -34,6 +45,7 @@ data class GroupResponse(
             name = group.name,
             isPrivate = group.isPrivate,
             maxMembers = group.maxMembers,
+            totalMembers = group.members.filter { it.role != GroupRole.CANDIDATE }.size,
             hasStarted = group.tournament.status != TournamentStatus.NOT_STARTED,
             standings = emptyList(),
         )
@@ -44,15 +56,9 @@ data class GroupResponse(
             name = group.name,
             isPrivate = group.isPrivate,
             maxMembers = group.maxMembers,
+            totalMembers = group.members.filter { it.role != GroupRole.CANDIDATE }.size,
             hasStarted = group.tournament.status != TournamentStatus.NOT_STARTED,
-            standings = standings.map { standing ->
-                StandingResponse(
-                    user = UserResponse.from(standing.user),
-                    points = standing.points.round(),
-                    rank = standing.rank,
-                    lastPredictions = standing.lastPredictions,
-                )
-            },
+            standings = standings.map(StandingResponse::from),
             candidates = candidates.map { UserResponse.from(it.user) }
         )
     }

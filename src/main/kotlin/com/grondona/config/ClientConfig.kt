@@ -17,8 +17,8 @@ class ClientConfig {
     @Bean
     fun matchWebClient(
         objectMapper: ObjectMapper,
-        @Value("\${external.api.base-url}") baseUrl: String,
-        @Value("\${external.api.timeout-ms}") timeoutMs: Long
+        @Value("\${external.api.matches.base-url}") baseUrl: String,
+        @Value("\${external.api.matches.timeout-ms}") timeoutMs: Long
     ): WebClient {
 
         val httpClient = HttpClient.create()
