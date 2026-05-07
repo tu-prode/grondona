@@ -210,6 +210,14 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 
   /api/users/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        description: UUID of the user to delete
+        schema:
+          type: string
+          format: uuid
     delete:
       tags:
         - Users
@@ -219,15 +227,6 @@ paths:
       operationId: deleteUser
       security:
         - bearerAuth: [ ]
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          description: UUID of the user to delete
-          schema:
-            type: string
-            format: uuid
-          example: 550e8400-e29b-41d4-a716-446655440000
       responses:
         "204":
           description: User deleted successfully
@@ -328,46 +327,15 @@ paths:
                   field: name
                   rejectedValue: Copa del Mundo 20206
 
-  /api/tournaments/points:
-    put:
-      tags:
-        - Tournaments
-      summary: Recalculates points for a tournament
-      description: |
-        Recheck every match and award prediction, and then recalculates the points for each user in each group within that tournament
-      operationId: recalculateTournamentPoints
-      security:
-        - bearerAuth: [ SUPERUSER ]
-      responses:
-        "200":
-          description: Points recalculated successfully
-        "401":
-          description: Credentials missing
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "403":
-          description: User has no access for performing this action
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "404":
-          description: Tournament not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "500":
-          description: Some detailed error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-
   /api/tournaments/{tournamentId}:
+    parameters:
+      - name: tournamentId
+        in: path
+        required: true
+        description: UUID of the tournament
+        schema:
+          type: string
+          format: uuid
     get:
       tags:
         - Tournaments
@@ -377,14 +345,6 @@ paths:
       operationId: getTournament
       security:
         - bearerAuth: [ ]
-      parameters:
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
       responses:
         "200":
           description: Tournament retrieved successfully
@@ -407,14 +367,6 @@ paths:
       operationId: updateTournament
       security:
         - bearerAuth: [ SUPERUSER ]
-      parameters:
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament to update
-          schema:
-            type: string
-            format: uuid
       requestBody:
         required: true
         content:
@@ -466,14 +418,6 @@ paths:
       operationId: deleteTournament
       security:
         - bearerAuth: [ SUPERUSER ]
-      parameters:
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament to delete
-          schema:
-            type: string
-            format: uuid
       responses:
         "204":
           description: Tournament deleted successfully
@@ -484,7 +428,61 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/tournaments/{tournamentId}/points:
+    parameters:
+      - name: tournamentId
+        in: path
+        required: true
+        description: UUID of the tournament
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - Tournaments
+      summary: Recalculates points for a tournament
+      description: |
+        Recheck every match and award prediction, and then recalculates the points for each user in each group within that tournament
+      operationId: recalculateTournamentPoints
+      security:
+        - bearerAuth: [ SUPERUSER ]
+      responses:
+        "200":
+          description: Points recalculated successfully
+        "401":
+          description: Credentials missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: User has no access for performing this action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Tournament not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Some detailed error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/tournaments/{tournamentId}/teams:
+    parameters:
+      - name: tournamentId
+        in: path
+        required: true
+        description: UUID of the tournament
+        schema:
+          type: string
+          format: uuid
     get:
       tags:
         - Tournaments
@@ -494,14 +492,6 @@ paths:
       operationId: getTournamentTeams
       security:
         - bearerAuth: [ ]
-      parameters:
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
       responses:
         "200":
           description: Tournament retrieved successfully
@@ -524,14 +514,6 @@ paths:
       operationId: createTournamentTeam
       security:
         - bearerAuth: [ SUPERUSER ]
-      parameters:
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
       requestBody:
         required: true
         content:
@@ -571,6 +553,14 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 
   /api/tournaments/{tournamentId}/players:
+    parameters:
+      - name: tournamentId
+        in: path
+        required: true
+        description: UUID of the tournament
+        schema:
+          type: string
+          format: uuid
     get:
       tags:
         - Tournaments
@@ -581,13 +571,6 @@ paths:
       security:
         - bearerAuth: [ ]
       parameters:
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
         - name: country
           in: query
           required: false
@@ -628,14 +611,6 @@ paths:
       operationId: createTournamentPlayer
       security:
         - bearerAuth: [ SUPERUSER ]
-      parameters:
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
       requestBody:
         required: true
         content:
@@ -675,6 +650,14 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 
   /api/tournaments/{tournamentId}/matches:
+    parameters:
+      - name: tournamentId
+        in: path
+        required: true
+        description: UUID of the tournament
+        schema:
+          type: string
+          format: uuid
     get:
       tags:
         - Matches
@@ -685,13 +668,6 @@ paths:
       security:
         - bearerAuth: [ ]
       parameters:
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
         - name: past
           in: query
           required: false
@@ -735,14 +711,6 @@ paths:
       operationId: createTournamentMatch
       security:
         - bearerAuth: [ SUPERUSER ]
-      parameters:
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
       requestBody:
         required: true
         content:
@@ -782,6 +750,14 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 
   /api/tournaments/{tournamentId}/groups:
+    parameters:
+      - name: tournamentId
+        in: path
+        required: true
+        description: UUID of the tournament
+        schema:
+          type: string
+          format: uuid
     get:
       tags:
         - Groups
@@ -792,13 +768,6 @@ paths:
       security:
         - bearerAuth: [ ]
       parameters:
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
         - name: search
           in: query
           required: false
@@ -831,14 +800,6 @@ paths:
       operationId: createGroup
       security:
         - bearerAuth: [ ]
-      parameters:
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
       requestBody:
         required: true
         content:
@@ -878,6 +839,21 @@ paths:
                   rejectedValue: General
 
   /api/tournaments/{tournamentId}/groups/{groupId}/join:
+    parameters:
+      - name: tournamentId
+        in: path
+        required: true
+        description: UUID of the tournament
+        schema:
+          type: string
+          format: uuid
+      - name: groupId
+        in: path
+        required: true
+        description: UUID of the group
+        schema:
+          type: string
+          format: uuid
     post:
       tags:
         - Groups
@@ -888,21 +864,6 @@ paths:
       operationId: joinGroup
       security:
         - bearerAuth: [ ]
-      parameters:
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
-        - name: groupId
-          in: path
-          required: true
-          description: UUID of the group to join
-          schema:
-            type: string
-            format: uuid
       responses:
         '201':
           description: Joined group successfully
@@ -939,6 +900,21 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /api/tournaments/{tournamentId}/groups/{groupId}/leave:
+    parameters:
+      - name: tournamentId
+        in: path
+        required: true
+        description: UUID of the tournament
+        schema:
+          type: string
+          format: uuid
+      - name: groupId
+        in: path
+        required: true
+        description: UUID of the group
+        schema:
+          type: string
+          format: uuid
     delete:
       tags:
         - Groups
@@ -949,21 +925,6 @@ paths:
       operationId: leaveGroup
       security:
         - bearerAuth: [ ]
-      parameters:
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
-        - name: groupId
-          in: path
-          required: true
-          description: UUID of the group to leave
-          schema:
-            type: string
-            format: uuid
       responses:
         '204':
           description: Left group successfully
@@ -980,7 +941,29 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/tournaments/{tournamentId}/groups/{groupId}/accept/{candidateId}:
+  /api/tournaments/{tournamentId}/groups/{groupId}/members/{candidateId}/accept:
+    parameters:
+      - name: tournamentId
+        in: path
+        required: true
+        description: UUID of the tournament
+        schema:
+          type: string
+          format: uuid
+      - name: groupId
+        in: path
+        required: true
+        description: UUID of the group to join
+        schema:
+          type: string
+          format: uuid
+      - name: candidateId
+        in: path
+        required: true
+        description: UUID of the user to accept
+        schema:
+          type: string
+          format: uuid
     put:
       tags:
         - Groups
@@ -990,28 +973,6 @@ paths:
       operationId: acceptCandidate
       security:
         - bearerAuth: [ ]
-      parameters:
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
-        - name: groupId
-          in: path
-          required: true
-          description: UUID of the group to join
-          schema:
-            type: string
-            format: uuid
-        - name: candidateId
-          in: path
-          required: true
-          description: UUID of the user to accept
-          schema:
-            type: string
-            format: uuid
       responses:
         '200':
           description: User accepted successfully
@@ -1047,7 +1008,29 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/tournaments/{tournamentId}/groups/{groupId}/reject/{candidateId}:
+  /api/tournaments/{tournamentId}/groups/{groupId}/members/{candidateId}/reject:
+    parameters:
+      - name: tournamentId
+        in: path
+        required: true
+        description: UUID of the tournament
+        schema:
+          type: string
+          format: uuid
+      - name: groupId
+        in: path
+        required: true
+        description: UUID of the group
+        schema:
+          type: string
+          format: uuid
+      - name: candidateId
+        in: path
+        required: true
+        description: UUID of the user
+        schema:
+          type: string
+          format: uuid
     delete:
       tags:
         - Groups
@@ -1057,28 +1040,6 @@ paths:
       operationId: rejectCandidate
       security:
         - bearerAuth: [ ]
-      parameters:
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
-        - name: groupId
-          in: path
-          required: true
-          description: UUID of the group to join
-          schema:
-            type: string
-            format: uuid
-        - name: candidateId
-          in: path
-          required: true
-          description: UUID of the user to accept
-          schema:
-            type: string
-            format: uuid
       responses:
         '200':
           description: User rejected successfully
@@ -1114,7 +1075,139 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/tournaments/{tournamentId}/groups/{groupId}/members/{memberId}:
+    parameters:
+      - name: tournamentId
+        in: path
+        required: true
+        description: UUID of the tournament
+        schema:
+          type: string
+          format: uuid
+      - name: groupId
+        in: path
+        required: true
+        description: UUID of the group
+        schema:
+          type: string
+          format: uuid
+      - name: memberId
+        in: path
+        required: true
+        description: UUID of the member
+        schema:
+          type: string
+          format: uuid
+    patch:
+      tags:
+        - Groups
+      summary: Manage group member
+      description: |
+        Partially updates specific data from a group member, as the role.
+      operationId: manageMember
+      security:
+        - bearerAuth: [ SUPERUSER ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGroupRequest"
+            example:
+              name: Updated Name
+              maxMembers: 30
+      responses:
+        "200":
+          description: Member updated successfully
+        "400":
+          description: Invalid request body or validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: SUPERUSER access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Tournament, group or user not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: General error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      tags:
+        - Groups
+      summary: Kick a group member
+      description: |
+        Remove a member from the group
+      operationId: kickMember
+      security:
+        - bearerAuth: [ SUPERUSER ]
+      responses:
+        "204":
+          description: Member removed successfully
+        "400":
+          description: Invalid request body or validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: SUPERUSER access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Tournament, group or user not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: General error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/tournaments/{tournamentId}/groups/{groupId}:
+    parameters:
+      - name: tournamentId
+        in: path
+        required: true
+        description: UUID of the tournament
+        schema:
+          type: string
+          format: uuid
+      - name: groupId
+        in: path
+        required: true
+        description: UUID of the group
+        schema:
+          type: string
+          format: uuid
     get:
       tags:
         - Groups
@@ -1125,13 +1218,6 @@ paths:
       security:
         - bearerAuth: [ ]
       parameters:
-        - name: groupId
-          in: path
-          required: true
-          description: UUID of the group
-          schema:
-            type: string
-            format: uuid
         - name: live
           in: query
           required: false
@@ -1160,14 +1246,6 @@ paths:
       operationId: updateGroup
       security:
         - bearerAuth: [ ]
-      parameters:
-        - name: groupId
-          in: path
-          required: true
-          description: UUID of the group to update
-          schema:
-            type: string
-            format: uuid
       requestBody:
         required: true
         content:
@@ -1219,14 +1297,6 @@ paths:
       operationId: deleteGroup
       security:
         - bearerAuth: [ ]
-      parameters:
-        - name: groupId
-          in: path
-          required: true
-          description: UUID of the group to delete
-          schema:
-            type: string
-            format: uuid
       responses:
         "204":
           description: Group deleted successfully
@@ -1238,6 +1308,21 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 
   /api/tournaments/{tournamentId}/groups/{groupId}/predictions/awards:
+    parameters:
+      - name: tournamentId
+        in: path
+        required: true
+        description: UUID of the tournament
+        schema:
+          type: string
+          format: uuid
+      - name: groupId
+        in: path
+        required: true
+        description: UUID of the group
+        schema:
+          type: string
+          format: uuid
     get:
       tags:
         - Awards
@@ -1247,21 +1332,6 @@ paths:
       operationId: getGroupAwardPredictions
       security:
         - bearerAuth: [ ]
-      parameters:
-        - name: groupId
-          in: path
-          required: true
-          description: UUID of the group
-          schema:
-            type: string
-            format: uuid
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
       responses:
         "200":
           description: User awards predictions for the group retrieved successfully
@@ -1284,21 +1354,6 @@ paths:
       operationId: submitGroupAwardPredictions
       security:
         - bearerAuth: [ ]
-      parameters:
-        - name: groupId
-          in: path
-          required: true
-          description: UUID of the group
-          schema:
-            type: string
-            format: uuid
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
       requestBody:
         required: true
         content:
@@ -1332,6 +1387,21 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 
   /api/tournaments/{tournamentId}/groups/{groupId}/predictions/awards/me:
+    parameters:
+      - name: tournamentId
+        in: path
+        required: true
+        description: UUID of the tournament
+        schema:
+          type: string
+          format: uuid
+      - name: groupId
+        in: path
+        required: true
+        description: UUID of the group
+        schema:
+          type: string
+          format: uuid
     get:
       tags:
         - Awards
@@ -1341,21 +1411,6 @@ paths:
       operationId: getMyGroupAwardPredictions
       security:
         - bearerAuth: [ ]
-      parameters:
-        - name: groupId
-          in: path
-          required: true
-          description: UUID of the group
-          schema:
-            type: string
-            format: uuid
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
       responses:
         "200":
           description: User awards predictions for the group retrieved successfully
@@ -1371,6 +1426,21 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 
   /api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches:
+    parameters:
+      - name: tournamentId
+        in: path
+        required: true
+        description: UUID of the tournament
+        schema:
+          type: string
+          format: uuid
+      - name: groupId
+        in: path
+        required: true
+        description: UUID of the group
+        schema:
+          type: string
+          format: uuid
     get:
       tags:
         - Predictions
@@ -1380,21 +1450,6 @@ paths:
       operationId: getGroupMatchPredictions
       security:
         - bearerAuth: [ ]
-      parameters:
-        - name: groupId
-          in: path
-          required: true
-          description: UUID of the group
-          schema:
-            type: string
-            format: uuid
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
       responses:
         "200":
           description: User predictions for the group retrieved successfully
@@ -1417,21 +1472,6 @@ paths:
       operationId: submitGroupBulkMatchPredictions
       security:
         - bearerAuth: [ ]
-      parameters:
-        - name: groupId
-          in: path
-          required: true
-          description: UUID of the group
-          schema:
-            type: string
-            format: uuid
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
       requestBody:
         required: true
         content:
@@ -1465,6 +1505,21 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 
   /api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches/me:
+    parameters:
+      - name: tournamentId
+        in: path
+        required: true
+        description: UUID of the tournament
+        schema:
+          type: string
+          format: uuid
+      - name: groupId
+        in: path
+        required: true
+        description: UUID of the group
+        schema:
+          type: string
+          format: uuid
     get:
       tags:
         - Predictions
@@ -1474,21 +1529,6 @@ paths:
       operationId: getMyGroupMatchPredictions
       security:
         - bearerAuth: [ ]
-      parameters:
-        - name: groupId
-          in: path
-          required: true
-          description: UUID of the group
-          schema:
-            type: string
-            format: uuid
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
       responses:
         "200":
           description: User predictions for the group retrieved successfully
@@ -1504,6 +1544,28 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 
   /api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches/{matchId}:
+    parameters:
+      - name: tournamentId
+        in: path
+        required: true
+        description: UUID of the tournament
+        schema:
+          type: string
+          format: uuid
+      - name: groupId
+        in: path
+        required: true
+        description: UUID of the group
+        schema:
+          type: string
+          format: uuid
+      - name: matchId
+        in: path
+        required: true
+        description: UUID of the match
+        schema:
+          type: string
+          format: uuid
     get:
       tags:
         - Predictions
@@ -1513,21 +1575,6 @@ paths:
       operationId: getSingleGroupMatchPredictions
       security:
         - bearerAuth: [ ]
-      parameters:
-        - name: groupId
-          in: path
-          required: true
-          description: UUID of the group
-          schema:
-            type: string
-            format: uuid
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
       responses:
         "200":
           description: Match predictions retrieved successfully
@@ -1562,28 +1609,6 @@ paths:
       operationId: submitGroupSingleMatchPredictions
       security:
         - bearerAuth: [ ]
-      parameters:
-        - name: groupId
-          in: path
-          required: true
-          description: UUID of the group
-          schema:
-            type: string
-            format: uuid
-        - name: tournamentId
-          in: path
-          required: true
-          description: UUID of the tournament
-          schema:
-            type: string
-            format: uuid
-        - name: matchId
-          in: path
-          required: true
-          description: UUID of the match
-          schema:
-            type: string
-            format: uuid
       requestBody:
         required: true
         content:
