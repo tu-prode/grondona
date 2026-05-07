@@ -6,6 +6,9 @@ import com.grondona.createTestingUserRequest
 import com.grondona.model.GroupRole
 import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.CreateGroupRequest
+import com.grondona.model.dto.request.CreateMatchRequest
+import com.grondona.model.dto.request.CreateTeamRequest
+import com.grondona.model.dto.request.SubmitBulkMatchPredictionsRequest
 import com.grondona.model.dto.request.SubmitMatchPredictionRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.model.dto.request.UpdateMemberRequest
@@ -13,7 +16,10 @@ import com.grondona.model.dto.response.AuthenticatedUserResponse
 import com.grondona.model.dto.response.GroupResponse
 import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.repository.GroupRepository
+import com.grondona.repository.MatchPredictionRepository
+import com.grondona.repository.MatchRepository
 import com.grondona.repository.MembershipRepository
+import com.grondona.repository.TeamRepository
 import com.grondona.repository.TournamentRepository
 import com.grondona.repository.UserRepository
 import org.junit.jupiter.api.*
@@ -25,6 +31,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import java.time.LocalDateTime
 import java.util.UUID
 
 @SpringBootTest
@@ -52,6 +59,15 @@ class GroupIntegrationTest {
     @Autowired
     private lateinit var userRepository: UserRepository
 
+    @Autowired
+    private lateinit var teamRepository: TeamRepository
+
+    @Autowired
+    private lateinit var matchRepository: MatchRepository
+
+    @Autowired
+    private lateinit var matchPredictionRepository: MatchPredictionRepository
+
     private var adminToken: String? = null
 
     private var user1Id: String? = null
@@ -61,7 +77,11 @@ class GroupIntegrationTest {
 
     @BeforeAll
     fun setUp() {
+        matchPredictionRepository.deleteAll()
+        membershipRepository.deleteAll()
         groupRepository.deleteAll()
+        matchRepository.deleteAll()
+        teamRepository.deleteAll()
         userRepository.deleteAll()
         tournamentRepository.deleteAll()
 
@@ -99,9 +119,13 @@ class GroupIntegrationTest {
 
     @AfterAll
     fun tearDown() {
+        matchPredictionRepository.deleteAll()
         membershipRepository.deleteAll()
         groupRepository.deleteAll()
+        matchRepository.deleteAll()
+        teamRepository.deleteAll()
         userRepository.deleteAll()
+        tournamentRepository.deleteAll()
     }
 
     @Nested
@@ -677,6 +701,102 @@ class GroupIntegrationTest {
         private var user5Id: String? = null
         private var user5Token: String? = null
         private var privateGroupId: String? = null
+        private lateinit var match1Id: UUID
+        private lateinit var match2Id: UUID
+
+        private fun createTeam(name: String, code: String): UUID {
+            val request = CreateTeamRequest(name = name, code = code, icon = code.lowercase())
+            val result = mockMvc.perform(
+                post("/api/tournaments/{tournamentId}/teams", testTournamentId)
+                    .header("Authorization", "Bearer $adminToken")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isCreated)
+                .andReturn()
+
+            return UUID.fromString(objectMapper.readTree(result.response.contentAsString).get("id").asText())
+        }
+
+        private fun createMatch(code: String, homeTeamId: String, awayTeamId: String, startedAt: LocalDateTime): UUID {
+            val request = CreateMatchRequest(
+                code = code,
+                homeTeam = UUID.fromString(homeTeamId),
+                awayTeam = UUID.fromString(awayTeamId),
+                startedAt = startedAt
+            )
+            val result = mockMvc.perform(
+                post("/api/tournaments/{tournamentId}/matches", testTournamentId)
+                    .header("Authorization", "Bearer $adminToken")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isCreated)
+                .andReturn()
+
+            return UUID.fromString(objectMapper.readTree(result.response.contentAsString).get("id").asText())
+        }
+
+        private fun submitGroupBulkMatchPredictions(
+            token: String?,
+            match1HomeGoals: Int,
+            match1AwayGoals: Int,
+            match2HomeGoals: Int,
+            match2AwayGoals: Int
+        ) {
+            val request = SubmitBulkMatchPredictionsRequest(
+                predictions = listOf(
+                    SubmitMatchPredictionRequest(matchId = match1Id, homeGoals = match1HomeGoals, awayGoals = match1AwayGoals),
+                    SubmitMatchPredictionRequest(matchId = match2Id, homeGoals = match2HomeGoals, awayGoals = match2AwayGoals)
+                )
+            )
+
+            mockMvc.perform(
+                post("/api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches", testTournamentId, privateGroupId)
+                    .header("Authorization", "Bearer $token")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isCreated)
+                .andExpect(jsonPath("$.predictions[?(@.match.id == '$match1Id')].prediction.home_goals").value(match1HomeGoals))
+                .andExpect(jsonPath("$.predictions[?(@.match.id == '$match1Id')].prediction.away_goals").value(match1AwayGoals))
+                .andExpect(jsonPath("$.predictions[?(@.match.id == '$match2Id')].prediction.home_goals").value(match2HomeGoals))
+                .andExpect(jsonPath("$.predictions[?(@.match.id == '$match2Id')].prediction.away_goals").value(match2AwayGoals))
+        }
+
+        private fun getMyGroupMatchPredictions(
+            token: String?,
+            match1HomeGoals: Int,
+            match1AwayGoals: Int,
+            match2HomeGoals: Int,
+            match2AwayGoals: Int
+        ) {
+            mockMvc.perform(
+                get("/api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches/me", testTournamentId, privateGroupId)
+                    .header("Authorization", "Bearer $token")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.predictions.length()").value(2))
+                .andExpect(jsonPath("$.predictions[?(@.match.id == '$match1Id')].prediction.home_goals").value(match1HomeGoals))
+                .andExpect(jsonPath("$.predictions[?(@.match.id == '$match1Id')].prediction.away_goals").value(match1AwayGoals))
+                .andExpect(jsonPath("$.predictions[?(@.match.id == '$match2Id')].prediction.home_goals").value(match2HomeGoals))
+                .andExpect(jsonPath("$.predictions[?(@.match.id == '$match2Id')].prediction.away_goals").value(match2AwayGoals))
+        }
+
+        private fun assertGroupStandings(token: String?, vararg expectedUserIds: String?) {
+            var resultActions = mockMvc.perform(
+                get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, privateGroupId)
+                    .header("Authorization", "Bearer $token")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.id").value(privateGroupId))
+                .andExpect(jsonPath("$.standings.length()").value(expectedUserIds.size))
+
+            expectedUserIds.forEach { userId ->
+                resultActions = resultActions
+                    .andExpect(jsonPath("$.standings[?(@.user.id == '$userId')].points").value(0.0))
+            }
+        }
 
         @BeforeAll
         fun setUp() {
@@ -723,6 +843,11 @@ class GroupIntegrationTest {
                     .content(objectMapper.writeValueAsString(CreateGroupRequest(name = "Public Group", maxMembers = 10)))
             ).andReturn()
             privateGroupId = objectMapper.readValue(groupResult.response.contentAsString, GroupResponse::class.java).id.toString()
+
+            val team1Id = createTeam("Flow Team One", "FLOW1").toString()
+            val team2Id = createTeam("Flow Team Two", "FLOW2").toString()
+            match1Id = createMatch("FLOW-1", team1Id, team2Id, LocalDateTime.now().plusDays(10))
+            match2Id = createMatch("FLOW-2", team2Id, team1Id, LocalDateTime.now().plusDays(11))
         }
 
         @Test
@@ -738,7 +863,7 @@ class GroupIntegrationTest {
 
         @Test
         @Order(2)
-        fun `user 2 joins the private group`() {
+        fun `user 2 joins the public group`() {
             mockMvc.perform(
                 post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, privateGroupId)
                     .header("Authorization", "Bearer $user2Token")
@@ -747,24 +872,19 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(9)
-        fun `user 2 can submit predictions`() {
-
-        }
-
-        @Test
         @Order(3)
-        fun `user 2 can check group standings`() {
-            mockMvc.perform(
-                get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, privateGroupId)
-                    .header("Authorization", "Bearer $user2Token")
-            )
-                .andExpect(status().isOk)
-                .andExpect(jsonPath("$.id").value(privateGroupId))
+        fun `user 2 can submit predictions`() {
+            submitGroupBulkMatchPredictions(user2Token, 1, 0, 2, 2)
         }
 
         @Test
         @Order(4)
+        fun `user 2 can check group standings`() {
+            assertGroupStandings(user2Token, user1Id, user2Id)
+        }
+
+        @Test
+        @Order(5)
         fun `user 3 joins the public group`() {
             mockMvc.perform(
                 post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, privateGroupId)
@@ -774,24 +894,19 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(9)
-        fun `user 3 can submit predictions`() {
-
-        }
-
-        @Test
-        @Order(5)
-        fun `user 3 can check group standings`() {
-            mockMvc.perform(
-                get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, privateGroupId)
-                    .header("Authorization", "Bearer $user3Token")
-            )
-                .andExpect(status().isOk)
-                .andExpect(jsonPath("$.id").value(privateGroupId))
-        }
-
-        @Test
         @Order(6)
+        fun `user 3 can submit predictions`() {
+            submitGroupBulkMatchPredictions(user3Token, 0, 1, 3, 1)
+        }
+
+        @Test
+        @Order(7)
+        fun `user 3 can check group standings`() {
+            assertGroupStandings(user3Token, user1Id, user2Id, user3Id)
+        }
+
+        @Test
+        @Order(8)
         fun `user 4 joins the public group`() {
             mockMvc.perform(
                 post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, privateGroupId)
@@ -803,22 +918,17 @@ class GroupIntegrationTest {
         @Test
         @Order(9)
         fun `user 4 can submit predictions`() {
-
+            submitGroupBulkMatchPredictions(user4Token, 2, 1, 0, 0)
         }
 
         @Test
-        @Order(7)
+        @Order(10)
         fun `user 4 can check group standings`() {
-            mockMvc.perform(
-                get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, privateGroupId)
-                    .header("Authorization", "Bearer $user4Token")
-            )
-                .andExpect(status().isOk)
-                .andExpect(jsonPath("$.id").value(privateGroupId))
+            assertGroupStandings(user4Token, user1Id, user2Id, user3Id, user4Id)
         }
 
         @Test
-        @Order(8)
+        @Order(11)
         fun `user 1 updates user 2 to group admin`() {
             mockMvc.perform(
                 patch("/api/tournaments/{tournamentId}/groups/{groupId}/members/{memberId}", testTournamentId, privateGroupId, user2Id)
@@ -830,7 +940,7 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(9)
+        @Order(12)
         fun `user 2 checks its status for the public group and its now admin`() {
             mockMvc.perform(
                 get("/api/users/me/groups")
@@ -841,7 +951,7 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(10)
+        @Order(13)
         fun `user 1 tries to change user 2 role to owner and fails`() {
             mockMvc.perform(
                 patch("/api/tournaments/{tournamentId}/groups/{groupId}/members/{memberId}", testTournamentId, privateGroupId, user2Id)
@@ -854,7 +964,7 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(11)
+        @Order(14)
         fun `user 1 tries to change user 2 role to candidate and fails`() {
             mockMvc.perform(
                 patch("/api/tournaments/{tournamentId}/groups/{groupId}/members/{memberId}", testTournamentId, privateGroupId, user2Id)
@@ -867,7 +977,7 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(12)
+        @Order(15)
         fun `user 2 updates user 3 to group admin`() {
             mockMvc.perform(
                 patch("/api/tournaments/{tournamentId}/groups/{groupId}/members/{memberId}", testTournamentId, privateGroupId, user3Id)
@@ -879,31 +989,10 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(13)
-        fun `user 2 kicks user 3 from the group`() {
+        @Order(16)
+        fun `user 2 tries to kicks user 3 from the group and fails`() {
             mockMvc.perform(
                 delete("/api/tournaments/{tournamentId}/groups/{groupId}/members/{memberId}", testTournamentId, privateGroupId, user3Id)
-                    .header("Authorization", "Bearer $user2Token")
-            )
-                .andExpect(status().isOk)
-        }
-
-        @Test
-        @Order(14)
-        fun `user 3 cannot get group since is no longer member`() {
-            mockMvc.perform(
-                get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, privateGroupId)
-                    .header("Authorization", "Bearer $user3Token")
-            )
-                .andExpect(status().isForbidden)
-                .andExpect(jsonPath("$.message").value("User not allowed"))
-        }
-
-        @Test
-        @Order(15)
-        fun `user 2 tries to kick user 1 from the group and fails`() {
-            mockMvc.perform(
-                delete("/api/tournaments/{tournamentId}/groups/{groupId}/members/{memberId}", testTournamentId, privateGroupId, user1Id)
                     .header("Authorization", "Bearer $user2Token")
             )
                 .andExpect(status().isForbidden)
@@ -911,17 +1000,23 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(16)
-        fun `user 1 kicks user 4 from the group`() {
+        @Order(17)
+        fun `user 2 kicks user 4 from the group`() {
             mockMvc.perform(
                 delete("/api/tournaments/{tournamentId}/groups/{groupId}/members/{memberId}", testTournamentId, privateGroupId, user4Id)
-                    .header("Authorization", "Bearer $user1Token")
+                    .header("Authorization", "Bearer $user2Token")
             )
                 .andExpect(status().isNoContent)
         }
 
         @Test
-        @Order(17)
+        @Order(18)
+        fun `user 2 checks standings table and there are now 3 users`() {
+            assertGroupStandings(user1Token, user1Id, user2Id, user3Id)
+        }
+
+        @Test
+        @Order(19)
         fun `user 4 cannot get group since is no longer member`() {
             mockMvc.perform(
                 get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, privateGroupId)
@@ -932,13 +1027,45 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(17)
-        fun `user 1 checks standings table and theres only 2 users`() {
-
+        @Order(20)
+        fun `user 2 tries to kick user 1 from the group and fails`() {
+            mockMvc.perform(
+                delete("/api/tournaments/{tournamentId}/groups/{groupId}/members/{memberId}", testTournamentId, privateGroupId, user1Id)
+                    .header("Authorization", "Bearer $user2Token")
+            )
+                .andExpect(status().isForbidden)
+                .andExpect(jsonPath("$.message").value("You have no access to perform this action"))
         }
 
         @Test
-        @Order(18)
+        @Order(21)
+        fun `user 1 kicks user 3 from the group`() {
+            mockMvc.perform(
+                delete("/api/tournaments/{tournamentId}/groups/{groupId}/members/{memberId}", testTournamentId, privateGroupId, user3Id)
+                    .header("Authorization", "Bearer $user1Token")
+            )
+                .andExpect(status().isNoContent)
+        }
+
+        @Test
+        @Order(22)
+        fun `user 3 cannot get group since is no longer member`() {
+            mockMvc.perform(
+                get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, privateGroupId)
+                    .header("Authorization", "Bearer $user3Token")
+            )
+                .andExpect(status().isForbidden)
+                .andExpect(jsonPath("$.message").value("User not allowed"))
+        }
+
+        @Test
+        @Order(23)
+        fun `user 1 checks standings table and there are only 2 users`() {
+            assertGroupStandings(user1Token, user1Id, user2Id)
+        }
+
+        @Test
+        @Order(24)
         fun `user 1 kicks user 2 from the group`() {
             mockMvc.perform(
                 delete("/api/tournaments/{tournamentId}/groups/{groupId}/members/{memberId}", testTournamentId, privateGroupId, user2Id)
@@ -948,7 +1075,7 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(19)
+        @Order(25)
         fun `user 2 cannot get group since is no longer member`() {
             mockMvc.perform(
                 get("/api/tournaments/{tournamentId}/groups/{groupId}", testTournamentId, privateGroupId)
@@ -959,7 +1086,7 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(20)
+        @Order(26)
         fun `user 1 cannot update its own data`() {
             mockMvc.perform(
                 patch("/api/tournaments/{tournamentId}/groups/{groupId}/members/{memberId}", testTournamentId, privateGroupId, user1Id)
@@ -972,7 +1099,7 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(21)
+        @Order(27)
         fun `user 2 rejoins the group`() {
             mockMvc.perform(
                 post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, privateGroupId)
@@ -982,13 +1109,13 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(21)
+        @Order(28)
         fun `user 2 checks its old predictions are still there`() {
-
+            getMyGroupMatchPredictions(user2Token, 1, 0, 2, 2)
         }
 
         @Test
-        @Order(22)
+        @Order(29)
         fun `user 3 rejoins the group`() {
             mockMvc.perform(
                 post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, privateGroupId)
@@ -998,13 +1125,13 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(21)
+        @Order(30)
         fun `user 3 checks its old predictions are still there`() {
-
+            getMyGroupMatchPredictions(user3Token, 0, 1, 3, 1)
         }
 
         @Test
-        @Order(23)
+        @Order(31)
         fun `user 4 rejoins the group`() {
             mockMvc.perform(
                 post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, privateGroupId)
@@ -1014,13 +1141,13 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(21)
+        @Order(32)
         fun `user 4 checks its old predictions are still there`() {
-
+            getMyGroupMatchPredictions(user4Token, 2, 1, 0, 0)
         }
 
         @Test
-        @Order(24)
+        @Order(33)
         fun `user 1 updates user 4 to group admin`() {
             mockMvc.perform(
                 patch("/api/tournaments/{tournamentId}/groups/{groupId}/members/{memberId}", testTournamentId, privateGroupId, user4Id)
@@ -1032,7 +1159,7 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(25)
+        @Order(34)
         fun `user 4 is now assigned as group admin`() {
             mockMvc.perform(
                 get("/api/users/me/groups")
@@ -1043,7 +1170,7 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(26)
+        @Order(35)
         fun `user 1 leaves the group`() {
             mockMvc.perform(
                 delete("/api/tournaments/{tournamentId}/groups/{groupId}/leave", testTournamentId, privateGroupId)
@@ -1053,7 +1180,7 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(27)
+        @Order(36)
         fun `user 4 is now assigned as group owner`() {
             mockMvc.perform(
                 get("/api/users/me/groups")
@@ -1064,7 +1191,7 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(28)
+        @Order(37)
         fun `user 4 leaves the group`() {
             mockMvc.perform(
                 delete("/api/tournaments/{tournamentId}/groups/{groupId}/leave", testTournamentId, privateGroupId)
@@ -1074,7 +1201,7 @@ class GroupIntegrationTest {
         }
 
         @Test
-        @Order(29)
+        @Order(38)
         fun `user 2 is now assigned as group owner`() {
             mockMvc.perform(
                 get("/api/users/me/groups")
