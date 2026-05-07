@@ -1959,6 +1959,7 @@ components:
         - name
         - private
         - max_members
+        - total_members
         - has_started
         - standings
         - candidates
@@ -1985,6 +1986,11 @@ components:
           type: integer
           format: int16
           description: Maximum number of members allowed
+          example: 50
+        total_members:
+          type: integer
+          format: int16
+          description: Current amount of members
           example: 50
         has_started:
           type: boolean

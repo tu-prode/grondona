@@ -102,7 +102,7 @@ class GroupController(
     }
 
     @GetMapping
-    fun getAllGroups(
+    fun searchGroups(
         @AuthenticationPrincipal principal: JwtUserPrincipal?,
         @PathVariable tournamentId: UUID,
         @RequestParam(required = false) search: String?,
@@ -111,7 +111,7 @@ class GroupController(
         logger.info("GET /api/tournaments/{}/groups - Fetching groups, search='{}', joined='{}'", tournamentId, search, joined)
         principal?.userId ?: throw UnauthorizedException("Authentication required")
 
-        val response = groupService.findOtherGroups(principal.userId, tournamentId, search, joined)
+        val response = groupService.searchGroups(principal.userId, tournamentId, search, joined)
         logger.info("GET /api/tournaments/{}/groups - Returning {} groups", tournamentId, response.size)
         return ResponseEntity.ok(response)
     }

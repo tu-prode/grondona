@@ -284,7 +284,7 @@ class GroupControllerTest {
                 testGroupResponse,
                 testGroupResponse.copy(id = UUID.randomUUID(), name = "Second Group")
             )
-            every { groupService.findOtherGroups(testUserId, testTournamentId, null, null) } returns groups
+            every { groupService.searchGroups(testUserId, testTournamentId, null, null) } returns groups
 
             setAuthenticatedUser(testUserId)
             mockMvc.perform(get("/api/tournaments/{tournamentId}/groups", testTournamentId))
@@ -297,7 +297,7 @@ class GroupControllerTest {
         @Test
         fun `GET api groups should return filtered groups when search and joined params provided`() {
             val groups = listOf(testGroupResponse)
-            every { groupService.findOtherGroups(testUserId, testTournamentId, "test", false) } returns groups
+            every { groupService.searchGroups(testUserId, testTournamentId, "test", false) } returns groups
 
             setAuthenticatedUser(testUserId)
             mockMvc.perform(get("/api/tournaments/{tournamentId}/groups", testTournamentId).param("search", "test").param( "joined", "false"))
@@ -308,7 +308,7 @@ class GroupControllerTest {
 
         @Test
         fun `GET api groups should return empty list when no groups match search`() {
-            every { groupService.findOtherGroups(testUserId, testTournamentId, "xyz", false) } returns emptyList()
+            every { groupService.searchGroups(testUserId, testTournamentId, "xyz", false) } returns emptyList()
 
             setAuthenticatedUser(testUserId)
             mockMvc.perform(get("/api/tournaments/{tournamentId}/groups", testTournamentId).param("search", "xyz").param( "joined", "false"))
