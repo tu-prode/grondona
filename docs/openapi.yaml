@@ -705,10 +705,10 @@ paths:
     post:
       tags:
         - Tournaments
-      summary: Create a match for a tournament
+      summary: Create matches for a tournament
       description: |
-        Create a new tournament match
-      operationId: createTournamentMatch
+        Create new tournament matches
+      operationId: createTournamentMatches
       security:
         - bearerAuth: [ SUPERUSER ]
       requestBody:
@@ -716,7 +716,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateMatchRequest"
+              $ref: "#/components/schemas/CreateMatchesRequest"
       responses:
         "201":
           description: Match created successfully
@@ -2247,6 +2247,15 @@ components:
         - NOT_STARTED
         - IN_PROGRESS
         - FINISHED
+
+    CreateMatchesRequest:
+      description: Multiple matches to be created
+      type: object
+      required:
+        - matches
+      properties:
+        matches:
+          $ref: '#/components/schemas/CreateMatchRequest'
 
     CreateMatchRequest:
       description: A match to be created

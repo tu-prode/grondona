@@ -7,6 +7,7 @@ import com.grondona.model.PlayerPosition
 import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.CreateMatchRequest
+import com.grondona.model.dto.request.CreateMatchesRequest
 import com.grondona.model.dto.request.CreatePlayerRequest
 import com.grondona.model.dto.request.CreateTeamRequest
 import com.grondona.model.dto.request.SubmitAwardPredictionRequest
@@ -597,7 +598,9 @@ class PredictionIntegrationTest {
     }
 
     private fun createMatch(code: String, homeTeamId: UUID, awayTeamId: UUID, startedAt: LocalDateTime): MatchResponse {
-        val request = CreateMatchRequest(code = code, homeTeam = homeTeamId, awayTeam = awayTeamId, startedAt = startedAt)
+        val request = CreateMatchesRequest(
+            matches = listOf(CreateMatchRequest(code = code, homeTeam = homeTeamId, awayTeam = awayTeamId, startedAt = startedAt))
+        )
         val result = mockMvc.perform(
             post("/api/tournaments/{tournamentId}/matches", tournamentId)
                 .header("Authorization", "Bearer $adminToken")

@@ -58,7 +58,7 @@ data class TournamentMatchesResponse(
     val totalNextMatches: Int,
 ) {
     companion object {
-        fun from(tournament: Tournament, matches: List<Match>, past: Int?, next: Int?, live: Int?): TournamentMatchesResponse {
+        fun from(tournament: Tournament, matches: List<Match>, past: Int? = null, next: Int? = null, live: Int? = null): TournamentMatchesResponse {
             var pastMatches = matches.filter { it.status == MatchStatus.FINISHED }.map(MatchResponse::from).sortedByDescending { it.startedAt }
             var liveMatches = matches.filter { it.status == MatchStatus.IN_PROGRESS }.map(MatchResponse::from)
             var nextMatches = matches.filter { it.status == MatchStatus.NOT_STARTED }.map(MatchResponse::from)

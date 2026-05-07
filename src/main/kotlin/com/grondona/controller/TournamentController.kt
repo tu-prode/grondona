@@ -2,12 +2,11 @@ package com.grondona.controller
 
 import com.grondona.exception.ForbiddenException
 import com.grondona.exception.UnauthorizedException
-import com.grondona.model.dto.request.CreateMatchRequest
+import com.grondona.model.dto.request.CreateMatchesRequest
 import com.grondona.model.dto.request.CreatePlayerRequest
 import com.grondona.model.dto.request.CreateTeamRequest
 import com.grondona.model.dto.request.CreateTournamentRequest
 import com.grondona.model.dto.request.UpdateTournamentRequest
-import com.grondona.model.dto.response.MatchResponse
 import com.grondona.model.dto.response.PlayerResponse
 import com.grondona.model.dto.response.TeamResponse
 import com.grondona.model.dto.response.TournamentMatchesResponse
@@ -133,14 +132,14 @@ class TournamentController(
     }
 
     @PostMapping("/{tournamentId}/matches")
-    fun createTournamentMatch(
+    fun createTournamentMatches(
         @AuthenticationPrincipal principal: JwtUserPrincipal?,
         @PathVariable tournamentId: UUID,
-        @Valid @RequestBody request: CreateMatchRequest,
-    ): ResponseEntity<MatchResponse> {
+        @Valid @RequestBody request: CreateMatchesRequest,
+    ): ResponseEntity<TournamentMatchesResponse> {
         return withSuperuserValidation(principal) {
             logger.info("POST /api/tournaments/{}/matches - Creating match: code='{}'", tournamentId, request.code)
-            val response = tournamentService.createTournamentMatch(tournamentId, request)
+            val response = tournamentService.createTournamentMatches(tournamentId, request)
             logger.info("POST /api/tournaments/{}/matches - Match created: code='{}', id={}", tournamentId, response.code, response.id)
             ResponseEntity.status(HttpStatus.CREATED).body(response)
         }

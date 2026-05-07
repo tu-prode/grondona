@@ -7,6 +7,7 @@ import com.grondona.model.GroupRole
 import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.CreateMatchRequest
+import com.grondona.model.dto.request.CreateMatchesRequest
 import com.grondona.model.dto.request.CreateTeamRequest
 import com.grondona.model.dto.request.SubmitBulkMatchPredictionsRequest
 import com.grondona.model.dto.request.SubmitMatchPredictionRequest
@@ -719,11 +720,13 @@ class GroupIntegrationTest {
         }
 
         private fun createMatch(code: String, homeTeamId: String, awayTeamId: String, startedAt: LocalDateTime): UUID {
-            val request = CreateMatchRequest(
-                code = code,
-                homeTeam = UUID.fromString(homeTeamId),
-                awayTeam = UUID.fromString(awayTeamId),
-                startedAt = startedAt
+            val request = CreateMatchesRequest(
+                matches = listOf(CreateMatchRequest(
+                    code = code,
+                    homeTeam = UUID.fromString(homeTeamId),
+                    awayTeam = UUID.fromString(awayTeamId),
+                    startedAt = startedAt,
+                ))
             )
             val result = mockMvc.perform(
                 post("/api/tournaments/{tournamentId}/matches", testTournamentId)
