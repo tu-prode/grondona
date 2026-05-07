@@ -38,22 +38,22 @@ data class Tournament(
     val id: UUID? = null,
 
     @Column(nullable = false, unique = true)
-    var name: String,
+    val name: String,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    var status: TournamentStatus = TournamentStatus.NOT_STARTED,
+    val status: TournamentStatus = TournamentStatus.NOT_STARTED,
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(nullable = true)
-    var awards: Awards? = null,
+    val awards: Awards? = null,
 
     @Column(name = "created_at", nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now(),
+    val updatedAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "deleted_at")
-    var deletedAt: LocalDateTime? = null
+    val deletedAt: LocalDateTime? = null
 )

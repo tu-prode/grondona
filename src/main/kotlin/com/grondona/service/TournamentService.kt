@@ -84,26 +84,26 @@ class TournamentService(
             NotFoundException("Tournament not found")
         }
 
-        request.name?.let { newName ->
-            if (newName != tournament.name && tournamentRepository.existsByName(newName)) {
-                logger.warn("Tournament update failed: name '{}' already exists", newName)
-                throw ConflictException(message = "Tournament name already exists", field = "name", rejectedValue = newName)
-            }
-            tournament.name = newName
-        }
-
-        request.status?.let { newStatus -> tournament.status = newStatus }
-        request.awards?.let { newAwards ->
-            if (tournament.status == TournamentStatus.FINISHED) {
-                tournament.awards = newAwards
-            } else {
-                logger.warn("Tournament update failed: cannot set awards for a non-finished tournament")
-                throw BadRequestException(message = "Setting awards for a non-finished tournament")
+        if (request.name != null) {
+            if (request.name != tournament.name && tournamentRepository.existsByName(request.name)) {
+                logger.warn("Tournament update failed: name '{}' already exists", request.name)
+                throw ConflictException(message = "Tournament name already exists", field = "name", rejectedValue = request.name)
             }
         }
-        tournament.updatedAt = LocalDateTime.now()
 
-        val savedTournament = tournamentRepository.save(tournament)
+        if (request.awards != null && (request.status ?: tournament.status) != TournamentStatus.FINISHED) {
+            logger.warn("Tournament update failed: cannot set awards for a non-finished tournament")
+            throw BadRequestException(message = "Setting awards for a non-finished tournament")
+        }
+
+        val tournamentToSave = tournament.copy(
+            name = request.name ?: tournament.name,
+            status = request.status ?: tournament.status,
+            awards = request.awards ?: tournament.awards,
+            updatedAt = LocalDateTime.now(),
+        )
+
+        val savedTournament = tournamentRepository.save(tournamentToSave)
         logger.info("Tournament updated successfully: id={}, name='{}'", savedTournament.id, savedTournament.name)
 
         if (savedTournament.awards != null) {

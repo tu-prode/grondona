@@ -5,6 +5,7 @@ import com.grondona.exception.BadRequestException
 import com.grondona.exception.ExternalServiceException
 import com.grondona.model.ExternalMatch
 import com.grondona.model.Group
+import com.grondona.model.GroupRole
 import com.grondona.model.Match
 import com.grondona.model.MatchStatus
 import com.grondona.model.MatchPrediction
@@ -111,8 +112,8 @@ class MatchServiceTest {
     @Nested
     inner class UpdateMatchesStatusesTests {
 
-        val systemMatches = (1..10).map { matchFromDB(code = "$it", home = "H$it", away = "A$it") }
-        val externalMatches = (1..10).map { matchFromAPI(code = "$it", home = "H$it", away = "A$it") }
+        private val systemMatches = (1..10).map { matchFromDB(code = "$it", home = "H$it", away = "A$it") }
+        private val externalMatches = (1..10).map { matchFromAPI(code = "$it", home = "H$it", away = "A$it") }
 
         @Test
         fun `updateMatchesStatuses fails when tournamentId is not supported`() {
@@ -139,8 +140,10 @@ class MatchServiceTest {
             every { matchClient.getMatches(testTournamentId) } returns externalMatches
             every { matchRepository.findByTournamentId(testTournamentId) } returns systemMatches
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
-            every { engine.calculateTournamentStatus(systemMatches) } returns TournamentStatus.IN_PROGRESS
-            every { engine.calculateNewMatches(systemMatches, externalMatches) } returns emptyList()
+
+            val consolidatedMatches = externalMatches.map { it.toMatchUpdated(systemMatches)!! }
+            every { engine.calculateTournamentStatus(consolidatedMatches) } returns TournamentStatus.IN_PROGRESS
+            every { engine.calculateNewMatches(consolidatedMatches, externalMatches) } returns emptyList()
 
             every { tournamentRepository.save(any()) } answers { firstArg() }
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
@@ -160,8 +163,10 @@ class MatchServiceTest {
             every { matchClient.getMatches(testTournamentId) } returns externalMatches
             every { matchRepository.findByTournamentId(testTournamentId) } returns systemMatches
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
-            every { engine.calculateTournamentStatus(systemMatches) } returns null
-            every { engine.calculateNewMatches(systemMatches, externalMatches) } returns emptyList()
+
+            val consolidatedMatches = externalMatches.map { it.toMatchUpdated(systemMatches)!! }
+            every { engine.calculateTournamentStatus(consolidatedMatches) } returns null
+            every { engine.calculateNewMatches(consolidatedMatches, externalMatches) } returns emptyList()
 
             verify(exactly = 0) { tournamentRepository.save(any()) }
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
@@ -188,8 +193,11 @@ class MatchServiceTest {
             every { matchClient.getMatches(testTournamentId) } returns externalMatches
             every { matchRepository.findByTournamentId(testTournamentId) } returns systemMatches
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
-            every { engine.calculateTournamentStatus(systemMatches) } returns null
-            every { engine.calculateNewMatches(systemMatches, externalMatches) } returns emptyList()
+
+            val consolidatedMatches = externalMatches.dropLast(1).map { it.toMatchUpdated(systemMatches)!! } + systemMatches.last()
+            every { engine.calculateTournamentStatus(consolidatedMatches) } returns null
+            every { engine.calculateTournamentStatus(consolidatedMatches) } returns null
+            every { engine.calculateNewMatches(consolidatedMatches, externalMatches) } returns emptyList()
 
             verify(exactly = 0) { tournamentRepository.save(any()) }
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
@@ -211,10 +219,11 @@ class MatchServiceTest {
             every { matchClient.getMatches(testTournamentId) } returns externalMatches
             every { matchRepository.findByTournamentId(testTournamentId) } returns systemMatches
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
-            every { engine.calculateTournamentStatus(systemMatches) } returns null
 
+            val consolidatedMatches = externalMatches.map { it.toMatchUpdated(systemMatches)!! }
+            every { engine.calculateTournamentStatus(consolidatedMatches) } returns null
             val newMatches = (11..16).map { matchFromDB(code = "$it", home = "H$it", away = "A$it") }
-            every { engine.calculateNewMatches(systemMatches, externalMatches) } returns newMatches
+            every { engine.calculateNewMatches(consolidatedMatches, externalMatches) } returns newMatches
 
             verify(exactly = 0) { tournamentRepository.save(any()) }
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
@@ -241,13 +250,45 @@ class MatchServiceTest {
         }
 
         @Test
-        fun `updateMatchesStatuses updates match predictions when any of the matches has finished`() {
+        fun `updateMatchesStatuses ignores system finished matches`() {
             val externalMatches = externalMatches.dropLast(1) + externalMatches.last().copy(status = "COMPLETED")
             every { matchClient.getMatches(testTournamentId) } returns externalMatches
+
+            val systemMatches = systemMatches.map { it.copy(status = MatchStatus.IN_PROGRESS, homeGoals = 1, awayGoals = 1) }.dropLast(1) +
+                    systemMatches.last().copy(status = MatchStatus.FINISHED, homeGoals = 1, awayGoals = 1, substatus = "FIN")
             every { matchRepository.findByTournamentId(testTournamentId) } returns systemMatches
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
-            every { engine.calculateTournamentStatus(systemMatches) } returns null
-            every { engine.calculateNewMatches(systemMatches, externalMatches) } returns emptyList()
+
+            val consolidatedMatches = externalMatches.dropLast(1).map { it.toMatchUpdated(systemMatches)!! } + systemMatches.last()
+            every { engine.calculateTournamentStatus(consolidatedMatches) } returns null
+            every { engine.calculateNewMatches(consolidatedMatches, externalMatches) } returns emptyList()
+
+            verify(exactly = 0) { tournamentRepository.save(any()) }
+            every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
+
+            every { matchService.updateMatchPredictionsPoints(any()) } just Runs
+            matchService.updateMatchesStatuses(testTournamentId)
+
+            val slot = slot<List<Match>>()
+            verify(exactly = 1) { matchRepository.saveAll(capture(slot)) }
+            val matchesSaved = slot.captured
+            assertEquals(9, matchesSaved.size)
+            assertEquals(systemMatches.map { it.id }.dropLast(1), matchesSaved.map { it.id })
+            matchesSaved.forEach { assertEquals(MatchStatus.IN_PROGRESS, it.status) }
+        }
+
+        @Test
+        fun `updateMatchesStatuses updates match predictions when any of the matches has finished`() {
+            val externalMatches = externalMatches.dropLast(1) + externalMatches.last().copy(status = "COMPLETED", endedAt = LocalDateTime.now())
+            every { matchClient.getMatches(testTournamentId) } returns externalMatches
+
+            val systemMatches = systemMatches.map { it.copy(status = MatchStatus.IN_PROGRESS, homeGoals = 1, awayGoals = 1) }
+            every { matchRepository.findByTournamentId(testTournamentId) } returns systemMatches
+            every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
+
+            val consolidatedMatches = externalMatches.map { it.toMatchUpdated(systemMatches)!! }
+            every { engine.calculateTournamentStatus(consolidatedMatches) } returns null
+            every { engine.calculateNewMatches(consolidatedMatches, externalMatches) } returns emptyList()
 
             verify(exactly = 0) { tournamentRepository.save(any()) }
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }

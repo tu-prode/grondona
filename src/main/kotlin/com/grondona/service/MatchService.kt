@@ -57,9 +57,8 @@ class MatchService(
 
         val newTournamentStatus = tournamentEngine.calculateTournamentStatus(consolidatedMatches)
         newTournamentStatus?.let {
-            tournament.status = newTournamentStatus
             logger.debug("Setting tournament={} status as {} in DB", tournament.id, newTournamentStatus)
-            tournamentRepository.save(tournament)
+            tournamentRepository.save(tournament.copy(status = newTournamentStatus))
         }
 
         val newMatches = tournamentEngine.calculateNewMatches(consolidatedMatches, apiMatches)

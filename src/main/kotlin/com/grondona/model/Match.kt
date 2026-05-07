@@ -38,7 +38,7 @@ data class Match(
     val id: UUID? = null,
 
     @Column(nullable = false)
-    var code: String,
+    val code: String,
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "tournament_id", nullable = false)
@@ -56,38 +56,38 @@ data class Match(
     val awayTeam: Team,
 
     @Column(name = "home_quota", nullable = false)
-    var homeQuota: Float = 0F,
+    val homeQuota: Float = 0F,
 
     @Column(name = "away_quota", nullable = false)
-    var awayQuota: Float = 0F,
+    val awayQuota: Float = 0F,
 
     @Column(name = "draw_quota", nullable = false)
-    var drawQuota: Float = 0F,
+    val drawQuota: Float = 0F,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    var status: MatchStatus = MatchStatus.NOT_STARTED,
+    val status: MatchStatus = MatchStatus.NOT_STARTED,
 
     @Column(name = "substatus")
-    var substatus: String? = null,
+    val substatus: String? = null,
 
     @Column(name = "started_at")
-    var startedAt: LocalDateTime,
+    val startedAt: LocalDateTime,
 
     @Column(name = "finished_at")
-    var finishedAt: LocalDateTime? = null,
+    val finishedAt: LocalDateTime? = null,
 
     @Column(name = "home_goals")
-    var homeGoals: Int? = null,
+    val homeGoals: Int? = null,
 
     @Column(name = "away_goals")
-    var awayGoals: Int? = null,
+    val awayGoals: Int? = null,
 
     @Column(name = "home_penalties")
-    var homePenalties: Int? = null,
+    val homePenalties: Int? = null,
 
     @Column(name = "away_penalties")
-    var awayPenalties: Int? = null,
+    val awayPenalties: Int? = null,
 
     @Column(name = "has_multiplier")
     val hasMultiplier: Boolean = false,
@@ -96,10 +96,10 @@ data class Match(
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "updated_at", nullable = false)
-    var updatedAt: LocalDateTime = LocalDateTime.now(),
+    val updatedAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "deleted_at")
-    var deletedAt: LocalDateTime? = null
+    val deletedAt: LocalDateTime? = null
 ) {
     fun score(): Score? = homeGoals?.let { home -> awayGoals?.let { away -> Score(home, away) } }
 }
