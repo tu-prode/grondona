@@ -34,8 +34,7 @@ data class Awards(
 @SQLRestriction("deleted_at is null")
 data class Tournament(
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    val id: UUID? = null,
+    val id: UUID = UUID.randomUUID(),
 
     @Column(nullable = false, unique = true)
     val name: String,

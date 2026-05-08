@@ -16,6 +16,7 @@ import com.grondona.model.dto.request.CreatePlayerRequest
 import com.grondona.model.dto.request.CreateTeamRequest
 import com.grondona.model.dto.request.CreateTournamentRequest
 import com.grondona.model.dto.request.UpdateTournamentRequest
+import com.grondona.model.dto.response.CreatedMatchesResponse
 import com.grondona.model.dto.response.PlayerResponse
 import com.grondona.model.dto.response.TeamResponse
 import com.grondona.model.dto.response.TournamentMatchesResponse
@@ -213,12 +214,19 @@ class TournamentService(
         }.takeIf { tournament.status == TournamentStatus.FINISHED }
 
     @Transactional
-    fun createTournamentMatches(tournamentId: UUID, request: CreateMatchesRequest): TournamentMatchesResponse {
+    fun createTournamentMatches(tournamentId: UUID, request: CreateMatchesRequest): CreatedMatchesResponse {
         logger.info("Creating match for tournament id={}", tournamentId)
 
         val tournament = tournamentRepository.findById(tournamentId).orElseThrow {
             logger.warn("Tournament not found id={}", tournamentId)
             NotFoundException("Tournament not found")
+        }
+
+        val matchesCodes = request.matches.map { it.code }
+        val existingCodes = matchRepository.findByCodes(tournamentId, matchesCodes).map { it.code }
+        if (existingCodes.isNotEmpty()) {
+            logger.error("Trying to create matches for tournament={} with existing codes: {}", tournamentId, existingCodes)
+            throw ConflictException("Some codes are already registered", field = "code", rejectedValue = existingCodes.sorted().joinToString(","))
         }
 
         val teamsPerId = request.matches
@@ -248,7 +256,7 @@ class TournamentService(
 
         matchRepository.saveAll(matchesToSave)
         logger.info("Matches created successfully for tournament={}: {}", tournamentId, matchesToSave.size)
-        return TournamentMatchesResponse.from(tournament, matchesToSave)
+        return CreatedMatchesResponse.from(tournament, matchesToSave)
     }
 
     @Transactional

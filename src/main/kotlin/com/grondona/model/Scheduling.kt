@@ -1,9 +1,9 @@
 package com.grondona.model
 
-import java.time.LocalDateTime
+import java.time.ZonedDateTime
 
 data class SchedulerData(
-    val nextRunAt: LocalDateTime? = null,
+    val nextRunAt: ZonedDateTime? = null,
     val shouldStop: Boolean = false,
 ) {
     fun shouldStop(): Boolean = shouldStop
@@ -13,6 +13,6 @@ data class SchedulerData(
     companion object {
         fun wait() = SchedulerData()
         fun stop() = SchedulerData(shouldStop = true)
-        fun sleep(until: LocalDateTime) = SchedulerData(nextRunAt = until)
+        fun sleep(until: ZonedDateTime) = SchedulerData(nextRunAt = until)
     }
 }

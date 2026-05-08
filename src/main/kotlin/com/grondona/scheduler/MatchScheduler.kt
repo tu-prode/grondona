@@ -14,7 +14,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.time.temporal.ChronoUnit
+import java.time.ZonedDateTime
 import java.util.Date
 import java.util.concurrent.ScheduledFuture
 
@@ -52,7 +52,7 @@ class MatchScheduler(
         scheduleAfterDelay(wait)
     }
 
-    private fun updateMatches() {
+    fun updateMatches() {
         logger.debug("Executing scheduled job for recalculating matches status")
 
         val schedulerData: SchedulerData
@@ -78,7 +78,7 @@ class MatchScheduler(
             schedulerData.shouldSleep() -> {
                 val nextRun = schedulerData.nextRunAt!!
                 logger.debug("Sleeping MatchScheduler until {}", nextRun)
-                scheduleAt(nextRun)
+                scheduleAt(nextRun.toLocalDateTime())
             }
 
             schedulerData.shouldWait() -> {
@@ -96,7 +96,7 @@ class MatchScheduler(
         val nextMatches = tournamentMatches.filter { it.status == MatchStatus.NOT_STARTED }
         if (nextMatches.isNotEmpty()) {
             val nextRunAt = nextMatches.sortedBy { it.startedAt }.first().startedAt
-            return SchedulerData.sleep(nextRunAt).takeIf { nextRunAt.isAfter(LocalDateTime.now()) } ?: SchedulerData.wait()
+            return SchedulerData.sleep(nextRunAt).takeIf { nextRunAt.isAfter(ZonedDateTime.now()) } ?: SchedulerData.wait()
         }
 
         return SchedulerData.stop()

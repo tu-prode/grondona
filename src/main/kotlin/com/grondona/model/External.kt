@@ -3,7 +3,7 @@ package com.grondona.model
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.grondona.service.PredictionService
 import com.grondona.utils.oddsToQuota
-import java.time.LocalDateTime
+import java.time.ZonedDateTime
 
 // Data class for matches retrieved from LiveScoreAPI: https://live-score-api.com/documentation
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -21,8 +21,8 @@ data class ExternalMatch(
     val homeOdds: Float = 1f,
     val drawOdds: Float = 1f,
     val awayOdds: Float = 1f,
-    val startedAt: LocalDateTime,
-    val endedAt: LocalDateTime? = null,
+    val startedAt: ZonedDateTime,
+    val endedAt: ZonedDateTime? = null,
 ) {
     private enum class Status { TO_START, IN_PLAY, HALF_TIME, PENALTIES, COMPLETED }
 
@@ -43,7 +43,7 @@ data class ExternalMatch(
         )
     }
 
-    fun toMatchUpdated(matches: List<Match>): Match? =
+    fun toSystemMatch(matches: List<Match>): Match? =
         matches.takeIf { status != Status.TO_START.name }
             ?.filter { it.status != MatchStatus.FINISHED }
             ?.firstOrNull { it.homeTeam.code == home && it.awayTeam.code == away }?.let {
@@ -93,7 +93,7 @@ data class ExternalMatch(
                         newHomePenalties = homePenalties
                         newAwayPenalties = awayPenalties
                         newStatus = MatchStatus.FINISHED
-                        newFinishedAt = endedAt ?: LocalDateTime.now()
+                        newFinishedAt = endedAt ?: ZonedDateTime.now()
                         newSubstatus = "FIN"
                     }
                 }
@@ -105,7 +105,7 @@ data class ExternalMatch(
                 )
             }
 
-    fun toQuotasUpdated(matches: List<Match>): Match? =
+    fun toSystemQuotas(matches: List<Match>): Match? =
         matches.filter { it.status == MatchStatus.NOT_STARTED && PredictionService.isMatchUnlocked(it) }
             .firstOrNull { it.homeTeam.name == home && it.awayTeam.name == away }
             ?.takeUnless { status != Status.TO_START.name }?.copy(

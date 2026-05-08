@@ -14,6 +14,7 @@ import com.grondona.model.dto.request.SubmitMatchPredictionRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.model.dto.request.UpdateMemberRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
+import com.grondona.model.dto.response.CreatedMatchesResponse
 import com.grondona.model.dto.response.GroupResponse
 import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.repository.GroupRepository
@@ -33,6 +34,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.UUID
 
 @SpringBootTest
@@ -719,15 +721,8 @@ class GroupIntegrationTest {
             return UUID.fromString(objectMapper.readTree(result.response.contentAsString).get("id").asText())
         }
 
-        private fun createMatch(code: String, homeTeamId: String, awayTeamId: String, startedAt: LocalDateTime): UUID {
-            val request = CreateMatchesRequest(
-                matches = listOf(CreateMatchRequest(
-                    code = code,
-                    homeTeam = UUID.fromString(homeTeamId),
-                    awayTeam = UUID.fromString(awayTeamId),
-                    startedAt = startedAt,
-                ))
-            )
+        private fun createMatches(matches: List<CreateMatchRequest>): Map<String, UUID> {
+            val request = CreateMatchesRequest(matches = matches)
             val result = mockMvc.perform(
                 post("/api/tournaments/{tournamentId}/matches", testTournamentId)
                     .header("Authorization", "Bearer $adminToken")
@@ -737,7 +732,8 @@ class GroupIntegrationTest {
                 .andExpect(status().isCreated)
                 .andReturn()
 
-            return UUID.fromString(objectMapper.readTree(result.response.contentAsString).get("id").asText())
+            val createdMatches = objectMapper.readValue(result.response.contentAsString, CreatedMatchesResponse::class.java).matches
+            return createdMatches.associate { it.code to it.id }
         }
 
         private fun submitGroupBulkMatchPredictions(
@@ -849,8 +845,24 @@ class GroupIntegrationTest {
 
             val team1Id = createTeam("Flow Team One", "FLOW1").toString()
             val team2Id = createTeam("Flow Team Two", "FLOW2").toString()
-            match1Id = createMatch("FLOW-1", team1Id, team2Id, LocalDateTime.now().plusDays(10))
-            match2Id = createMatch("FLOW-2", team2Id, team1Id, LocalDateTime.now().plusDays(11))
+            val createdMatches = createMatches(
+                listOf(
+                    CreateMatchRequest(
+                        code = "FLOW-1",
+                        homeTeam = UUID.fromString(team1Id),
+                        awayTeam = UUID.fromString(team2Id),
+                        startedAt = ZonedDateTime.now().plusDays(10),
+                    ),
+                    CreateMatchRequest(
+                        code = "FLOW-2",
+                        homeTeam = UUID.fromString(team2Id),
+                        awayTeam = UUID.fromString(team1Id),
+                        startedAt = ZonedDateTime.now().plusDays(11),
+                    )
+                )
+            )
+            match1Id = createdMatches.getValue("FLOW-1")
+            match2Id = createdMatches.getValue("FLOW-2")
         }
 
         @Test

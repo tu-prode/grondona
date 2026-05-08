@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import java.util.*
 
@@ -376,7 +377,7 @@ class GroupServiceTest {
 
             val testMatch = Match(
                 id = UUID.randomUUID(), code = "XX", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 1, awayGoals = 1, status = MatchStatus.IN_PROGRESS, startedAt = LocalDateTime.now().minusMinutes(60)
+                homeGoals = 1, awayGoals = 1, status = MatchStatus.IN_PROGRESS, startedAt = ZonedDateTime.now().minusMinutes(60)
             )
             val prediction1 = MatchPredictionView(
                 id = UUID.randomUUID(),

@@ -723,7 +723,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PlayerResponse"
+                $ref: "#/components/schemas/CreatedMatchesResponse"
         "401":
           description: Credentials missing
           content:
@@ -2289,6 +2289,28 @@ components:
           type: boolean
           description: Flag indicating if the match is a special match with a multiplier bonus
           example: false
+
+    CreatedMatchesResponse:
+      description: All the matches of the tournament
+      type: object
+      required:
+        - tournament_id
+        - tournament_name
+        - matches
+      properties:
+        tournament_id:
+          type: string
+          format: uuid
+          description: Unique tournament identifier
+          example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+        tournament_name:
+          type: string
+          description: Tournament name
+          example: Copa del Mundo 2026
+        matches:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchResponse'
 
     MatchResponse:
       description: A match of a tournament

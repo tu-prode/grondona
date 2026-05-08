@@ -6,6 +6,7 @@ import org.hibernate.annotations.OnDeleteAction
 import org.hibernate.annotations.SQLDelete
 import org.hibernate.annotations.SQLRestriction
 import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.UUID
 
 enum class MatchOutcome {
@@ -72,10 +73,10 @@ data class Match(
     val substatus: String? = null,
 
     @Column(name = "started_at")
-    val startedAt: LocalDateTime,
+    val startedAt: ZonedDateTime,
 
     @Column(name = "finished_at")
-    val finishedAt: LocalDateTime? = null,
+    val finishedAt: ZonedDateTime? = null,
 
     @Column(name = "home_goals")
     val homeGoals: Int? = null,

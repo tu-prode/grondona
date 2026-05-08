@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull
 import org.springframework.format.annotation.DateTimeFormat
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.UUID
 
 data class CreateTournamentRequest(
@@ -68,8 +69,7 @@ data class CreateMatchRequest(
     val awayTeam: UUID,
 
     @field:NotNull(message = "Start date is required")
-    @field:DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    val startedAt: LocalDateTime,
+    val startedAt: ZonedDateTime,
 
     val hasMultiplier: Boolean? = null,
 )

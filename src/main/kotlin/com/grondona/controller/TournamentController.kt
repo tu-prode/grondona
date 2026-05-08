@@ -7,6 +7,7 @@ import com.grondona.model.dto.request.CreatePlayerRequest
 import com.grondona.model.dto.request.CreateTeamRequest
 import com.grondona.model.dto.request.CreateTournamentRequest
 import com.grondona.model.dto.request.UpdateTournamentRequest
+import com.grondona.model.dto.response.CreatedMatchesResponse
 import com.grondona.model.dto.response.PlayerResponse
 import com.grondona.model.dto.response.TeamResponse
 import com.grondona.model.dto.response.TournamentMatchesResponse
@@ -136,11 +137,11 @@ class TournamentController(
         @AuthenticationPrincipal principal: JwtUserPrincipal?,
         @PathVariable tournamentId: UUID,
         @Valid @RequestBody request: CreateMatchesRequest,
-    ): ResponseEntity<TournamentMatchesResponse> {
+    ): ResponseEntity<CreatedMatchesResponse> {
         return withSuperuserValidation(principal) {
-            logger.info("POST /api/tournaments/{}/matches - Creating match: code='{}'", tournamentId, request.code)
+            logger.info("POST /api/tournaments/{}/matches - Creating matches {}", tournamentId, request.matches.size)
             val response = tournamentService.createTournamentMatches(tournamentId, request)
-            logger.info("POST /api/tournaments/{}/matches - Match created: code='{}', id={}", tournamentId, response.code, response.id)
+            logger.info("POST /api/tournaments/{}/matches - Total matches created: {}", tournamentId, response.matches.size)
             ResponseEntity.status(HttpStatus.CREATED).body(response)
         }
     }
