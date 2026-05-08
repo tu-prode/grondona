@@ -4,7 +4,6 @@ import com.grondona.model.Group
 import com.grondona.model.GroupRole
 import com.grondona.model.MembershipView
 import com.grondona.model.User
-import com.grondona.model.hasAdminAccess
 import com.grondona.utils.round
 
 data class JoinRequestResponse(

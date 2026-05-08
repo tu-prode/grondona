@@ -27,7 +27,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.core.MethodParameter
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -47,7 +46,7 @@ class UserControllerTest {
 
     private lateinit var mockMvc: MockMvc
     private lateinit var userService: UserService
-    private lateinit var groupMembershipService: MembershipService
+    private lateinit var membershipService: MembershipService
     private lateinit var userController: UserController
     private lateinit var objectMapper: ObjectMapper
 
@@ -73,8 +72,8 @@ class UserControllerTest {
     @BeforeEach
     fun setUp() {
         userService = mockk()
-        groupMembershipService = mockk()
-        userController = UserController(userService, groupMembershipService)
+        membershipService = mockk()
+        userController = UserController(userService, membershipService)
         objectMapper = ObjectMapper()
         mockMvc = MockMvcBuilders
             .standaloneSetup(userController)
@@ -268,7 +267,7 @@ class UserControllerTest {
                 candidatesCount = 2L , membersCount = 5L, points = 100f, rank = 1, role = GroupRole.MEMBER,
                 group = Group(id = groupId, name = "My Group", tournament = testTournament),
             )))
-            every { groupMembershipService.getMyGroups(testUserId) } returns groups
+            every { membershipService.getMyGroups(testUserId) } returns groups
 
             mockMvc.perform(get("/api/users/me/groups"))
                 .andExpect(status().isOk)
@@ -283,7 +282,7 @@ class UserControllerTest {
         @Test
         fun `GET api users me groups should return empty list when not in any group`() {
             setAuthenticatedUser(testUserId, "testuser")
-            every { groupMembershipService.getMyGroups(testUserId) } returns emptyList()
+            every { membershipService.getMyGroups(testUserId) } returns emptyList()
 
             mockMvc.perform(get("/api/users/me/groups"))
                 .andExpect(status().isOk)

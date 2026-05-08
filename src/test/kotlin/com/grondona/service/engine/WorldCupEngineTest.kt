@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.*
 
 class WorldCupEngineTest {
@@ -22,7 +23,7 @@ class WorldCupEngineTest {
     )
 
     private fun matchFromDB(
-        home: String = "XXX", away: String = "XXX", status: MatchStatus = MatchStatus.NOT_STARTED, startedAt: LocalDateTime = LocalDateTime.now().plusDays(1),
+        home: String = "XXX", away: String = "XXX", status: MatchStatus = MatchStatus.NOT_STARTED, startedAt: ZonedDateTime = ZonedDateTime.now().plusDays(1),
         code: String = "XXX", homeGoals: Int = 0, awayGoals: Int = 0, homeQuota: Float = 1f, drawQuota: Float = 1f, awayQuota: Float = 1f,
     ) = Match(
         id = UUID.randomUUID(), code = code,
@@ -38,7 +39,7 @@ class WorldCupEngineTest {
         homeOdds: Float = 1f, drawOdds: Float = 1f, awayOdds: Float = 1f,
     ) = ExternalMatch(
         code = code, home = home, away = away, homeGoals = homeGoals, awayGoals = awayGoals, status = status,
-        minutes = minutes, half = half, homeOdds = homeOdds, drawOdds = drawOdds, awayOdds = awayOdds, startedAt = LocalDateTime.now(),
+        minutes = minutes, half = half, homeOdds = homeOdds, drawOdds = drawOdds, awayOdds = awayOdds, startedAt = ZonedDateTime.now(),
     )
 
     @BeforeEach

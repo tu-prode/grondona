@@ -4,6 +4,7 @@ import com.grondona.model.Match
 import com.grondona.model.MatchStatus
 import com.grondona.model.Tournament
 import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.UUID
 import kotlin.math.min
 
@@ -17,8 +18,8 @@ data class MatchResponse(
     val drawQuota: Float,
     val status: MatchStatus,
     val substatus: String?,
-    val startedAt: LocalDateTime?,
-    val finishedAt: LocalDateTime?,
+    val startedAt: ZonedDateTime?,
+    val finishedAt: ZonedDateTime?,
     val homeGoals: Int?,
     val awayGoals: Int?,
     val homePenalties: Int?,
@@ -58,7 +59,7 @@ data class TournamentMatchesResponse(
     val totalNextMatches: Int,
 ) {
     companion object {
-        fun from(tournament: Tournament, matches: List<Match>, past: Int?, next: Int?, live: Int?): TournamentMatchesResponse {
+        fun from(tournament: Tournament, matches: List<Match>, past: Int? = null, next: Int? = null, live: Int? = null): TournamentMatchesResponse {
             var pastMatches = matches.filter { it.status == MatchStatus.FINISHED }.map(MatchResponse::from).sortedByDescending { it.startedAt }
             var liveMatches = matches.filter { it.status == MatchStatus.IN_PROGRESS }.map(MatchResponse::from)
             var nextMatches = matches.filter { it.status == MatchStatus.NOT_STARTED }.map(MatchResponse::from)
@@ -77,5 +78,19 @@ data class TournamentMatchesResponse(
                 totalNextMatches = nextMatches.size,
             )
         }
+    }
+}
+
+data class CreatedMatchesResponse(
+    val tournamentId: UUID,
+    val tournamentName: String,
+    val matches: List<MatchResponse>
+) {
+    companion object {
+        fun from(tournament: Tournament, matches: List<Match>) = CreatedMatchesResponse(
+            tournamentId = tournament.id!!,
+            tournamentName = tournament.name,
+            matches = matches.map(MatchResponse::from),
+        )
     }
 }

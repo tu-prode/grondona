@@ -2,7 +2,6 @@ package com.grondona.service
 
 import com.grondona.client.MatchClient
 import com.grondona.exception.BadRequestException
-import com.grondona.model.Environments
 import com.grondona.model.Match
 import com.grondona.model.MatchStatus
 import com.grondona.model.MatchPrediction
@@ -51,7 +50,7 @@ class MatchService(
         val systemMatches = matchRepository.findByTournamentId(tournamentId)
         logger.trace("System matches retrieved={}", systemMatches.size)
 
-        val matchesToUpdate = apiMatches.mapNotNull { it.toMatchUpdated(systemMatches) }
+        val matchesToUpdate = apiMatches.mapNotNull { it.toSystemMatch(systemMatches) }
         val consolidatedMatches = consolidateMatches(matchesToUpdate, systemMatches)
         val tournament = tournamentRepository.findById(tournamentId).orElseThrow {
             logger.error("Tournament={} not found in DB", tournamentId)
@@ -135,7 +134,7 @@ class MatchService(
         val systemMatches = matchRepository.findByTournamentIdAndStatus(tournamentId, MatchStatus.NOT_STARTED)
         logger.trace("System matches retrieved={}", systemMatches.size)
 
-        val matchesToUpdate = apiMatches.mapNotNull { it.toQuotasUpdated(systemMatches) }
+        val matchesToUpdate = apiMatches.mapNotNull { it.toSystemQuotas(systemMatches) }
         if (matchesToUpdate.isNotEmpty()) {
             logger.debug("Matches to update in DB={}", matchesToUpdate.size)
             matchRepository.saveAll(matchesToUpdate)

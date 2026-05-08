@@ -7,6 +7,7 @@ import com.grondona.model.PlayerPosition
 import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.CreateMatchRequest
+import com.grondona.model.dto.request.CreateMatchesRequest
 import com.grondona.model.dto.request.CreatePlayerRequest
 import com.grondona.model.dto.request.CreateTeamRequest
 import com.grondona.model.dto.request.SubmitAwardPredictionRequest
@@ -15,12 +16,14 @@ import com.grondona.model.dto.request.SubmitMatchPredictionRequest
 import com.grondona.model.dto.request.UpdateUserRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
 import com.grondona.model.dto.response.AwardPredictionsResponse
+import com.grondona.model.dto.response.CreatedMatchesResponse
 import com.grondona.model.dto.response.GroupMatchPredictionsResponse
 import com.grondona.model.dto.response.GroupResponse
 import com.grondona.model.dto.response.MatchPredictionResponse
 import com.grondona.model.dto.response.MatchResponse
 import com.grondona.model.dto.response.PlayerResponse
 import com.grondona.model.dto.response.TeamResponse
+import com.grondona.model.dto.response.TournamentMatchesResponse
 import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.repository.AwardPredictionRepository
 import com.grondona.repository.GroupRepository
@@ -42,6 +45,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.util.UUID
 
 @SpringBootTest
@@ -104,8 +109,8 @@ class PredictionIntegrationTest {
         goalkeeperPlayerId = createPlayer("Goalkeeper Player", PlayerPosition.GOALKEEPER, teamTwoId, LocalDate.of(1997, 7, 20)).id
         youngPlayerId = createPlayer("Young Player", PlayerPosition.FORWARD, teamTwoId, LocalDate.of(2006, 8, 15)).id
 
-        firstMatchId = createMatch("ARG-BRA-1", teamOneId, teamTwoId, LocalDateTime.now().plusDays(10)).id
-        secondMatchId = createMatch("BRA-ARG-2", teamTwoId, teamOneId, LocalDateTime.now().plusDays(11)).id
+        firstMatchId = createMatch("ARG-BRA-1", teamOneId, teamTwoId, ZonedDateTime.now().plusDays(10)).id
+        secondMatchId = createMatch("BRA-ARG-2", teamTwoId, teamOneId, ZonedDateTime.now().plusDays(11)).id
 
         groupId = createGroup(adminToken, "Prediction Group")
 
@@ -596,8 +601,10 @@ class PredictionIntegrationTest {
         return objectMapper.readValue(result.response.contentAsString, PlayerResponse::class.java)
     }
 
-    private fun createMatch(code: String, homeTeamId: UUID, awayTeamId: UUID, startedAt: LocalDateTime): MatchResponse {
-        val request = CreateMatchRequest(code = code, homeTeam = homeTeamId, awayTeam = awayTeamId, startedAt = startedAt)
+    private fun createMatch(code: String, homeTeamId: UUID, awayTeamId: UUID, startedAt: ZonedDateTime): MatchResponse {
+        val request = CreateMatchesRequest(
+            matches = listOf(CreateMatchRequest(code = code, homeTeam = homeTeamId, awayTeam = awayTeamId, startedAt = startedAt))
+        )
         val result = mockMvc.perform(
             post("/api/tournaments/{tournamentId}/matches", tournamentId)
                 .header("Authorization", "Bearer $adminToken")
@@ -607,7 +614,7 @@ class PredictionIntegrationTest {
             .andExpect(status().isCreated)
             .andReturn()
 
-        return objectMapper.readValue(result.response.contentAsString, MatchResponse::class.java)
+        return objectMapper.readValue(result.response.contentAsString, CreatedMatchesResponse::class.java).matches[0]
     }
 
     private fun createGroup(token: String, name: String): UUID {

@@ -11,12 +11,12 @@ import com.grondona.model.PredictionStatus
 import com.grondona.model.Team
 import com.grondona.model.Tournament
 import com.grondona.model.TournamentStatus
-import com.grondona.model.dto.request.CreateMatchRequest
+import com.grondona.model.dto.request.CreateMatchesRequest
 import com.grondona.model.dto.request.CreatePlayerRequest
 import com.grondona.model.dto.request.CreateTeamRequest
 import com.grondona.model.dto.request.CreateTournamentRequest
 import com.grondona.model.dto.request.UpdateTournamentRequest
-import com.grondona.model.dto.response.MatchResponse
+import com.grondona.model.dto.response.CreatedMatchesResponse
 import com.grondona.model.dto.response.PlayerResponse
 import com.grondona.model.dto.response.TeamResponse
 import com.grondona.model.dto.response.TournamentMatchesResponse
@@ -31,7 +31,6 @@ import com.grondona.repository.TeamRepository
 import com.grondona.repository.TournamentRepository
 import com.grondona.service.engine.PredictionsEngine
 import com.grondona.service.engine.WorldCupEngine
-import jakarta.validation.constraints.NotBlank
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -215,7 +214,7 @@ class TournamentService(
         }.takeIf { tournament.status == TournamentStatus.FINISHED }
 
     @Transactional
-    fun createTournamentMatch(tournamentId: UUID, request: CreateMatchRequest): MatchResponse {
+    fun createTournamentMatches(tournamentId: UUID, request: CreateMatchesRequest): CreatedMatchesResponse {
         logger.info("Creating match for tournament id={}", tournamentId)
 
         val tournament = tournamentRepository.findById(tournamentId).orElseThrow {
@@ -223,28 +222,41 @@ class TournamentService(
             NotFoundException("Tournament not found")
         }
 
-        val homeTeam = teamRepository.findById(request.homeTeam).orElseThrow {
-            logger.warn("Team not found id={}", request.homeTeam)
-            NotFoundException("Home team not found")
+        val matchesCodes = request.matches.map { it.code }
+        val existingCodes = matchRepository.findByCodes(tournamentId, matchesCodes).map { it.code }
+        if (existingCodes.isNotEmpty()) {
+            logger.error("Trying to create matches for tournament={} with existing codes: {}", tournamentId, existingCodes)
+            throw ConflictException("Some codes are already registered", field = "code", rejectedValue = existingCodes.sorted().joinToString(","))
         }
 
-        val awayTeam = teamRepository.findById(request.awayTeam).orElseThrow {
-            logger.warn("Team not found id={}", request.awayTeam)
-            NotFoundException("Away team not found")
+        val teamsPerId = request.matches
+            .map { setOf(it.homeTeam, it.awayTeam) }
+            .reduce { accList, newList -> accList + newList }
+            .let { ids -> teamRepository.findAllById(ids) }
+            .groupBy { it.id!! }
+            .mapValues { (_, teams) -> teams.first() }
+
+        val matchesToSave = request.matches.map { matchReq ->
+            val homeTeam: Team = teamsPerId[matchReq.homeTeam] ?: run {
+                logger.warn("Team not found id={}", matchReq.homeTeam)
+                throw NotFoundException("Home team not found")
+            }
+
+            val awayTeam = teamsPerId[matchReq.awayTeam] ?: run {
+                logger.warn("Team not found id={}", matchReq.awayTeam)
+                throw NotFoundException("Away team not found")
+            }
+
+            Match(
+                code = matchReq.code, tournament = tournament,
+                homeTeam = homeTeam, awayTeam = awayTeam,
+                startedAt = matchReq.startedAt, hasMultiplier = matchReq.hasMultiplier ?: false,
+            )
         }
 
-        val match = Match(
-            code = request.code,
-            tournament = tournament,
-            homeTeam = homeTeam,
-            awayTeam = awayTeam,
-            startedAt = request.startedAt,
-            hasMultiplier = request.hasMultiplier ?: false,
-        )
-
-        matchRepository.save(match)
-        logger.info("Match created successfully with id={} and code={}, for tournament={}", match.id, match.code, tournamentId)
-        return MatchResponse.from(match)
+        matchRepository.saveAll(matchesToSave)
+        logger.info("Matches created successfully for tournament={}: {}", tournamentId, matchesToSave.size)
+        return CreatedMatchesResponse.from(tournament, matchesToSave)
     }
 
     @Transactional

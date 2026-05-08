@@ -44,6 +44,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.*
 
 class PredictionServiceTest {
@@ -134,7 +135,7 @@ class PredictionServiceTest {
         code = "OPEN-01",
         homeTeam = testTeam,
         awayTeam = testTeam,
-        startedAt = LocalDateTime.now().plusHours(2)
+        startedAt = ZonedDateTime.now().plusHours(2)
     )
 
     // Locked match: startedAt in the past → canSubmit = false
@@ -145,7 +146,7 @@ class PredictionServiceTest {
         homeTeam = testTeam,
         awayTeam = testTeam,
         status = MatchStatus.FINISHED,
-        startedAt = LocalDateTime.now().minusHours(2)
+        startedAt = ZonedDateTime.now().minusHours(2)
     )
 
     private val testPrediction = MatchPrediction(
@@ -173,13 +174,13 @@ class PredictionServiceTest {
 
         @Test
         fun `canSubmit returns true when match starts more than 15 minutes from now`() {
-            val match = testMatchOpen.copy(startedAt = LocalDateTime.now().plusHours(1))
+            val match = testMatchOpen.copy(startedAt = ZonedDateTime.now().plusHours(1))
             assertTrue(PredictionService.isMatchUnlocked(match))
         }
 
         @Test
         fun `canSubmit returns false when match starts in less than 15 minutes`() {
-            val match = testMatchOpen.copy(startedAt = LocalDateTime.now().plusMinutes(5))
+            val match = testMatchOpen.copy(startedAt = ZonedDateTime.now().plusMinutes(5))
             assertFalse(PredictionService.isMatchUnlocked(match))
         }
 
@@ -991,15 +992,15 @@ class PredictionServiceTest {
 
             val testMatch1 = Match(
                 id = UUID.randomUUID(), code = "X1", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 0, awayGoals = 0, startedAt = LocalDateTime.now().minusDays(7)
+                homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().minusDays(7)
             )
             val testMatch2 = Match(
                 id = UUID.randomUUID(), code = "X2", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 1, awayGoals = 0, startedAt = LocalDateTime.now().minusDays(6)
+                homeGoals = 1, awayGoals = 0, startedAt = ZonedDateTime.now().minusDays(6)
             )
             val testMatch3 = Match(
                 id = UUID.randomUUID(), code = "X3", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 0, awayGoals = 1, startedAt = LocalDateTime.now().minusDays(5)
+                homeGoals = 0, awayGoals = 1, startedAt = ZonedDateTime.now().minusDays(5)
             )
 
             val matchPredictions = listOf(
@@ -1583,15 +1584,15 @@ class PredictionServiceTest {
 
             val testMatch1 = Match(
                 id = UUID.randomUUID(), code = "X1", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 0, awayGoals = 0, startedAt = LocalDateTime.now().minusDays(7)
+                homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().minusDays(7)
             )
             val testMatch2 = Match(
                 id = UUID.randomUUID(), code = "X2", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 1, awayGoals = 0, startedAt = LocalDateTime.now().minusDays(6)
+                homeGoals = 1, awayGoals = 0, startedAt = ZonedDateTime.now().minusDays(6)
             )
             val testMatch3 = Match(
                 id = UUID.randomUUID(), code = "X3", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 0, awayGoals = 1, startedAt = LocalDateTime.now().minusDays(6)
+                homeGoals = 0, awayGoals = 1, startedAt = ZonedDateTime.now().minusDays(6)
             )
 
             val matchPredictions = listOf(

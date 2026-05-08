@@ -34,9 +34,11 @@ import com.grondona.service.engine.PredictionsEngine
 import com.grondona.service.engine.WorldCupEngine
 import com.grondona.utils.consolidateGroupMatchPredictions
 import org.slf4j.LoggerFactory
+import org.springframework.beans.propertyeditors.ZoneIdEditor
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 
@@ -57,7 +59,7 @@ class PredictionService(
         private val logger = LoggerFactory.getLogger(PredictionService::class.java)
 
         fun isMatchUnlocked(match: Match): Boolean =
-            match.startedAt.isAfter(now.plus(15, ChronoUnit.MINUTES))
+            match.startedAt.isAfter(now.atZone(ZoneId.systemDefault()).plus(15, ChronoUnit.MINUTES))
     }
 
     internal fun checkMembership(userId: UUID, groupId: UUID): Pair<User, Group> {

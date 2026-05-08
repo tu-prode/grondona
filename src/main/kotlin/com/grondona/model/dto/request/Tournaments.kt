@@ -4,10 +4,12 @@ import com.grondona.model.Awards
 import com.grondona.model.PlayerPosition
 import com.grondona.model.TournamentStatus
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.NotNull
 import org.springframework.format.annotation.DateTimeFormat
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.UUID
 
 data class CreateTournamentRequest(
@@ -51,6 +53,11 @@ data class CreatePlayerRequest(
     val birthdate: LocalDate,
 )
 
+data class CreateMatchesRequest(
+    @field:NotEmpty(message = "Matches are required")
+    val matches: List<CreateMatchRequest>,
+)
+
 data class CreateMatchRequest(
     @field:NotBlank(message = "Code is required")
     val code: String,
@@ -62,8 +69,7 @@ data class CreateMatchRequest(
     val awayTeam: UUID,
 
     @field:NotNull(message = "Start date is required")
-    @field:DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    val startedAt: LocalDateTime,
+    val startedAt: ZonedDateTime,
 
     val hasMultiplier: Boolean? = null,
 )

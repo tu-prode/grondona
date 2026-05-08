@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 
@@ -61,8 +62,8 @@ class PredictionsEngineTest {
         homeTeam = anyTeam, awayTeam = anyTeam, status = MatchStatus.FINISHED,
         homeGoals = homeGoals, awayGoals = awayGoals, hasMultiplier = hasMultiplier,
         homeQuota = homeQuota, awayQuota = awayQuota, drawQuota = drawQuota,
-        startedAt = LocalDateTime.now().minusHours(2),
-        finishedAt = LocalDateTime.now().minusHours(1),
+        startedAt = ZonedDateTime.now().minusHours(2),
+        finishedAt = ZonedDateTime.now().minusHours(1),
     )
 
     private fun testMatchPrediction(match: Match, homeGoals: Int, awayGoals: Int): MatchPrediction {

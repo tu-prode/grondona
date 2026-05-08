@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import java.util.*
 
 class TournamentServiceTest {
@@ -342,7 +343,7 @@ class TournamentServiceTest {
     @Nested
     inner class GetTournamentMatchesTests {
 
-        private fun makeMatch(status: MatchStatus, startedAt: LocalDateTime = LocalDateTime.now().plusDays(1)): Match {
+        private fun makeMatch(status: MatchStatus, startedAt: ZonedDateTime = ZonedDateTime.now().plusDays(1)): Match {
             val team = Team(
                 id = UUID.randomUUID(),
                 tournament = testTournament,
@@ -377,9 +378,9 @@ class TournamentServiceTest {
 
         @Test
         fun `getTournamentMatches should categorize matches by status`() {
-            val pastMatch = makeMatch(MatchStatus.FINISHED, LocalDateTime.now().minusDays(1))
-            val liveMatch = makeMatch(MatchStatus.IN_PROGRESS, LocalDateTime.now())
-            val nextMatch = makeMatch(MatchStatus.NOT_STARTED, LocalDateTime.now().plusDays(1))
+            val pastMatch = makeMatch(MatchStatus.FINISHED, ZonedDateTime.now().minusDays(1))
+            val liveMatch = makeMatch(MatchStatus.IN_PROGRESS, ZonedDateTime.now())
+            val nextMatch = makeMatch(MatchStatus.NOT_STARTED, ZonedDateTime.now().plusDays(1))
 
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
             every { matchRepository.findByTournamentIdOrderByStartedAt(testTournamentId) } returns

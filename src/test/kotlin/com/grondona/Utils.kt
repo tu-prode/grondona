@@ -4,6 +4,7 @@ import com.grondona.model.Group
 import com.grondona.model.Team
 import com.grondona.model.Tournament
 import com.grondona.model.User
+import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.CreateTournamentRequest
 import com.grondona.model.dto.request.CreateUserRequest
 import java.time.LocalDateTime
@@ -28,6 +29,18 @@ fun createTestingUserRequest(
             .mapIndexed { idx, str -> if (idx == 0) randomString("$str-") else str }
             .joinToString("@"),
         password = password,
+    )
+}
+
+fun createTestingGroupRequest(
+    name: String = "Group",
+    isPrivate: Boolean = false,
+    maxMembers: Int = 32,
+): CreateGroupRequest {
+    return CreateGroupRequest(
+        name = randomString(name),
+        isPrivate = isPrivate,
+        maxMembers = maxMembers,
     )
 }
 

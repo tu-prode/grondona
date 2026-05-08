@@ -11,10 +11,16 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 enum class GroupRole {
-    OWNER, ADMIN, MEMBER, CANDIDATE
-}
+    OWNER, ADMIN, MEMBER, CANDIDATE;
 
-fun GroupRole.hasAdminAccess() = this == GroupRole.ADMIN || this == GroupRole.OWNER
+    fun hasAdminAccess() = this == ADMIN || this == OWNER
+    fun hasMorePrivileges(otherRole: GroupRole) = when (this) {
+        OWNER -> true
+        ADMIN -> otherRole == MEMBER
+        CANDIDATE, MEMBER -> false
+    }
+
+}
 
 @Entity
 @Table(name = "group_users")
