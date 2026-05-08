@@ -242,7 +242,7 @@ class TournamentService(
                 throw NotFoundException("Home team not found")
             }
 
-            val awayTeam = teamsPerId[matchReq.homeTeam] ?: run {
+            val awayTeam = teamsPerId[matchReq.awayTeam] ?: run {
                 logger.warn("Team not found id={}", matchReq.awayTeam)
                 throw NotFoundException("Away team not found")
             }
