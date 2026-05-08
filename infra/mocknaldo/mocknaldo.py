@@ -34,7 +34,7 @@ PORT = 8085
 TIME_LOCK = threading.Lock()
 current = datetime.now()
 checkpoint = None
-delta = 15 * 60
+delta = 51
 
 import signal
 def handle_shutdown(signum):
