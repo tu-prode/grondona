@@ -2,8 +2,8 @@ package com.grondona.integration
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.grondona.client.MatchClient
-import com.grondona.createTestingGroupRequest
 import com.grondona.createTestingUserRequest
+import com.grondona.integration.utils.GrondonaClient
 import com.grondona.model.ExternalMatch
 import com.grondona.model.Tournament
 import com.grondona.model.UserPermissions
@@ -13,13 +13,9 @@ import com.grondona.model.dto.request.CreateTeamRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
 import com.grondona.model.dto.request.CreateUserRequest
 import com.grondona.model.dto.request.LoginUserRequest
-import com.grondona.model.dto.request.SubmitBulkMatchPredictionsRequest
 import com.grondona.model.dto.request.SubmitMatchPredictionRequest
 import com.grondona.model.dto.request.UpdateUserRequest
 import com.grondona.model.dto.response.CreatedMatchesResponse
-import com.grondona.model.dto.response.GroupMatchPredictionsResponse
-import com.grondona.model.dto.response.GroupResponse
-import com.grondona.model.dto.response.MatchPredictionResponse
 import com.grondona.repository.TournamentRepository
 import com.grondona.repository.UserRepository
 import com.grondona.scheduler.MatchScheduler
@@ -80,8 +76,6 @@ class UserIntegrationTest {
     @BeforeAll
     fun setUp() {
         userRepository.deleteAll()
-
-
 
         // Create an admin user to create the first tournament
         val adminResult = mockMvc.perform(
@@ -453,30 +447,17 @@ class UserIntegrationTest {
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
     inner class PredictionUniquenessFlowTests {
+        
+        private val client = GrondonaClient(mockMvc, objectMapper)
+            .withAdminToken(adminToken!!)
+            .withTournament(testTournamentId!!)
 
-        private var userId: String? = null
+        private var userId: UUID? = null
         private var userToken: String? = null
 
-        private var group1Id: String? = null
-        private var group2Id: String? = null
-        private var group3Id: String? = null
-
-        private fun createGroup(): String {
-            val groupResult = mockMvc.perform(
-                post("/api/tournaments/{tournamentId}/groups", testTournamentId)
-                    .header("Authorization", "Bearer $adminToken")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(createTestingGroupRequest()))
-            ).andExpect(status().isCreated).andReturn()
-            return objectMapper.readValue(groupResult.response.contentAsString, GroupResponse::class.java).id.toString()
-        }
-
-        private fun joinGroup(token: String?, groupId: String?) {
-            mockMvc.perform(
-                post("/api/tournaments/{tournamentId}/groups/{groupId}/join", testTournamentId, groupId)
-                    .header("Authorization", "Bearer $token")
-            ).andExpect(status().isCreated)
-        }
+        private var group1Id: UUID? = null
+        private var group2Id: UUID? = null
+        private var group3Id: UUID? = null
 
         private fun setPredictionUniqueness(uniqueness: Boolean, masterGroup: UUID? = null) {
             mockMvc.perform(
@@ -487,31 +468,6 @@ class UserIntegrationTest {
             ).andExpect(status().isOk).andReturn()
         }
 
-        private fun submitPredictionsToGroup(token: String?, groupId: String?, matchPredictions: List<SubmitMatchPredictionRequest>) {
-            val request = SubmitBulkMatchPredictionsRequest(predictions = matchPredictions)
-
-            val response = mockMvc.perform(
-                post("/api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches", testTournamentId, groupId)
-                    .header("Authorization", "Bearer $token")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request))
-            ).andExpect(status().isCreated)
-
-            matchPredictions.forEach {
-                response.andExpect(jsonPath("$.predictions[?(@.match.id == '${it.matchId}')].prediction.home_goals").value(it.homeGoals))
-                response.andExpect(jsonPath("$.predictions[?(@.match.id == '${it.matchId}')].prediction.away_goals").value(it.awayGoals))
-            }
-        }
-
-        private fun fetchPredictionsInGroup(token: String?, groupId: String?): List<MatchPredictionResponse> {
-            val predictionsResponse = mockMvc.perform(
-                get("/api/tournaments/{tournamentId}/groups/{groupId}/predictions/matches/me", testTournamentId, groupId)
-                    .header("Authorization", "Bearer $token")
-            ).andExpect(status().isOk).andReturn()
-
-            return objectMapper.readValue(predictionsResponse.response.contentAsString, GroupMatchPredictionsResponse::class.java).predictions
-        }
-
         @BeforeAll
         fun setUp() {
             val userResult = mockMvc.perform(
@@ -520,15 +476,15 @@ class UserIntegrationTest {
                     .content(objectMapper.writeValueAsString(createTestingUserRequest()))
             ).andReturn()
             val userResponse = objectMapper.readValue(userResult.response.contentAsString, AuthenticatedUserResponse::class.java)
-            userId = userResponse.userId.toString()
+            userId = userResponse.userId
             userToken = userResponse.token
 
-            group1Id = createGroup()
-            group2Id = createGroup()
-            group3Id = createGroup()
-            joinGroup(userToken, group1Id)
-            joinGroup(userToken, group2Id)
-            joinGroup(userToken, group3Id)
+            group1Id = client.createGroup()
+            group2Id = client.createGroup()
+            group3Id = client.createGroup()
+            client.joinGroup(userToken, group1Id)
+            client.joinGroup(userToken, group2Id)
+            client.joinGroup(userToken, group3Id)
         }
 
         @Test
@@ -539,7 +495,7 @@ class UserIntegrationTest {
                 SubmitMatchPredictionRequest(matchId = testMatch2Id!!, homeGoals = 1, awayGoals = 0),
                 SubmitMatchPredictionRequest(matchId = testMatch3Id!!, homeGoals = 2, awayGoals = 0),
             )
-            submitPredictionsToGroup(userToken, group1Id, matchPredictions)
+            client.submitMatchPredictionsToGroup(userToken, group1Id, matchPredictions)
         }
 
         @Test
@@ -550,7 +506,7 @@ class UserIntegrationTest {
                 SubmitMatchPredictionRequest(matchId = testMatch2Id!!, homeGoals = 2, awayGoals = 1),
                 SubmitMatchPredictionRequest(matchId = testMatch3Id!!, homeGoals = 3, awayGoals = 1),
             )
-            submitPredictionsToGroup(userToken, group2Id, matchPredictions)
+            client.submitMatchPredictionsToGroup(userToken, group2Id, matchPredictions)
         }
 
         @Test
@@ -561,13 +517,13 @@ class UserIntegrationTest {
                 SubmitMatchPredictionRequest(matchId = testMatch2Id!!, homeGoals = 3, awayGoals = 2),
                 SubmitMatchPredictionRequest(matchId = testMatch3Id!!, homeGoals = 4, awayGoals = 2),
             )
-            submitPredictionsToGroup(userToken, group3Id, matchPredictions)
+            client.submitMatchPredictionsToGroup(userToken, group3Id, matchPredictions)
         }
 
         @Test
         @Order(4)
         fun `user checks predictions in group 1 and are the same as submitted`() {
-            val matchPredictions = fetchPredictionsInGroup(userToken, group1Id)
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group1Id)
             matchPredictions.forEach {
                 when (it.match.id) {
                     testMatch1Id -> {
@@ -589,7 +545,7 @@ class UserIntegrationTest {
         @Test
         @Order(5)
         fun `user checks predictions in group 2 and are the same as submitted`() {
-            val matchPredictions = fetchPredictionsInGroup(userToken, group2Id)
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group2Id)
             matchPredictions.forEach {
                 it.prediction!!
                 when (it.match.id) {
@@ -612,7 +568,7 @@ class UserIntegrationTest {
         @Test
         @Order(6)
         fun `user checks predictions in group 3 and are the same as submitted`() {
-            val matchPredictions = fetchPredictionsInGroup(userToken, group3Id)
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group3Id)
             matchPredictions.forEach {
                 it.prediction!!
                 when (it.match.id) {
@@ -656,13 +612,13 @@ class UserIntegrationTest {
         @Test
         @Order(8)
         fun `user sets uniqueness for predictions`() {
-            setPredictionUniqueness(true, group1Id?.let { UUID.fromString(it) })
+            setPredictionUniqueness(true, group1Id)
         }
 
         @Test
         @Order(9)
         fun `user checks predictions in group 1 and they are still the same`() {
-            val matchPredictions = fetchPredictionsInGroup(userToken, group1Id)
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group1Id)
             matchPredictions.forEach {
                 it.prediction!!
                 when (it.match.id) {
@@ -685,7 +641,7 @@ class UserIntegrationTest {
         @Test
         @Order(10)
         fun `user checks predictions in group 2 and only the active ones were updated`() {
-            val matchPredictions = fetchPredictionsInGroup(userToken, group2Id)
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group2Id)
             matchPredictions.forEach {
                 it.prediction!!
                 when (it.match.id) {
@@ -708,7 +664,7 @@ class UserIntegrationTest {
         @Test
         @Order(11)
         fun `user checks predictions in group 3 and only the active ones were updated`() {
-            val matchPredictions = fetchPredictionsInGroup(userToken, group3Id)
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group3Id)
             matchPredictions.forEach {
                 it.prediction!!
                 when (it.match.id) {
@@ -734,13 +690,13 @@ class UserIntegrationTest {
             val matchPredictions = listOf(
                 SubmitMatchPredictionRequest(matchId = testMatch2Id!!, homeGoals = 1, awayGoals = 1),
             )
-            submitPredictionsToGroup(userToken, group1Id, matchPredictions)
+            client.submitMatchPredictionsToGroup(userToken, group1Id, matchPredictions)
         }
 
         @Test
         @Order(13)
         fun `user checks predictions in group 1 and were updated`() {
-            val matchPredictions = fetchPredictionsInGroup(userToken, group1Id)
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group1Id)
             matchPredictions.forEach {
                 when (it.match.id) {
                     testMatch2Id -> {
@@ -754,7 +710,7 @@ class UserIntegrationTest {
         @Test
         @Order(14)
         fun `user checks predictions in group 2 and also were updated`() {
-            val matchPredictions = fetchPredictionsInGroup(userToken, group2Id)
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group2Id)
             matchPredictions.forEach {
                 when (it.match.id) {
                     testMatch2Id -> {
@@ -768,7 +724,7 @@ class UserIntegrationTest {
         @Test
         @Order(15)
         fun `user checks predictions in group 3 and also were updated`() {
-            val matchPredictions = fetchPredictionsInGroup(userToken, group3Id)
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group3Id)
             matchPredictions.forEach {
                 when (it.match.id) {
                     testMatch2Id -> {
@@ -803,7 +759,7 @@ class UserIntegrationTest {
         @Test
         @Order(17)
         fun `user checks predictions in group 1 and are still the same`() {
-            val matchPredictions = fetchPredictionsInGroup(userToken, group1Id)
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group1Id)
             matchPredictions.forEach {
                 when (it.match.id) {
                     testMatch2Id -> {
@@ -821,7 +777,7 @@ class UserIntegrationTest {
         @Test
         @Order(18)
         fun `user checks predictions in group 2 and are still the same`() {
-            val matchPredictions = fetchPredictionsInGroup(userToken, group2Id)
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group2Id)
             matchPredictions.forEach {
                 when (it.match.id) {
                     testMatch2Id -> {
@@ -839,7 +795,7 @@ class UserIntegrationTest {
         @Test
         @Order(19)
         fun `user checks predictions in group 3 and are still the same`() {
-            val matchPredictions = fetchPredictionsInGroup(userToken, group3Id)
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group3Id)
             matchPredictions.forEach {
                 when (it.match.id) {
                     testMatch2Id -> {
@@ -866,13 +822,13 @@ class UserIntegrationTest {
             val matchPredictions = listOf(
                 SubmitMatchPredictionRequest(matchId = testMatch3Id!!, homeGoals = 5, awayGoals = 0),
             )
-            submitPredictionsToGroup(userToken, group1Id, matchPredictions)
+            client.submitMatchPredictionsToGroup(userToken, group1Id, matchPredictions)
         }
 
         @Test
         @Order(22)
         fun `user checks predictions in group 1 and they were updated one more time`() {
-            val matchPredictions = fetchPredictionsInGroup(userToken, group1Id)
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group1Id)
             matchPredictions.forEach {
                 when (it.match.id) {
                     testMatch3Id -> {
@@ -886,7 +842,7 @@ class UserIntegrationTest {
         @Test
         @Order(23)
         fun `user checks predictions in group 2 and they were not updated this time`() {
-            val matchPredictions = fetchPredictionsInGroup(userToken, group2Id)
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group2Id)
             matchPredictions.forEach {
                 when (it.match.id) {
                     testMatch3Id -> {
@@ -900,7 +856,7 @@ class UserIntegrationTest {
         @Test
         @Order(24)
         fun `user checks predictions in group 3 and they were not updated this time`() {
-            val matchPredictions = fetchPredictionsInGroup(userToken, group3Id)
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group3Id)
             matchPredictions.forEach {
                 when (it.match.id) {
                     testMatch3Id -> {

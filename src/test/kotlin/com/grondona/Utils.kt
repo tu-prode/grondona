@@ -10,11 +10,15 @@ import com.grondona.model.dto.request.CreateUserRequest
 import java.time.LocalDateTime
 import java.util.UUID
 
+// Randomizer
+
 fun randomString(str: String = "", maxSize: Int = 50): String {
     val uuid = UUID.randomUUID().toString().replace("-", "")
     val take = if (str.isEmpty()) uuid.length.coerceAtMost(maxSize) else str.length.minus(1).coerceAtMost(maxSize)
     return str + uuid.substring(0, take)
 }
+
+// Request builders
 
 fun createTestingUserRequest(
     fullname: String = "User",
@@ -52,6 +56,8 @@ fun createTestingTournamentRequest(
     )
 }
 
+// Test entities
+
 val testTournament = Tournament(
     id = UUID.randomUUID(),
     name = "Test Tournament",
@@ -81,3 +87,15 @@ val testUser: User = User(
     email = "test@gmail.com",
     passwordHash = "password",
 )
+
+// Utility functions
+
+fun <T> List<T>.otherRandom(vararg others: T): T {
+    var choice = this.random()
+    while (others.contains(choice)) {
+        choice = this.random()
+    }
+    return choice
+}
+
+fun <T> List<T>.consistsOf(other: List<T>) = this.containsAll(other) && other.containsAll(this)

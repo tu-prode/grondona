@@ -13,7 +13,7 @@ data class TournamentResponse(
 ) {
     companion object {
         fun from(tournament: Tournament, awards: ExtendedAwards?): TournamentResponse = TournamentResponse(
-            id = tournament.id!!,
+            id = tournament.id,
             name = tournament.name,
             status = tournament.status,
             awards = awards?.let(AwardsResponse::from),
