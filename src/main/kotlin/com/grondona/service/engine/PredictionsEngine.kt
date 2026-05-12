@@ -70,9 +70,9 @@ object PredictionsEngine {
         members.map { member ->
             val updatedLast = member.lastPredictions.toMutableList()
             var updatedPoints = member.points
-            var updatedBonus = 0
-            var updatedCorrect = 0
-            var updatedPartial = 0
+            var updatedBonus = member.amountBonus
+            var updatedCorrect = member.amountCorrect
+            var updatedPartial = member.amountPartial
 
             val matchesApplied: MutableSet<UUID> = mutableSetOf()
             newPredictions[member.user.id].orEmpty().also {
@@ -106,13 +106,13 @@ object PredictionsEngine {
 
     fun updateAwardPoints(members: List<GroupUser>, predictions: Map<UUID, List<AwardPrediction>>): List<GroupUser> =
         members.map { member ->
-            var points = 0f
-            if (member.group.tournament.status != TournamentStatus.FINISHED) {
+            var points = member.points
+            if (member.group.tournament.status == TournamentStatus.FINISHED) {
                 val memberPredictions = predictions[member.user.id].orEmpty()
                 if (memberPredictions.isEmpty()) {
                     logger.debug("No awards predictions for user={} in group={}", member.user, member.group)
                 }
-                points = member.points + awardPoints(memberPredictions)
+                points += awardPoints(memberPredictions)
             }
             member.copy(points = points)
         }.rank()

@@ -114,7 +114,7 @@ class TournamentService(
     }
 
     fun updateAwardPredictionsPoints(tournament: Tournament) {
-        var predictionsToUpdate = awardPredictionRepository.findByTournamentId(tournament.id!!)
+        var predictionsToUpdate = awardPredictionRepository.findByTournamentId(tournament.id)
         predictionsToUpdate = checkAwardPredictions(predictionsToUpdate)
         if (predictionsToUpdate.isNotEmpty()) {
             logger.debug("Award predictions to update in DB={}", predictionsToUpdate.size)

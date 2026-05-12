@@ -41,7 +41,7 @@ data class GroupResponse(
     companion object {
         fun from(group: Group): GroupResponse = GroupResponse(
             id = group.id!!,
-            tournamentId = group.tournament.id!!,
+            tournamentId = group.tournament.id,
             name = group.name,
             isPrivate = group.isPrivate,
             maxMembers = group.maxMembers,
@@ -52,7 +52,7 @@ data class GroupResponse(
 
         fun from(group: Group, standings: List<Standing>, candidates: List<GroupUser>): GroupResponse = GroupResponse(
             id = group.id!!,
-            tournamentId = group.tournament.id!!,
+            tournamentId = group.tournament.id,
             name = group.name,
             isPrivate = group.isPrivate,
             maxMembers = group.maxMembers,

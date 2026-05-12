@@ -68,7 +68,7 @@ data class TournamentMatchesResponse(
             liveMatches = live?.takeIf { liveMatches.isNotEmpty() }?.let { liveMatches.subList(0, min(it, liveMatches.lastIndex)) } ?: liveMatches
             nextMatches = next?.takeIf { nextMatches.isNotEmpty() }?.let { nextMatches.subList(0, min(it, nextMatches.lastIndex)) } ?: nextMatches
             return TournamentMatchesResponse(
-                tournamentId = tournament.id!!,
+                tournamentId = tournament.id,
                 tournamentName = tournament.name,
                 pastMatches = pastMatches,
                 totalPastMatches = pastMatches.size,
@@ -88,7 +88,7 @@ data class CreatedMatchesResponse(
 ) {
     companion object {
         fun from(tournament: Tournament, matches: List<Match>) = CreatedMatchesResponse(
-            tournamentId = tournament.id!!,
+            tournamentId = tournament.id,
             tournamentName = tournament.name,
             matches = matches.map(MatchResponse::from),
         )
