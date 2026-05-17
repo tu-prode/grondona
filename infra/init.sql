@@ -11,14 +11,23 @@ drop table if exists groups cascade;
 drop table if exists tournaments cascade;
 drop table if exists users cascade;
 
+-- Automatically update updated_at on row updates
+create or replace function set_updated_at()
+    returns trigger as $$
+begin
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    return NEW;
+end;
+$$ language plpgsql;
+
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    fullname VARCHAR(255) NOT NULL,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(32) NOT NULL,
-    permissions VARCHAR(20) NOT NULL DEFAULT 'USER',
+    fullname TEXT NOT NULL,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    permissions TEXT NOT NULL DEFAULT 'USER',
     unique_predictions BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -28,6 +37,10 @@ CREATE TABLE IF NOT EXISTS users (
 -- Create indexes for uniqueness and better query performance
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE deleted_at IS NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username) WHERE deleted_at IS NULL;
+
+-- Create trigger for the updated_at field
+CREATE TRIGGER trg_users_updated_at
+BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- Add comments to table and columns
 COMMENT ON TABLE users IS 'User accounts table';
@@ -41,27 +54,11 @@ COMMENT ON COLUMN users.created_at IS 'Timestamp when the user was created';
 COMMENT ON COLUMN users.updated_at IS 'Timestamp when the user was last updated';
 COMMENT ON COLUMN users.deleted_at IS 'Timestamp when the user was deleted';
 
--- Seed default users
-INSERT INTO users (id, fullname, username, email, password_hash, permissions) VALUES
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'Cristian Raña', 'cris', 'cris@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'SUPERUSER'),
-    ('60635292-4a13-43d8-b976-b2e292020deb', 'Lautaro Chamorro', 'chas', 'chas@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('4fc682de-233f-4b0f-b4c3-4ee0f5716675', 'Manuel Domínguez', 'manu', 'manu@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('56118705-5d57-4a6d-9f38-46606c78dbd6', 'Federico Cornago', 'corna', 'corna@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('a2618ce3-03a0-4f81-bb0b-010c0245a65b', 'Gastón Macrini', 'macro', 'macro@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('2b67aaa9-2ecf-4d21-9ce1-e378337b6adb', 'Gastón Añón', 'añon', 'añon@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('b7d358aa-42c0-4b22-9da2-ed292a00ee47', 'Federico Groisman', 'grois', 'grois@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('4cb252f7-9dac-4249-a9a2-b45d5234d384', 'Franco Rapallini', 'fran', 'fran@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('bdbf29ee-cfda-4d02-9928-af93ebd40892', 'Facundo Gandara', 'rifle', 'rifle@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('4a97633c-649b-4315-91a9-f995dc950171', 'Germán Raña', 'germán', 'german@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('dab4229a-e438-4d11-8f29-26320991848f', 'Ariel Canteros', 'ariel', 'ariel@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('23295782-bc35-4d70-892b-37a771620bc7', 'Camila Ivanovich', 'cami', 'cami@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER')
-ON CONFLICT (id) DO NOTHING;
-
 -- Create tournaments table
 CREATE TABLE IF NOT EXISTS tournaments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(256) NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'NOT_STARTED',
+    name TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'NOT_STARTED',
     awards JSONB DEFAULT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -70,6 +67,10 @@ CREATE TABLE IF NOT EXISTS tournaments (
 
 -- Create indexes for uniqueness and better query performance
 CREATE UNIQUE INDEX IF NOT EXISTS idx_tournaments_name ON tournaments(name) WHERE deleted_at IS NULL;
+
+-- Create trigger for the updated_at field
+CREATE TRIGGER trg_tournaments_updated_at
+BEFORE UPDATE ON tournaments FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- Add comments to table and columns
 COMMENT ON TABLE tournaments IS 'Tournaments table';
@@ -81,16 +82,11 @@ COMMENT ON COLUMN tournaments.created_at IS 'Timestamp when the tournament was c
 COMMENT ON COLUMN tournaments.updated_at IS 'Timestamp when the tournament was last updated';
 COMMENT ON COLUMN tournaments.deleted_at IS 'Timestamp when the tournament was deleted';
 
--- Seed default tournaments
-INSERT INTO tournaments (id, name, status) VALUES
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', 'Copa del Mundo 2026', 'NOT_STARTED')
-ON CONFLICT (id) DO NOTHING;
-
 -- Create groups table
 CREATE TABLE IF NOT EXISTS groups (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
-    name VARCHAR(100) NOT NULL UNIQUE,
+    name TEXT NOT NULL UNIQUE,
     is_private BOOLEAN NOT NULL DEFAULT FALSE,
     max_members INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -100,6 +96,9 @@ CREATE TABLE IF NOT EXISTS groups (
 
 -- Create indexes for uniqueness and better query performance
 CREATE UNIQUE INDEX IF NOT EXISTS idx_groups_name ON groups(tournament_id, name) WHERE deleted_at IS NULL;
+
+-- Create trigger for the updated_at field
+CREATE TRIGGER trg_groups_updated_at BEFORE UPDATE ON groups FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- Add comments to table and columns
 COMMENT ON TABLE groups IS 'Groups table';
@@ -112,28 +111,19 @@ COMMENT ON COLUMN groups.created_at IS 'Timestamp when the group was created';
 COMMENT ON COLUMN groups.updated_at IS 'Timestamp when the group was last updated';
 COMMENT ON COLUMN groups.deleted_at IS 'Timestamp when the group was deleted';
 
--- Seed default groups
-INSERT INTO groups (id, tournament_id, name, is_private, max_members) VALUES
-    ('f47ac10b-58cc-4372-a567-0e02b2c3d479', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'General', TRUE, 50),
-    ('7c9e6679-7425-40de-944b-e07fc1f90ae7', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'EPO', TRUE, 25),
-    ('b5d4c3a2-1e0f-4d9c-8b7a-6f5e4d3c2b1a', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'Baldosa', TRUE, 27),
-    ('e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'Maldolar', TRUE, 12),
-    ('8158a607-97b3-47db-8382-92d878358b9c', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'Familia', TRUE, 20)
-ON CONFLICT (id) DO NOTHING;
-
 -- Create group_users table (membership)
 CREATE TABLE IF NOT EXISTS group_users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
-    role VARCHAR(20) NOT NULL DEFAULT 'MEMBER',
+    role TEXT NOT NULL DEFAULT 'MEMBER',
     rank INTEGER DEFAULT NULL,
     points FLOAT NOT NULL DEFAULT 0,
     joined_at TIMESTAMP DEFAULT NULL,
     amount_bonus INTEGER DEFAULT 0,
     amount_correct INTEGER DEFAULT 0,
     amount_partial INTEGER DEFAULT 0,
-    last_predictions VARCHAR(20)[] NOT NULL DEFAULT '{}',
+    last_predictions TEXT[] NOT NULL DEFAULT '{}',
     predicted_awards JSONB NOT NULL DEFAULT '{}',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -144,6 +134,9 @@ CREATE TABLE IF NOT EXISTS group_users (
 CREATE INDEX IF NOT EXISTS idx_group_users_user_id ON group_users(user_id);
 CREATE INDEX IF NOT EXISTS idx_group_users_group_id ON group_users(group_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_group_users_uniqueness ON group_users(user_id, group_id) WHERE deleted_at IS NULL;
+
+-- Create trigger for the updated_at field
+CREATE TRIGGER trg_group_users_updated_at BEFORE UPDATE ON group_users FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- Add comments to table and columns
 COMMENT ON TABLE group_users IS 'Group membership table';
@@ -163,43 +156,12 @@ COMMENT ON COLUMN group_users.created_at IS 'Timestamp when the membership was c
 COMMENT ON COLUMN group_users.updated_at IS 'Timestamp when the membership was updated';
 COMMENT ON COLUMN group_users.deleted_at IS 'Timestamp when the membership was deleted';
 
--- Seed default members
-INSERT INTO group_users (user_id, group_id, role) VALUES
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'OWNER'),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', '7c9e6679-7425-40de-944b-e07fc1f90ae7', 'OWNER'),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'b5d4c3a2-1e0f-4d9c-8b7a-6f5e4d3c2b1a', 'OWNER'),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', 'OWNER'),
-    ('c97ec073-c40c-4094-9f9e-b07074188936', '8158a607-97b3-47db-8382-92d878358b9c', 'OWNER'),
-    ('60635292-4a13-43d8-b976-b2e292020deb', '7c9e6679-7425-40de-944b-e07fc1f90ae7', 'ADMIN'),
-    ('4fc682de-233f-4b0f-b4c3-4ee0f5716675', '7c9e6679-7425-40de-944b-e07fc1f90ae7', 'MEMBER'),
-    ('56118705-5d57-4a6d-9f38-46606c78dbd6', '7c9e6679-7425-40de-944b-e07fc1f90ae7', 'MEMBER'),
-    ('a2618ce3-03a0-4f81-bb0b-010c0245a65b', 'e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', 'ADMIN'),
-    ('2b67aaa9-2ecf-4d21-9ce1-e378337b6adb', 'e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', 'MEMBER'),
-    ('b7d358aa-42c0-4b22-9da2-ed292a00ee47', 'e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', 'MEMBER'),
-    ('4cb252f7-9dac-4249-a9a2-b45d5234d384', 'b5d4c3a2-1e0f-4d9c-8b7a-6f5e4d3c2b1a', 'ADMIN'),
-    ('bdbf29ee-cfda-4d02-9928-af93ebd40892', 'b5d4c3a2-1e0f-4d9c-8b7a-6f5e4d3c2b1a', 'MEMBER'),
-    ('4a97633c-649b-4315-91a9-f995dc950171', '8158a607-97b3-47db-8382-92d878358b9c', 'ADMIN'),
-    ('dab4229a-e438-4d11-8f29-26320991848f', '8158a607-97b3-47db-8382-92d878358b9c', 'MEMBER'),
-    ('23295782-bc35-4d70-892b-37a771620bc7', '8158a607-97b3-47db-8382-92d878358b9c', 'MEMBER'),
-    ('60635292-4a13-43d8-b976-b2e292020deb', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'ADMIN'),
-    ('4fc682de-233f-4b0f-b4c3-4ee0f5716675', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
-    ('56118705-5d57-4a6d-9f38-46606c78dbd6', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
-    ('a2618ce3-03a0-4f81-bb0b-010c0245a65b', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
-    ('2b67aaa9-2ecf-4d21-9ce1-e378337b6adb', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
-    ('b7d358aa-42c0-4b22-9da2-ed292a00ee47', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
-    ('4cb252f7-9dac-4249-a9a2-b45d5234d384', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
-    ('bdbf29ee-cfda-4d02-9928-af93ebd40892', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
-    ('4a97633c-649b-4315-91a9-f995dc950171', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
-    ('dab4229a-e438-4d11-8f29-26320991848f', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
-    ('23295782-bc35-4d70-892b-37a771620bc7', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER')
-ON CONFLICT (id) DO NOTHING;
-
 -- Create teams table
 CREATE TABLE IF NOT EXISTS teams (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
-    name VARCHAR(100) NOT NULL,
-    code VARCHAR(5) NOT NULL,
+    name TEXT NOT NULL,
+    code TEXT NOT NULL,
     icon TEXT DEFAULT 'https://flagicons.lipis.dev/flags/4x3/xx.svg',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -208,6 +170,9 @@ CREATE TABLE IF NOT EXISTS teams (
 
 -- Create indexes for uniqueness and better query performance
 CREATE INDEX IF NOT EXISTS idx_teams_code ON teams(code, tournament_id) WHERE deleted_at IS NULL;
+
+-- Create trigger for the updated_at field
+CREATE TRIGGER trg_teams_updated_at BEFORE UPDATE ON teams FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- Add comments to table and columns
 COMMENT ON TABLE teams IS 'Teams table';
@@ -220,7 +185,167 @@ COMMENT ON COLUMN teams.created_at IS 'Timestamp when the team was created';
 COMMENT ON COLUMN teams.updated_at IS 'Timestamp when the team was last updated';
 COMMENT ON COLUMN teams.deleted_at IS 'Timestamp when the team was deleted';
 
--- Seed default tournaments
+-- Create teams table
+CREATE TABLE IF NOT EXISTS players (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      position TEXT NOT NULL,
+      birthdate DATE NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      deleted_at TIMESTAMP DEFAULT NULL
+);
+
+-- Create indexes for uniqueness and better query performance
+CREATE INDEX IF NOT EXISTS idx_players_team ON players(name, team_id) WHERE deleted_at IS NULL;
+
+-- Create trigger for the updated_at field
+CREATE TRIGGER trg_players_updated_at BEFORE UPDATE ON players FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- Add comments to table and columns
+COMMENT ON TABLE players IS 'Teams table';
+COMMENT ON COLUMN players.id IS 'Unique identifier for the player';
+COMMENT ON COLUMN players.team_id IS 'Reference to the team';
+COMMENT ON COLUMN players.name IS 'Name of the player';
+COMMENT ON COLUMN players.position IS 'Position of the player';
+COMMENT ON COLUMN players.birthdate IS 'Birthdate of the player';
+COMMENT ON COLUMN players.created_at IS 'Timestamp when the player was created';
+COMMENT ON COLUMN players.updated_at IS 'Timestamp when the player was last updated';
+COMMENT ON COLUMN players.deleted_at IS 'Timestamp when the player was deleted';
+
+-- Create matches table
+CREATE TABLE IF NOT EXISTS matches (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code TEXT NOT NULL,
+    tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+    home_team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    away_team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    home_quota FLOAT NOT NULL DEFAULT 1,
+    draw_quota FLOAT NOT NULL DEFAULT 1,
+    away_quota FLOAT NOT NULL DEFAULT 1,
+    status TEXT NOT NULL DEFAULT 'NOT_STARTED',
+    substatus TEXT DEFAULT NULL,
+    started_at timestamptz NOT NULL,
+    finished_at timestamptz DEFAULT NULL,
+    home_goals INT DEFAULT NULL,
+    away_goals INT DEFAULT NULL,
+    home_penalties INT DEFAULT NULL,
+    away_penalties INT DEFAULT NULL,
+    has_multiplier BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP DEFAULT NULL
+);
+
+-- Create indexes for uniqueness and better query performance
+CREATE UNIQUE INDEX IF NOT EXISTS idx_matches_code ON matches(tournament_id, code) WHERE deleted_at IS NULL;
+
+-- Create trigger for the updated_at field
+CREATE TRIGGER trg_matches_updated_at BEFORE UPDATE ON matches FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- Add comments to table and columns
+COMMENT ON TABLE matches IS 'Matches table';
+COMMENT ON COLUMN matches.id IS 'Unique identifier for the match';
+COMMENT ON COLUMN matches.code IS 'Unique identifier for the match within the tournament';
+COMMENT ON COLUMN matches.tournament_id IS 'Reference to the tournament';
+COMMENT ON COLUMN matches.home_team_id IS 'Home team identifier';
+COMMENT ON COLUMN matches.away_team_id IS 'Away team identifier';
+COMMENT ON COLUMN matches.home_quota IS 'The quota for a home team win';
+COMMENT ON COLUMN matches.draw_quota IS 'The quota for a draw';
+COMMENT ON COLUMN matches.away_quota IS 'The quota for an away team win';
+COMMENT ON COLUMN matches.status IS 'Status of the match (can be either NOT_STARTED, IN_PROGRESS or FINISHED)';
+COMMENT ON COLUMN matches.substatus IS 'Substatus of the in-progress match (can be either HT, FT or the minute of the game)';
+COMMENT ON COLUMN matches.started_at IS 'Timestamp when the match started';
+COMMENT ON COLUMN matches.finished_at IS 'Timestamp when the match finished';
+COMMENT ON COLUMN matches.home_goals IS 'Amount of goals scored by the home team';
+COMMENT ON COLUMN matches.away_goals IS 'Amount of goals scored by the away team';
+COMMENT ON COLUMN matches.home_penalties IS 'Amount of penalties scored by the home team';
+COMMENT ON COLUMN matches.away_penalties IS 'Amount of penalties scored by the away team';
+COMMENT ON COLUMN matches.has_multiplier IS 'Flag indicating if a match has a multiplier';
+COMMENT ON COLUMN matches.created_at IS 'Timestamp when the match was created';
+COMMENT ON COLUMN matches.updated_at IS 'Timestamp when the match was last updated';
+COMMENT ON COLUMN matches.deleted_at IS 'Timestamp when the match was deleted';
+
+-- Create matches-predictions table
+CREATE TABLE IF NOT EXISTS match_predictions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+    match_id UUID NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+    home_goals INT,
+    away_goals INT,
+    status TEXT NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP DEFAULT NULL
+);
+
+-- Create indexes for uniqueness and better query performance
+CREATE UNIQUE INDEX IF NOT EXISTS idx_match_predictions_uniqueness ON match_predictions(user_id, group_id, match_id) WHERE deleted_at IS NULL;
+
+-- Create trigger for the updated_at field
+CREATE TRIGGER trg_match_predictions_updated_at BEFORE UPDATE ON match_predictions FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- Add comments to table and columns
+COMMENT ON TABLE match_predictions IS 'Matches predictions table';
+COMMENT ON COLUMN match_predictions.id IS 'Unique identifier for the match';
+COMMENT ON COLUMN match_predictions.user_id IS 'Reference to the user';
+COMMENT ON COLUMN match_predictions.group_id IS 'Reference to the group';
+COMMENT ON COLUMN match_predictions.match_id IS 'Reference to the match';
+COMMENT ON COLUMN match_predictions.home_goals IS 'The home goals predicted';
+COMMENT ON COLUMN match_predictions.away_goals IS 'The away goals predicted';
+COMMENT ON COLUMN match_predictions.status IS 'Status of the prediction (can be either BONUS, CORRECT, PARTIAL, INCORRECT, PENDING or MISSING)';
+COMMENT ON COLUMN match_predictions.created_at IS 'Timestamp when the prediction was created';
+COMMENT ON COLUMN match_predictions.updated_at IS 'Timestamp when the prediction was updated';
+COMMENT ON COLUMN match_predictions.deleted_at IS 'Timestamp when the prediction was deleted';
+
+-- Create awards-predictions table
+CREATE TABLE IF NOT EXISTS award_predictions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+    award_type TEXT NOT NULL,
+    awarded_team_id UUID NULL REFERENCES teams(id) ON DELETE CASCADE,
+    awarded_player_id UUID NULL REFERENCES players(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP DEFAULT NULL
+);
+
+-- Create indexes for uniqueness and better query performance
+CREATE UNIQUE INDEX IF NOT EXISTS idx_award_predictions_uniqueness ON award_predictions(user_id, award_type, awarded_team_id, awarded_player_id) WHERE deleted_at IS NULL;
+
+-- Create trigger for the updated_at field
+CREATE TRIGGER trg_award_predictions_updated_at BEFORE UPDATE ON award_predictions FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- Add comments to table and columns
+COMMENT ON TABLE award_predictions IS 'Awards predictions table';
+COMMENT ON COLUMN award_predictions.id IS 'Unique identifier for the match';
+COMMENT ON COLUMN award_predictions.user_id IS 'Reference to the user';
+COMMENT ON COLUMN award_predictions.award_type IS 'Type of the award, depending on the tournament';
+COMMENT ON COLUMN award_predictions.awarded_team_id IS 'Reference to the team awarded (optional)';
+COMMENT ON COLUMN award_predictions.awarded_player_id IS 'Reference to the player awarded (optional)';
+COMMENT ON COLUMN award_predictions.status IS 'Status of the prediction (can be either BONUS, CORRECT, PARTIAL, INCORRECT, PENDING or MISSING)';
+COMMENT ON COLUMN award_predictions.created_at IS 'Timestamp when the prediction was created';
+COMMENT ON COLUMN award_predictions.updated_at IS 'Timestamp when the prediction was updated';
+COMMENT ON COLUMN award_predictions.deleted_at IS 'Timestamp when the prediction was deleted';
+
+-- 
+--
+--
+--
+-- REAL VALUES
+--
+--
+--
+--
+
+INSERT INTO tournaments (id, name, status) VALUES
+    ('28652183-a2d6-4f33-a624-0d24645ce3cd', 'Copa del Mundo 2026', 'NOT_STARTED')
+ON CONFLICT (id) DO NOTHING;
+
 INSERT INTO teams (id, tournament_id, name, code, icon) VALUES
     ('6f1c5f6e-9c9e-4f3b-8d8e-2b5e2a6a1c01', '28652183-a2d6-4f33-a624-0d24645ce3cd','Alemania', 'GER', 'https://flagcdn.com/w40/de.png'),
     ('b2c9c3e7-7f7e-4a5a-9f2b-3c1d9a4e8b02', '28652183-a2d6-4f33-a624-0d24645ce3cd','Arabia Saudita', 'KSA', 'https://flagcdn.com/w40/sa.png'),
@@ -272,60 +397,35 @@ INSERT INTO teams (id, tournament_id, name, code, icon) VALUES
     ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', '28652183-a2d6-4f33-a624-0d24645ce3cd','Chequia', 'CZE', 'https://flagcdn.com/w40/cz.png')
 ON CONFLICT (id) DO NOTHING;
 
--- Create teams table
-CREATE TABLE IF NOT EXISTS players (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-      name TEXT NOT NULL,
-      position VARCHAR(20) NOT NULL,
-      birthdate DATE NOT NULL,
-      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      deleted_at TIMESTAMP DEFAULT NULL
-);
-
--- Create indexes for uniqueness and better query performance
-CREATE INDEX IF NOT EXISTS idx_players_team ON players(name, team_id) WHERE deleted_at IS NULL;
-
--- Add comments to table and columns
-COMMENT ON TABLE players IS 'Teams table';
-COMMENT ON COLUMN players.id IS 'Unique identifier for the player';
-COMMENT ON COLUMN players.team_id IS 'Reference to the team';
-COMMENT ON COLUMN players.name IS 'Name of the player';
-COMMENT ON COLUMN players.position IS 'Position of the player';
-COMMENT ON COLUMN players.birthdate IS 'Birthdate of the player';
-COMMENT ON COLUMN players.created_at IS 'Timestamp when the player was created';
-COMMENT ON COLUMN players.updated_at IS 'Timestamp when the player was last updated';
-COMMENT ON COLUMN players.deleted_at IS 'Timestamp when the player was deleted';
-
 INSERT INTO players (team_id, name, position, birthdate) VALUES
-    -- SWE
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Viktor Johansson', 'GOALKEEPER', '1998-09-14'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Jacob Widell Zetterstrom', 'GOALKEEPER', '1998-07-11'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Gustaf Lagerbielke', 'DEFENDER', '2000-04-10'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Victor Lindelof', 'DEFENDER', '1994-07-17'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Gabriel Gudmundsson', 'DEFENDER', '1999-04-29'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Daniel Svensson', 'DEFENDER', '2002-02-12'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Elliot Stroud', 'DEFENDER', '2002-06-22'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Carl Starfelt', 'DEFENDER', '1995-06-01'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Isak Hien', 'DEFENDER', '1999-01-13'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Emil Holm', 'DEFENDER', '2000-05-13'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Hjalmar Ekdal', 'DEFENDER', '1998-10-21'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Eric Smith ', 'DEFENDER', '1997-01-08'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Lucas Bergvall', 'MIDFIELDER', '2006-02-02'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Jesper Karlstrom', 'MIDFIELDER', '1995-06-21'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Yasin Ayari', 'MIDFIELDER', '2003-10-06'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Mattias Svanberg', 'MIDFIELDER', '1991-01-05'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Besfort Zeneli', 'MIDFIELDER', '2002-11-21'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Ken Sema', 'MIDFIELDER', '1993-09-30'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Gustaf Nilsson', 'FORWARD', '1997-05-23'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Benjamin Nygren', 'FORWARD', '2001-07-08'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Anthony Elanga', 'FORWARD', '2002-04-27'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Viktor Gyokeres', 'FORWARD', '1998-06-04'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Taha Ali', 'FORWARD', '1998-07-01'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Alexander Isak', 'FORWARD', '1999-09-21'),
-    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Alexander Bernhardsson', 'FORWARD', '1998-09-08'),
-    -- BIH
+    -- KOR (16-5)
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Kim Seung-gyu', 'GOALKEEPER', '1990-09-30'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Bum-keun Song', 'GOALKEEPER', '1997-10-15'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Hyeon-woo Jo', 'GOALKEEPER', '1991-09-25'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Kim Moon-hwan', 'DEFENDER', '1995-08-01'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Kim Min-jae', 'DEFENDER', '1996-11-15'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Kim Tae-hyeon', 'DEFENDER', '2000-09-17'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Jin-seop Park', 'DEFENDER', '1995-10-23'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Young-woo Seol', 'DEFENDER', '1998-12-05'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Jens Castrop', 'DEFENDER', '2003-07-29'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Ki-hyuk Lee', 'DEFENDER', '2000-03-24'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Tae-seok Lee', 'DEFENDER', '2002-07-28'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Han-beom Lee', 'DEFENDER', '2002-06-17'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Yu-min Cho', 'DEFENDER', '1996-11-17'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Kim Jin-gyu', 'MIDFIELDER', '1997-02-24'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Jun-ho Bae', 'MIDFIELDER', '2003-08-21'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Seung-ho Paik', 'MIDFIELDER', '1997-03-17'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Hyun-jun Yang', 'MIDFIELDER', '2002-05-25'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Ji-sung Eom', 'MIDFIELDER', '2002-02-26'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Kang-in Lee', 'MIDFIELDER', '2001-02-19'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Dong-gyeong Lee', 'MIDFIELDER', '1997-09-20'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Jae-sung Lee', 'MIDFIELDER', '1992-08-10'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'In-beom Hwang', 'MIDFIELDER', '1996-09-20'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Hee-chan Hwang', 'MIDFIELDER', '1996-01-26'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Heung-min Son', 'FORWARD', '1992-07-08'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Hyeon-gyu Oh', 'FORWARD', '2001-04-12'),
+    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Gue-sung Cho', 'FORWARD', '1998-01-25'),
+    -- BIH (11-5)
     ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', 'Nikola Vasilj', 'GOALKEEPER', '1995-12-02'),
     ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', 'Martin Zlomislić', 'GOALKEEPER', '1998-08-16'),
     ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', 'Osman Hadžikić', 'GOALKEEPER', '1996-03-12'),
@@ -352,7 +452,7 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', 'Samed Baždar', 'FORWARD', '2004-01-31'),
     ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', 'Haris Tabaković', 'FORWARD', '1994-06-20'),
     ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', 'Jovo Lukić', 'FORWARD', '1999-07-20'),
-    -- HAI
+    -- HAI (15-5)
     ('d1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24', 'GOALKEEPER', 'Johnny Placide', '1988-01-29'),
     ('d1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24', 'GOALKEEPER', 'Alexandre Pierre', '2001-02-25'),
     ('d1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24', 'GOALKEEPER', 'Josué Duverger', '2000-04-12'),
@@ -379,7 +479,7 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('d1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24', 'FORWARD', 'Frantzdy Pierrot', '1995-03-20'),
     ('d1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24', 'FORWARD', 'Yassin Fortune', '1999-01-30'),
     ('d1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24', 'FORWARD', 'Lenny Joseph', '2000-10-12'),
-    -- CIV
+    -- CIV (15-5)
     ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', 'GOALKEEPER', 'Yahia Fofana', '2000-08-21'),
     ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', 'GOALKEEPER', 'Mohamed Koné', '2001-03-12'),
     ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', 'GOALKEEPER', 'Alban Lafont', '1999-01-23'),
@@ -406,7 +506,7 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', 'FORWARD', 'Nicolas Pépé', '1995-05-29'),
     ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', 'FORWARD', 'Bazoumana Touré', '2006-03-02'),
     ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', 'FORWARD', 'Elye Wahi', '2003-01-02'),
-    -- JPN
+    -- JPN (15-5)
     ('a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27', 'GOALKEEPER', 'Zion Suzuki', '2002-08-21'),
     ('a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27', 'GOALKEEPER', 'Keisuke Osako', '1999-07-28'),
     ('a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27', 'GOALKEEPER', 'Tomoki Hayakawa', '1999-03-03'),
@@ -433,34 +533,61 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27', 'FORWARD', 'Keisuke Goto', '2005-06-03'),
     ('a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27', 'FORWARD', 'Ritsu Doan', '1998-06-16'),
     ('a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27', 'FORWARD', 'Ayase Ueda', '1998-08-28'),
-    -- TUN
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'GOALKEEPER', 'Aymen Dahmen', '1997-01-28'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'GOALKEEPER', 'A. Chamakh', '2002-04-07'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'GOALKEEPER', 'Sabri Ben Hassen', '1998-07-11'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'DEFENDER', 'Van Valery', '1999-10-22'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'DEFENDER', 'Moutaz Neffati', '2004-01-22'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'DEFENDER', 'Dylan Bronn', '1995-06-19'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'DEFENDER', 'Montassar Talbi', '1998-05-26'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'DEFENDER', 'Omar Rekik', '2001-12-20'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'DEFENDER', 'Adem Arous', '2003-01-15'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'DEFENDER', 'Raed Chikhaoui', '1999-02-02'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'DEFENDER', 'Ali Abdi', '1993-12-20'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'DEFENDER', 'Mohamed Amine Ben Hmida', '1995-03-06'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'MIDFIELDER', 'Ellyes Skhiri', '1995-05-10'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'MIDFIELDER', 'Mohamed Hadj Mahmoud', '2000-05-25'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'MIDFIELDER', 'Rani Khedira', '1994-01-27'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'MIDFIELDER', 'Anis Ben Slimane', '2001-03-16'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'MIDFIELDER', 'Mortadha Ben Ouanes', '1994-07-16'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'MIDFIELDER', 'Ismaël Gharbi', '2004-04-10'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'MIDFIELDER', 'Hannibal Mejbri', '2003-01-21'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'FORWARD', 'Khalil Ayari', '2005-01-09'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'FORWARD', 'Elias Achouri', '1999-02-10'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'FORWARD', 'Elias Saad', '1999-12-27'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'FORWARD', 'Firas Chaouat', '1996-05-20'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'FORWARD', 'Hazem Mastouri', '1997-03-16'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'FORWARD', 'Rayan Elloumi', '2005-01-18'),
-    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'FORWARD', 'Sebastian Tounekti', '2002-07-13'),
-    -- BEL
+    -- SWE (12-5)
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Viktor Johansson', 'GOALKEEPER', '1998-09-14'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Kristoffer Nordfeldt', 'GOALKEEPER', '1989-06-23'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Jacob Widell Zetterstrom', 'GOALKEEPER', '1998-07-11'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Hjalmar Ekdal', 'DEFENDER', '1998-10-21'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Gabriel Gudmundsson', 'DEFENDER', '1999-04-29'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Isak Hien', 'DEFENDER', '1999-01-13'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Emil Holm', 'DEFENDER', '2000-05-13'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Gustaf Lagerbielke', 'DEFENDER', '2000-04-10'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Victor Lindelof', 'DEFENDER', '1994-07-17'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Erik Smith', 'DEFENDER', '1997-01-08'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Carl Starfelt', 'DEFENDER', '1995-06-01'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Elliot Stroud', 'DEFENDER', '2002-06-13'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Daniel Svensson', 'DEFENDER', '2002-02-12'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Taha Ali', 'MIDFIELDER', '1998-06-16'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Yasin Ayari', 'MIDFIELDER', '2003-10-06'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Lucas Bergvall', 'MIDFIELDER', '2006-02-02'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Jesper Karlstrom', 'MIDFIELDER', '1995-06-21'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Ken Sema', 'MIDFIELDER', '1993-09-30'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Mattias Svanberg', 'MIDFIELDER', '1999-01-05'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Besfort Zeneli', 'MIDFIELDER', '2002-02-21'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Alexander Bernhardsson', 'FORWARD', '1998-09-08'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Anthony Elanga', 'FORWARD', '2002-04-27'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Viktor Gyokeres', 'FORWARD', '1998-06-04'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Alexander Isak', 'FORWARD', '1999-09-21'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Gustaf Nilsson', 'FORWARD', '1997-05-23'),
+    ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', 'Benjamin Nygren', 'FORWARD', '2001-07-08'),
+    -- TUN (15-5)
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Aymen Dahmen', 'GOALKEEPER', '1997-01-28'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Sabri Ben Hassine', 'GOALKEEPER', '1998-07-14'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Mohib Al-Shamikh', 'GOALKEEPER', '2001-03-31'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Montassar Talbi', 'DEFENDER', '1998-05-26'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Dylan Bronn', 'DEFENDER', '1995-06-19'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Omar Rekik', 'DEFENDER', '2001-12-20'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Yan Valery', 'DEFENDER', '1999-02-22'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Ali Abdi', 'DEFENDER', '1993-12-20'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Moataz Nafati', 'DEFENDER', '1997-11-22'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Raed Sheikhaoui', 'DEFENDER', '2004-05-27'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Adam Arous', 'DEFENDER', '2003-02-02'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Ellyes Skhiri', 'MIDFIELDER', '1995-05-10'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Hannibal Mejbri', 'MIDFIELDER', '2003-01-21'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Amin Ben Hamida', 'MIDFIELDER', '1995-12-15'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Anis Ben Slimane', 'MIDFIELDER', '2001-03-16'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Mohamed Haj Mahmoud', 'MIDFIELDER', '2000-05-07'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Rani Khedira', 'MIDFIELDER', '1994-01-27'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Mortadha Ben Ounas', 'MIDFIELDER', 'unknown'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Elyes Achouri', 'FORWARD', '1995-02-11'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Ismael Garbi', 'FORWARD', '2004-01-10'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Elyes Saad', 'FORWARD', '1999-02-08'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Sebastian Tounekti', 'FORWARD', '2002-07-13'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Firas Chaouat', 'FORWARD', '1996-05-20'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Khalil Ayari', 'FORWARD', '2005-01-12'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Hazem Mestouri', 'FORWARD', '1998-03-15'),
+    ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', 'Rayan Loumi', 'FORWARD', '2000-12-10'),
+    -- BEL (15-5)
     ('8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08', 'GOALKEEPER', 'Thibaut Courtois', '1992-05-11'),
     ('8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08', 'GOALKEEPER', 'Senne Lammens', '2002-07-07'),
     ('8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08', 'GOALKEEPER', 'Mike Penders', '2005-07-31'),
@@ -487,7 +614,7 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08', 'FORWARD', 'Charles De Ketelaere', '2001-03-10'),
     ('8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08', 'FORWARD', 'Matias Fernández-Pardo', '2005-02-03'),
     ('8b3e1c7a-2d9f-4a6c-9e5b-3f7a1c2d8b08', 'FORWARD', 'Diego Moreira', '2004-08-06'),
--- NZL
+    -- NZL (14-5)
     ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', 'GOALKEEPER', 'Max Crocombe', '1993-08-12'),
     ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', 'GOALKEEPER', 'Alex Paulsen', '2002-07-26'),
     ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', 'GOALKEEPER', 'Michael Woud', '1999-01-16'),
@@ -514,7 +641,7 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', 'FORWARD', 'Sarpreet Singh', '1999-02-20'),
     ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', 'FORWARD', 'Ben Waine', '2001-06-11'),
     ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', 'FORWARD', 'Chris Wood', '1991-12-07'),
-    -- FRA
+    -- FRA (14-5)
     ('b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22', 'GOALKEEPER', 'Mike Maignan', '1995-07-03'),
     ('b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22', 'GOALKEEPER', 'Brice Samba', '1994-04-25'),
     ('b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22', 'GOALKEEPER', 'Robin Risser', '2004-12-02'),
@@ -611,9 +738,6 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12','Luis Díaz', 'FORWARD', '1997-01-13'),
     ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12','James Rodríguez', 'FORWARD', '1991-07-12'),
     ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12','David Ospina', 'GOALKEEPER', '1988-08-31'),
-    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13','Son Heung-Min', 'FORWARD', '1992-07-08'),
-    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13','Lee Kang-in', 'FORWARD', '2001-02-19'),
-    ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13','Jo Hyeon-woo', 'GOALKEEPER', '1991-09-25'),
     ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15','Luka Modrić', 'FORWARD', '1985-09-09'),
     ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15','Joško Gvardiol', 'FORWARD', '2002-01-21'),
     ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15','Dominik Livaković', 'GOALKEEPER', '1995-01-09'),
@@ -697,57 +821,6 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4','Vítězslav Jaroš', 'GOALKEEPER', '2001-07-23')
 ON CONFLICT (id) DO NOTHING;
 
--- Create matches table
-CREATE TABLE IF NOT EXISTS matches (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      code VARCHAR(10) NOT NULL,
-      tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
-      home_team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-      away_team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-      home_quota FLOAT NOT NULL DEFAULT 1,
-      draw_quota FLOAT NOT NULL DEFAULT 1,
-      away_quota FLOAT NOT NULL DEFAULT 1,
-      status VARCHAR(20) NOT NULL DEFAULT 'NOT_STARTED',
-      substatus VARCHAR(20) DEFAULT NULL,
-      started_at TIMESTAMP NOT NULL,
-      finished_at TIMESTAMP DEFAULT NULL,
-      home_goals INT DEFAULT NULL,
-      away_goals INT DEFAULT NULL,
-      home_penalties INT DEFAULT NULL,
-      away_penalties INT DEFAULT NULL,
-      has_multiplier BOOLEAN NOT NULL DEFAULT FALSE,
-      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      deleted_at TIMESTAMP DEFAULT NULL
-);
-
--- Create indexes for uniqueness and better query performance
-CREATE UNIQUE INDEX IF NOT EXISTS idx_matches_code ON matches(tournament_id, code) WHERE deleted_at IS NULL;
-
--- Add comments to table and columns
-COMMENT ON TABLE matches IS 'Matches table';
-COMMENT ON COLUMN matches.id IS 'Unique identifier for the match';
-COMMENT ON COLUMN matches.code IS 'Unique identifier for the match within the tournament';
-COMMENT ON COLUMN matches.tournament_id IS 'Reference to the tournament';
-COMMENT ON COLUMN matches.home_team_id IS 'Home team identifier';
-COMMENT ON COLUMN matches.away_team_id IS 'Away team identifier';
-COMMENT ON COLUMN matches.home_quota IS 'The quota for a home team win';
-COMMENT ON COLUMN matches.draw_quota IS 'The quota for a draw';
-COMMENT ON COLUMN matches.away_quota IS 'The quota for an away team win';
-COMMENT ON COLUMN matches.status IS 'Status of the match (can be either NOT_STARTED, IN_PROGRESS or FINISHED)';
-COMMENT ON COLUMN matches.substatus IS 'Substatus of the in-progress match (can be either HT, FT or the minute of the game)';
-COMMENT ON COLUMN matches.started_at IS 'Timestamp when the match started';
-COMMENT ON COLUMN matches.finished_at IS 'Timestamp when the match finished';
-COMMENT ON COLUMN matches.home_goals IS 'Amount of goals scored by the home team';
-COMMENT ON COLUMN matches.away_goals IS 'Amount of goals scored by the away team';
-COMMENT ON COLUMN matches.home_penalties IS 'Amount of penalties scored by the home team';
-COMMENT ON COLUMN matches.away_penalties IS 'Amount of penalties scored by the away team';
-COMMENT ON COLUMN matches.has_multiplier IS 'Flag indicating if a match has a multiplier';
-COMMENT ON COLUMN matches.created_at IS 'Timestamp when the match was created';
-COMMENT ON COLUMN matches.updated_at IS 'Timestamp when the match was last updated';
-COMMENT ON COLUMN matches.deleted_at IS 'Timestamp when the match was deleted';
-
--- Seed default matches (using Bet365 quotas)
 INSERT INTO matches (id, tournament_id, code, home_team_id, away_team_id, started_at, has_multiplier, home_quota, draw_quota, away_quota) VALUES
     ('6a7c9c74-9a3d-4b9e-9a45-0a5dce3a8f3a', '28652183-a2d6-4f33-a624-0d24645ce3cd', '1', 'd3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30', 'f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38', '2026-06-11 13:00:00 -06:00'::timestamptz, false, 1+2*round(cast(log(1.45) as numeric), 2), 1+2*round(cast(log(4.10) as numeric), 2), 1+2*round(cast(log(5.75) as numeric), 2)),
     ('0c3d4b9f-cc8b-4c6f-8a54-0c1d9f3c3c41', '28652183-a2d6-4f33-a624-0d24645ce3cd', '2', 'e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', '219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', '2026-06-11 20:00:00 -06:00'::timestamptz, false, 1+2*round(cast(log(2.55) as numeric), 2), 1+2*round(cast(log(3.20) as numeric), 2), 1+2*round(cast(log(2.60) as numeric), 2)),
@@ -823,122 +896,106 @@ INSERT INTO matches (id, tournament_id, code, home_team_id, away_team_id, starte
     ('44556677-8899-4b88-9c0f-aaabbccddeef', '28652183-a2d6-4f33-a624-0d24645ce3cd', '72', '8f251495-81ba-4724-b575-f7ebecf213c4', 'd9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42', '2026-06-27 19:30:00 -04:00'::timestamptz, true, 1+2*round(cast(log(3.00) as numeric), 2), 1+2*round(cast(log(3.10) as numeric), 2), 1+2*round(cast(log(2.40) as numeric), 2))
 ON CONFLICT (id) DO NOTHING;
 
--- Testing matches
--- update matches set status='FINISHED', started_at=(current_timestamp - interval '1 days 20 hours'), finished_at=(current_timestamp - interval '1 days 18 hours'), home_goals=2, away_goals=1 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='1';
--- update matches set status='FINISHED', started_at=(current_timestamp - interval '1 days 17 hours'), finished_at=(current_timestamp - interval '1 days 15 hours'), home_goals=5, away_goals=0 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='2';
--- update matches set status='FINISHED', started_at=(current_timestamp - interval '21 hours'), finished_at=(current_timestamp - interval '19 hours'), home_goals=0, away_goals=0 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='3';
--- update matches set status='FINISHED', started_at=(current_timestamp - interval '18 hours'), finished_at=(current_timestamp - interval '16 hours'), home_goals=1, away_goals=2 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='4';
--- update matches set status='IN_PROGRESS', substatus='HT', started_at=(current_timestamp - interval '1 hours 30 minutes'), home_goals=3, away_goals=1 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='7';
--- update matches set status='IN_PROGRESS', substatus='45+7''', started_at=(current_timestamp - interval '30 minutes'), home_goals=0, away_goals=2 where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='8';
--- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '1 days') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='5';
--- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '1 days 2 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='6';
--- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '2 days 1 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='9';
--- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '2 days 3 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='11';
--- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '3 days 0 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='10';
--- update matches set status='NOT_STARTED', started_at=(current_timestamp + interval '3 days 2 hours') where tournament_id='28652183-a2d6-4f33-a624-0d24645ce3cd' and code='12';
+-- 
+--
+--
+--
+-- TEST VALUES
+--
+--
+--
+--
 
--- Create matches-predictions table
-CREATE TABLE IF NOT EXISTS match_predictions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
-    match_id UUID NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
-    home_goals INT,
-    away_goals INT,
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP DEFAULT NULL
-);
+INSERT INTO users (id, fullname, username, email, password_hash, permissions) VALUES
+    ('c97ec073-c40c-4094-9f9e-b07074188936', 'Cristian Raña', 'cris', 'cris@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'SUPERUSER'),
+    ('60635292-4a13-43d8-b976-b2e292020deb', 'Lautaro Chamorro', 'chas', 'chas@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('4fc682de-233f-4b0f-b4c3-4ee0f5716675', 'Manuel Domínguez', 'manu', 'manu@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('56118705-5d57-4a6d-9f38-46606c78dbd6', 'Federico Cornago', 'corna', 'corna@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('a2618ce3-03a0-4f81-bb0b-010c0245a65b', 'Gastón Macrini', 'macro', 'macro@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('2b67aaa9-2ecf-4d21-9ce1-e378337b6adb', 'Gastón Añón', 'añon', 'añon@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('b7d358aa-42c0-4b22-9da2-ed292a00ee47', 'Federico Groisman', 'grois', 'grois@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('4cb252f7-9dac-4249-a9a2-b45d5234d384', 'Franco Rapallini', 'fran', 'fran@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('bdbf29ee-cfda-4d02-9928-af93ebd40892', 'Facundo Gandara', 'rifle', 'rifle@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('4a97633c-649b-4315-91a9-f995dc950171', 'Germán Raña', 'germán', 'german@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('dab4229a-e438-4d11-8f29-26320991848f', 'Ariel Canteros', 'ariel', 'ariel@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('23295782-bc35-4d70-892b-37a771620bc7', 'Camila Ivanovich', 'cami', 'cami@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER')
+ON CONFLICT (id) DO NOTHING;
 
--- Create indexes for uniqueness and better query performance
-CREATE UNIQUE INDEX IF NOT EXISTS idx_match_predictions_uniqueness ON match_predictions(user_id, group_id, match_id) WHERE deleted_at IS NULL;
+INSERT INTO groups (id, tournament_id, name, is_private, max_members) VALUES
+    ('f47ac10b-58cc-4372-a567-0e02b2c3d479', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'General', TRUE, 50),
+    ('7c9e6679-7425-40de-944b-e07fc1f90ae7', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'EPO', TRUE, 25),
+    ('b5d4c3a2-1e0f-4d9c-8b7a-6f5e4d3c2b1a', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'Baldosa', TRUE, 27),
+    ('e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'Maldolar', TRUE, 12),
+    ('8158a607-97b3-47db-8382-92d878358b9c', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'Familia', TRUE, 20)
+ON CONFLICT (id) DO NOTHING;
 
--- Add comments to table and columns
-COMMENT ON TABLE match_predictions IS 'Matches predictions table';
-COMMENT ON COLUMN match_predictions.id IS 'Unique identifier for the match';
-COMMENT ON COLUMN match_predictions.user_id IS 'Reference to the user';
-COMMENT ON COLUMN match_predictions.group_id IS 'Reference to the group';
-COMMENT ON COLUMN match_predictions.match_id IS 'Reference to the match';
-COMMENT ON COLUMN match_predictions.home_goals IS 'The home goals predicted';
-COMMENT ON COLUMN match_predictions.away_goals IS 'The away goals predicted';
-COMMENT ON COLUMN match_predictions.status IS 'Status of the prediction (can be either BONUS, CORRECT, PARTIAL, INCORRECT, PENDING or MISSING)';
-COMMENT ON COLUMN match_predictions.created_at IS 'Timestamp when the prediction was created';
-COMMENT ON COLUMN match_predictions.updated_at IS 'Timestamp when the prediction was updated';
-COMMENT ON COLUMN match_predictions.deleted_at IS 'Timestamp when the prediction was deleted';
+INSERT INTO group_users (user_id, group_id, role) VALUES
+    ('c97ec073-c40c-4094-9f9e-b07074188936', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'OWNER'),
+    ('c97ec073-c40c-4094-9f9e-b07074188936', '7c9e6679-7425-40de-944b-e07fc1f90ae7', 'OWNER'),
+    ('c97ec073-c40c-4094-9f9e-b07074188936', 'b5d4c3a2-1e0f-4d9c-8b7a-6f5e4d3c2b1a', 'OWNER'),
+    ('c97ec073-c40c-4094-9f9e-b07074188936', 'e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', 'OWNER'),
+    ('c97ec073-c40c-4094-9f9e-b07074188936', '8158a607-97b3-47db-8382-92d878358b9c', 'OWNER'),
+    ('60635292-4a13-43d8-b976-b2e292020deb', '7c9e6679-7425-40de-944b-e07fc1f90ae7', 'ADMIN'),
+    ('4fc682de-233f-4b0f-b4c3-4ee0f5716675', '7c9e6679-7425-40de-944b-e07fc1f90ae7', 'MEMBER'),
+    ('56118705-5d57-4a6d-9f38-46606c78dbd6', '7c9e6679-7425-40de-944b-e07fc1f90ae7', 'MEMBER'),
+    ('a2618ce3-03a0-4f81-bb0b-010c0245a65b', 'e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', 'ADMIN'),
+    ('2b67aaa9-2ecf-4d21-9ce1-e378337b6adb', 'e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', 'MEMBER'),
+    ('b7d358aa-42c0-4b22-9da2-ed292a00ee47', 'e8d7c6b5-a4f3-4e2d-9c1b-0a8f7e6d5c4b', 'MEMBER'),
+    ('4cb252f7-9dac-4249-a9a2-b45d5234d384', 'b5d4c3a2-1e0f-4d9c-8b7a-6f5e4d3c2b1a', 'ADMIN'),
+    ('bdbf29ee-cfda-4d02-9928-af93ebd40892', 'b5d4c3a2-1e0f-4d9c-8b7a-6f5e4d3c2b1a', 'MEMBER'),
+    ('4a97633c-649b-4315-91a9-f995dc950171', '8158a607-97b3-47db-8382-92d878358b9c', 'ADMIN'),
+    ('dab4229a-e438-4d11-8f29-26320991848f', '8158a607-97b3-47db-8382-92d878358b9c', 'MEMBER'),
+    ('23295782-bc35-4d70-892b-37a771620bc7', '8158a607-97b3-47db-8382-92d878358b9c', 'MEMBER'),
+    ('60635292-4a13-43d8-b976-b2e292020deb', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'ADMIN'),
+    ('4fc682de-233f-4b0f-b4c3-4ee0f5716675', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
+    ('56118705-5d57-4a6d-9f38-46606c78dbd6', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
+    ('a2618ce3-03a0-4f81-bb0b-010c0245a65b', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
+    ('2b67aaa9-2ecf-4d21-9ce1-e378337b6adb', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
+    ('b7d358aa-42c0-4b22-9da2-ed292a00ee47', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
+    ('4cb252f7-9dac-4249-a9a2-b45d5234d384', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
+    ('bdbf29ee-cfda-4d02-9928-af93ebd40892', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
+    ('4a97633c-649b-4315-91a9-f995dc950171', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
+    ('dab4229a-e438-4d11-8f29-26320991848f', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER'),
+    ('23295782-bc35-4d70-892b-37a771620bc7', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', 'MEMBER')
+ON CONFLICT (id) DO NOTHING;
 
--- Adding testing predictions
 INSERT INTO match_predictions (user_id, group_id, match_id, home_goals, away_goals, status)
 SELECT gu.user_id, gu.group_id, m.id, floor(random()*5)::int, floor(random()*5)::int, 'PENDING'
 FROM group_users gu
-     JOIN matches m ON m.code::int BETWEEN 1 AND 72;
-
--- Create awards-predictions table
-CREATE TABLE IF NOT EXISTS award_predictions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
-    award_type VARCHAR(20) NOT NULL,
-    awarded_team_id UUID NULL REFERENCES teams(id) ON DELETE CASCADE,
-    awarded_player_id UUID NULL REFERENCES players(id) ON DELETE CASCADE,
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP DEFAULT NULL
-);
-
--- Create indexes for uniqueness and better query performance
-CREATE UNIQUE INDEX IF NOT EXISTS idx_award_predictions_uniqueness ON award_predictions(user_id, award_type, awarded_team_id, awarded_player_id) WHERE deleted_at IS NULL;
-
--- Add comments to table and columns
-COMMENT ON TABLE award_predictions IS 'Awards predictions table';
-COMMENT ON COLUMN award_predictions.id IS 'Unique identifier for the match';
-COMMENT ON COLUMN award_predictions.user_id IS 'Reference to the user';
-COMMENT ON COLUMN award_predictions.award_type IS 'Type of the award, depending on the tournament';
-COMMENT ON COLUMN award_predictions.awarded_team_id IS 'Reference to the team awarded (optional)';
-COMMENT ON COLUMN award_predictions.awarded_player_id IS 'Reference to the player awarded (optional)';
-COMMENT ON COLUMN award_predictions.status IS 'Status of the prediction (can be either BONUS, CORRECT, PARTIAL, INCORRECT, PENDING or MISSING)';
-COMMENT ON COLUMN award_predictions.created_at IS 'Timestamp when the prediction was created';
-COMMENT ON COLUMN award_predictions.updated_at IS 'Timestamp when the prediction was updated';
-COMMENT ON COLUMN award_predictions.deleted_at IS 'Timestamp when the prediction was deleted';
+JOIN matches m ON m.code::int BETWEEN 1 AND 72;
 
 INSERT INTO award_predictions (user_id, group_id, award_type, awarded_team_id, awarded_player_id)
--- 1. CHAMPION (1–2 random teams)
 SELECT gu.user_id, gu.group_id, award_type, team_id, NULL
 FROM group_users gu
-     JOIN LATERAL (
+JOIN LATERAL (
     SELECT 'CHAMPION' AS award_type, teams.id AS team_id
     FROM teams WHERE gu.user_id IS NOT NULL
     ORDER BY random() LIMIT (floor(random() * 2))::int + 1) ch ON TRUE
 UNION ALL
--- 2. TOP_SCORER (1–3 players)
 SELECT gu.user_id, gu.group_id, award_type, NULL, player_id
 FROM group_users gu
-     JOIN LATERAL (
+JOIN LATERAL (
     SELECT 'TOP_SCORER' AS award_type, players.id AS player_id
     FROM players WHERE gu.user_id IS NOT NULL
     ORDER BY random() LIMIT (floor(random() * 3))::int + 1) ts ON TRUE
 UNION ALL
--- 3. BEST_PLAYER (1–3 players)
 SELECT gu.user_id, gu.group_id, award_type, NULL, player_id
 FROM group_users gu
-     JOIN LATERAL (
+JOIN LATERAL (
     SELECT 'BEST_PLAYER' AS award_type, players.id AS player_id
     FROM players WHERE gu.user_id IS NOT NULL
     ORDER BY random() LIMIT (floor(random() * 3))::int + 1) bp ON TRUE
 UNION ALL
--- 4. BEST_GOALKEEPER (1–3 players, filtered)
 SELECT gu.user_id, gu.group_id, award_type, NULL, player_id
 FROM group_users gu
-     JOIN LATERAL (
+JOIN LATERAL (
     SELECT 'BEST_GOALKEEPER' AS award_type, p.id AS player_id
     FROM players p WHERE gu.user_id IS NOT NULL AND p.position = 'GOALKEEPER'
     ORDER BY random() LIMIT (floor(random() * 3))::int + 1) bg ON TRUE
 UNION ALL
--- 5. BEST_YOUNG_PLAYER (1–3 players, filtered)
 SELECT gu.user_id, gu.group_id, award_type, NULL, player_id
 FROM group_users gu
-     JOIN LATERAL (
+JOIN LATERAL (
     SELECT 'BEST_YOUNG_PLAYER' AS award_type, p.id AS player_id
     FROM players p WHERE gu.user_id IS NOT NULL AND p.birthdate > DATE '2005-01-01'
     ORDER BY random() LIMIT (floor(random() * 3))::int + 1) byp ON TRUE;
