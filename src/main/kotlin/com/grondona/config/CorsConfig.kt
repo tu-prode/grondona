@@ -16,7 +16,7 @@ class CorsConfig {
             allowedOriginPatterns = listOf(
                 "http://localhost:*",
                 "http://127.0.0.1:*",
-                "https://elprodedelmundial-7d579.web.app/",
+                "https://elprodedelmundial-7d579.web.app",
             )
             
             // Allow all common HTTP methods
