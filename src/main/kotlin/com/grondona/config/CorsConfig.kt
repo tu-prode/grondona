@@ -15,7 +15,8 @@ class CorsConfig {
             // Allow any localhost origin (any port)
             allowedOriginPatterns = listOf(
                 "http://localhost:*",
-                "http://127.0.0.1:*"
+                "http://127.0.0.1:*",
+                "https://elprodedelmundial-7d579.web.app/",
             )
             
             // Allow all common HTTP methods
