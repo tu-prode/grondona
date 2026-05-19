@@ -15,24 +15,24 @@ class CorsConfig {
             // Allow prod host
             allowedOrigins = listOf(
                 "https://elprodedelmundial-7d579.web.app",
-                "https://elprodedelmundial-7d579.firebaseapp.com",
+                "https://elprodedelmundial-7d579.firebaseapp.com"
             )
 
             // Allow any localhost origin (any port)
             allowedOriginPatterns = listOf(
                 "http://localhost:*",
-                "http://127.0.0.1:*",
+                "http://127.0.0.1:*"
             )
             
             // Allow all common HTTP methods
             allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-            
+
             // Allow all headers
-            allowedHeaders = listOf("*")
-            
+            allowedHeaders = listOf("Content-Type", "Authorization")
+
             // Expose Authorization header to the client
             exposedHeaders = listOf("Authorization")
-            
+
             // Allow credentials (cookies, authorization headers)
             allowCredentials = true
             
