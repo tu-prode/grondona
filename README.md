@@ -94,7 +94,7 @@ grondona/
 │   ├── docker-compose.debug.yml # Debug mode override
 │   ├── Dockerfile               # Production container
 │   ├── Dockerfile.debug         # Debug container
-│   └── init.sql                 # Database initialization
+│   └── initdb/                  # Ordered database initialization scripts
 ├── Makefile                     # Convenience commands
 └── pom.xml                      # Maven configuration
 ```
