@@ -1,19 +1,19 @@
 INSERT INTO users (id, fullname, username, email, password_hash, permissions) VALUES
-    ('c97ec073-c40c-4094-9f9e-b07074188936', 'Cristian Raña', 'cris', 'cris@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'SUPERUSER'),
-    ('60635292-4a13-43d8-b976-b2e292020deb', 'Lautaro Chamorro', 'chas', 'chas@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('4fc682de-233f-4b0f-b4c3-4ee0f5716675', 'Manuel Domínguez', 'manu', 'manu@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('56118705-5d57-4a6d-9f38-46606c78dbd6', 'Federico Cornago', 'corna', 'corna@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('ef7aacbb-e1f8-46eb-bbd9-21dafe041749', 'Jonathan Link', 'jona', 'jona@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('b49d0241-d664-4223-ba33-d448ec050abe', 'Guido Landesman', 'landes', 'landes@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('a2618ce3-03a0-4f81-bb0b-010c0245a65b', 'Gastón Macrini', 'macro', 'macro@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('2b67aaa9-2ecf-4d21-9ce1-e378337b6adb', 'Gastón Añón', 'añon', 'añon@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('b7d358aa-42c0-4b22-9da2-ed292a00ee47', 'Federico Groisman', 'grois', 'grois@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('6baadbd8-dd3e-4926-8de6-e5908f774c4e', 'Rodrigo Díaz', 'rodri', 'rodri@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('4cb252f7-9dac-4249-a9a2-b45d5234d384', 'Franco Rapallini', 'fran', 'fran@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('bdbf29ee-cfda-4d02-9928-af93ebd40892', 'Facundo Gandara', 'rifle', 'rifle@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('4a97633c-649b-4315-91a9-f995dc950171', 'Germán Raña', 'germán', 'german@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('dab4229a-e438-4d11-8f29-26320991848f', 'Ariel Canteros', 'ariel', 'ariel@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
-    ('23295782-bc35-4d70-892b-37a771620bc7', 'Camila Ivanovich', 'cami', 'cami@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER')
+    ('c97ec073-c40c-4094-9f9e-b07074188936', 'Cristian Raña', 'cris', 'cris@test.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'SUPERUSER'),
+    ('60635292-4a13-43d8-b976-b2e292020deb', 'Lautaro Chamorro', 'chas', 'chas@test.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('4fc682de-233f-4b0f-b4c3-4ee0f5716675', 'Manuel Domínguez', 'manu', 'manu@test.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('56118705-5d57-4a6d-9f38-46606c78dbd6', 'Federico Cornago', 'corna', 'corna@test.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('ef7aacbb-e1f8-46eb-bbd9-21dafe041749', 'Jonathan Link', 'jona', 'jona@test.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('b49d0241-d664-4223-ba33-d448ec050abe', 'Guido Landesman', 'landes', 'landes@test.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('a2618ce3-03a0-4f81-bb0b-010c0245a65b', 'Gastón Macrini', 'macro', 'macro@test.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('2b67aaa9-2ecf-4d21-9ce1-e378337b6adb', 'Gastón Añón', 'anon', 'anon@test.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('b7d358aa-42c0-4b22-9da2-ed292a00ee47', 'Federico Groisman', 'grois', 'grois@test.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('6baadbd8-dd3e-4926-8de6-e5908f774c4e', 'Rodrigo Díaz', 'rodri', 'rodri@test.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('4cb252f7-9dac-4249-a9a2-b45d5234d384', 'Franco Rapallini', 'fran', 'fran@test.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('bdbf29ee-cfda-4d02-9928-af93ebd40892', 'Facundo Gandara', 'rifle', 'rifle@test.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('4a97633c-649b-4315-91a9-f995dc950171', 'Germán Raña', 'german', 'german@test.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('dab4229a-e438-4d11-8f29-26320991848f', 'Ariel Canteros', 'ariel', 'ariel@test.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
+    ('23295782-bc35-4d70-892b-37a771620bc7', 'Camila Ivanovich', 'cami', 'cami@test.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO groups (id, tournament_id, name, is_private, max_members) VALUES
