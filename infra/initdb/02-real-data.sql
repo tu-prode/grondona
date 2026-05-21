@@ -656,7 +656,37 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Ante Budimir', 'FORWARD', '1991-07-22'),
     ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Marco Pasalic', 'FORWARD', '2000-09-14'),
     ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Petar Musa', 'FORWARD', '1998-03-04'),
-    ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Igor Matanovic', 'FORWARD', '2003-03-31')
+    ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Igor Matanovic', 'FORWARD', '2003-03-31'),
+    -- CZE (21-5)
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Lukas Hornicek', 'GOALKEEPER', '2002-07-13'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Matej Kovar', 'GOALKEEPER', '2000-05-17'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Jindrich Stanek', 'GOALKEEPER', '1996-04-27'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Vladimir Coufal', 'DEFENDER', '1992-08-22'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'David Doudera', 'DEFENDER', '1998-05-31'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Tomáš Holeš', 'DEFENDER', '1993-03-31'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Robin Hranac', 'DEFENDER', '2000-01-29'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Stepan Chaloupek', 'DEFENDER', '2003-05-09'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'David Jurásek', 'DEFENDER', '2000-08-07'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Ladislav Krejci', 'DEFENDER', '1999-04-20'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Jaroslav Zeleny', 'DEFENDER', '1992-08-20'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'David Zima', 'DEFENDER', '2000-11-08'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Pavel Bucha', 'MIDFIELDER', '1998-06-11'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Lukáš Cerv', 'MIDFIELDER', '2001-04-29'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Vladimír Darida', 'MIDFIELDER', '1990-08-08'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Tomás Ladra', 'MIDFIELDER', '1997-03-22'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Lukáš Provod', 'MIDFIELDER', '1996-10-23'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Michal Sadílek', 'MIDFIELDER', '1999-05-31'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Hugo Sochurek', 'MIDFIELDER', '2008-06-07'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Alexandr Sojka', 'MIDFIELDER', '2003-04-02'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Tomáš Souček', 'MIDFIELDER', '1995-02-27'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Pavel Sulc', 'MIDFIELDER', '2000-12-29'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Denis Visinsky', 'MIDFIELDER', '2003-03-21'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Adam Hložek', 'FORWARD', '2002-07-25'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Tomáš Chorý', 'FORWARD', '1995-01-26'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Mojmír Chytil', 'FORWARD', '1999-04-29'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Christophe Kabongo', 'FORWARD', '2003-08-27'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Jan Kuchta', 'FORWARD', '1997-01-08'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Patrik Schick', 'FORWARD', '1996-01-24')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO matches (id, tournament_id, code, home_team_id, away_team_id, started_at, has_multiplier, home_quota, draw_quota, away_quota) VALUES
