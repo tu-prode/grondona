@@ -59,6 +59,8 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Create an entry for each player in the World Cup 2026
 INSERT INTO players (team_id, name, position, birthdate) VALUES
+    -- MEX (TBD)
+    -- RSA (TBD)
     -- KOR (16-5)
     ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Kim Seung-gyu', 'GOALKEEPER', '1990-09-30'),
     ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Bum-keun Song', 'GOALKEEPER', '1997-10-15'),
@@ -86,6 +88,37 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Heung-min Son', 'FORWARD', '1992-07-08'),
     ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Hyeon-gyu Oh', 'FORWARD', '2001-04-12'),
     ('e1c5a7d3-2f9b-4c8a-9e6d-3a1b2c7f5d13', 'Gue-sung Cho', 'FORWARD', '1998-01-25'),
+    -- CZE (21-5)
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Lukas Hornicek', 'GOALKEEPER', '2002-07-13'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Matej Kovar', 'GOALKEEPER', '2000-05-17'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Jindrich Stanek', 'GOALKEEPER', '1996-04-27'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Vladimir Coufal', 'DEFENDER', '1992-08-22'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'David Doudera', 'DEFENDER', '1998-05-31'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Tomáš Holeš', 'DEFENDER', '1993-03-31'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Robin Hranac', 'DEFENDER', '2000-01-29'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Stepan Chaloupek', 'DEFENDER', '2003-05-09'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'David Jurásek', 'DEFENDER', '2000-08-07'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Ladislav Krejci', 'DEFENDER', '1999-04-20'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Jaroslav Zeleny', 'DEFENDER', '1992-08-20'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'David Zima', 'DEFENDER', '2000-11-08'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Pavel Bucha', 'MIDFIELDER', '1998-06-11'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Lukáš Cerv', 'MIDFIELDER', '2001-04-29'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Vladimír Darida', 'MIDFIELDER', '1990-08-08'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Tomás Ladra', 'MIDFIELDER', '1997-03-22'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Lukáš Provod', 'MIDFIELDER', '1996-10-23'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Michal Sadílek', 'MIDFIELDER', '1999-05-31'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Hugo Sochurek', 'MIDFIELDER', '2008-06-07'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Alexandr Sojka', 'MIDFIELDER', '2003-04-02'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Tomáš Souček', 'MIDFIELDER', '1995-02-27'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Pavel Sulc', 'MIDFIELDER', '2000-12-29'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Denis Visinsky', 'MIDFIELDER', '2003-03-21'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Adam Hložek', 'FORWARD', '2002-07-25'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Tomáš Chorý', 'FORWARD', '1995-01-26'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Mojmír Chytil', 'FORWARD', '1999-04-29'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Christophe Kabongo', 'FORWARD', '2003-08-27'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Jan Kuchta', 'FORWARD', '1997-01-08'),
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Patrik Schick', 'FORWARD', '1996-01-24'),
+    -- CAN (TBD)
     -- BIH (11-5)
     ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', 'Nikola Vasilj', 'GOALKEEPER', '1995-12-02'),
     ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', 'Martin Zlomislić', 'GOALKEEPER', '1998-08-16'),
@@ -113,6 +146,7 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', 'Samed Baždar', 'FORWARD', '2004-01-31'),
     ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', 'Haris Tabaković', 'FORWARD', '1994-06-20'),
     ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', 'Jovo Lukić', 'FORWARD', '1999-07-20'),
+    -- QAT (TBD)
     -- SUI (20-5)
     ('a3c1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b39', 'Marvin Keller', 'GOALKEEPER', '2002-07-03'),
     ('a3c1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b39', 'Gregor Kobel', 'GOALKEEPER', '1997-12-06'),
@@ -167,6 +201,7 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07', 'Gabriel Martinelli', 'FORWARD', '2001-06-18'),
     ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07', 'Rayan', 'FORWARD', '2006-08-03'),
     ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07', 'Vinicius Jr.', 'FORWARD', '2000-07-12'),
+    -- MAR (TBD)
     -- HAI (15-5)
     ('d1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24', 'Johnny Placide', 'GOALKEEPER', '1988-01-29'),
     ('d1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24', 'Alexandre Pierre', 'GOALKEEPER', '2001-02-25'),
@@ -221,6 +256,10 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19', 'George Hirst', 'FORWARD', '1999-02-15'),
     ('e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19', 'Lawrence Shankland', 'FORWARD', '1995-08-10'),
     ('e7c3a1b5-9d2f-4c8a-9e6b-2f3a1c7d5b19', 'Ross Stewart', 'FORWARD', '1996-07-11'),
+    -- USA (TBD)
+    -- PAR (TBD)
+    -- AUS (TBD)
+    -- TUR (TBD)
     -- GER (21-5)
     ('6f1c5f6e-9c9e-4f3b-8d8e-2b5e2a6a1c01', 'Manuel Neuer', 'GOALKEEPER', '1986-03-27'),
     ('6f1c5f6e-9c9e-4f3b-8d8e-2b5e2a6a1c01', 'Oliver Baumann', 'GOALKEEPER', '1990-06-02'),
@@ -302,6 +341,8 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', 'Nicolas Pépé', 'FORWARD', '1995-05-29'),
     ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', 'Bazoumana Touré', 'FORWARD', '2006-03-02'),
     ('f9b3e1c7-5a2d-4a6c-8e1f-7c3b2a9d5e14', 'Elye Wahi', 'FORWARD', '2003-01-02'),
+    -- ECU (TBD)
+    -- NED (TBD)
     -- JPN (15-5)
     ('a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27', 'Zion Suzuki', 'GOALKEEPER', '2002-08-21'),
     ('a7c3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b27', 'Keisuke Osako', 'GOALKEEPER', '1999-07-28'),
@@ -438,6 +479,7 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('d5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18', 'Omar Marmoush', 'FORWARD', '1999-02-07'),
     ('d5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18', 'Aqtay Abdallah', 'FORWARD', '2003-06-01'),
     ('d5b1c7e3-2f9a-4a6c-8e1d-3c7a5f2b9e18', 'Hamza Abdelkarim', 'FORWARD', '2008-01-01'),
+    -- IRN (TBD)
     -- NZL (14-5)
     ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', 'Max Crocombe', 'GOALKEEPER', '1993-08-12'),
     ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', 'Alex Paulsen', 'GOALKEEPER', '2002-07-26'),
@@ -465,6 +507,7 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', 'Sarpreet Singh', 'FORWARD', '1999-02-20'),
     ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', 'Ben Waine', 'FORWARD', '2001-06-11'),
     ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', 'Chris Wood', 'FORWARD', '1991-12-07'),
+    -- ESP (TBD)
     -- CPV (18-5)
     ('4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09', 'Josimar Dias', 'GOALKEEPER', '1986-06-03'),
     ('4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09', 'Márcio da Rosa', 'GOALKEEPER', '1997-02-23'),
@@ -492,6 +535,8 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09', 'Dailon Livramento', 'FORWARD', '2001-05-04'),
     ('4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09', 'Gilson Benchimol', 'FORWARD', '2001-03-09'),
     ('4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09', 'Hélio Varela', 'FORWARD', '2002-02-04'),
+    -- KSA (TBD)
+    -- URU (TBD)
     -- FRA (14-5)
     ('b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22', 'Mike Maignan', 'GOALKEEPER', '1995-07-03'),
     ('b1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e22', 'Brice Samba', 'GOALKEEPER', '1994-04-25'),
@@ -548,6 +593,36 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('e3c1a7b5-9d2f-4c8a-9e6b-2f3a1c7d5b37', 'Nicolas Jackson', 'FORWARD', '2001-06-20'),
     ('e3c1a7b5-9d2f-4c8a-9e6b-2f3a1c7d5b37', 'Bamba Dieng', 'FORWARD', '2000-03-23'),
     ('e3c1a7b5-9d2f-4c8a-9e6b-2f3a1c7d5b37', 'Cherif Ndiaye', 'FORWARD', '1996-01-23'),
+    -- IRQ (TBD)
+    -- NOR (21-5)
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Orjan Haskjold Nyland', 'GOALKEEPER', '1990-09-10'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Sander Tangvik', 'GOALKEEPER', '2002-11-29'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Egil Selvik', 'GOALKEEPER', '1997-07-30'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Kristoffer Ajer', 'DEFENDER', '1998-04-17'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'David Moller Wolfe', 'DEFENDER', '2002-04-23'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Leo Ostigard', 'DEFENDER', '1999-11-28'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Fredrik Bjorkan', 'DEFENDER', '1998-08-22'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Marcus Pedersen', 'DEFENDER', '2000-07-16'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Torbjorn Heggem', 'DEFENDER', '1999-01-12'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Sondre Langas', 'DEFENDER', '2001-02-02'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Henrik Falchener', 'DEFENDER', '2003-05-08'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Julian Ryerson', 'DEFENDER', '1997-11-17'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Morter Thorsby', 'MIDFIELDER', '1996-05-05'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Patrick Berg', 'MIDFIELDER', '1997-11-24'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Sander Berge', 'MIDFIELDER', '1998-02-14'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Martin Odegaard', 'MIDFIELDER', '1998-12-17'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Fredrik Aursnes', 'MIDFIELDER', '1995-12-10'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Kristian Thorstvedt', 'MIDFIELDER', '1999-03-13'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Thelonious Aasgaard', 'MIDFIELDER', '2002-05-02'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Antonio Nusa', 'MIDFIELDER', '2005-04-17'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Andreas Schjelderup', 'MIDFIELDER', '2004-06-01'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Oscar Bob', 'MIDFIELDER', '2003-07-12'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Jens Petter Hauge', 'MIDFIELDER', '1999-10-12'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Alexander Sorloth', 'FORWARD', '1995-12-05'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Erling Haaland', 'FORWARD', '2000-07-21'),
+    ('e5a1c7b3-9d2f-4c8a-9e6b-2f3a1c7d5b31', 'Jorgen Strand Larsen', 'FORWARD', '2000-02-06'),
+    -- ARG (TBD)
+    -- ALG (TBD)
     -- AUT (18-5)
     ('7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06', 'Patrick Pentz', 'GOALKEEPER', '1997-01-02'),
     ('7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06', 'Alexander Schlager', 'GOALKEEPER', '1996-02-01'),
@@ -575,6 +650,7 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06', 'Marko Arnautovic', 'FORWARD', '1989-04-19'),
     ('7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06', 'Michael Gregoritsch', 'FORWARD', '1994-04-18'),
     ('7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06', 'Sasa Kalajdzic', 'FORWARD', '1997-07-07'),
+    -- JOR (TBD)
     -- POR (19-5)
     ('d7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36', 'Diogo Costa', 'GOALKEEPER', '1999-09-19'),
     ('d7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36', 'José Sá', 'GOALKEEPER', '1993-01-17'),
@@ -630,6 +706,35 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('8f251495-81ba-4724-b575-f7ebecf213c4', 'Fiston Mayele', 'FORWARD', '1994-06-03'),
     ('8f251495-81ba-4724-b575-f7ebecf213c4', 'Cedric Bakambu', 'FORWARD', '1991-04-11'),
     ('8f251495-81ba-4724-b575-f7ebecf213c4', 'Yoane Wissa', 'FORWARD', '1996-09-03'),
+    -- UZB (TBD)
+    -- COL (TBD)
+    -- ENG (22-5)
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Jordan Pickford', 'GOALKEEPER', '1994-03-07'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Dean Henderson', 'GOALKEEPER', '1997-03-12'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'James Trafford', 'GOALKEEPER', '2002-10-10'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Reece James', 'DEFENDER', '1999-12-08'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Tino Livramento', 'DEFENDER', '2002-11-12'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'John Stones', 'DEFENDER', '1994-05-28'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Marc Guehi', 'DEFENDER', '2000-07-13'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Ezri Konsa', 'DEFENDER', '1997-10-23'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Dan Burn', 'DEFENDER', '1992-05-09'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Jarell Quansah', 'DEFENDER', '2003-01-29'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Nico O’Reilly', 'DEFENDER', '2005-03-21'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Djed Spence', 'DEFENDER', '2000-08-09'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Jordan Henderson', 'MIDFIELDER', '1990-06-17'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Elliot Anderson', 'MIDFIELDER', '2002-11-06'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Declan Rice', 'MIDFIELDER', '1999-01-14'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Kobbie Mainoo', 'MIDFIELDER', '2005-04-19'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Eberechi Eze', 'MIDFIELDER', '1998-06-29'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Jude Bellingham', 'MIDFIELDER', '2003-06-29'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Morgan Rogers', 'MIDFIELDER', '2002-07-26'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Bukayo Saka', 'FORWARD', '2001-09-05'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Noni Madueke', 'FORWARD', '2002-03-10'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Marcus Rashford', 'FORWARD', '1997-10-31'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Anthony Gordon', 'FORWARD', '2001-02-24'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Harry Kane', 'FORWARD', '1993-07-28'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Ollie Watkins', 'FORWARD', '1995-12-30'),
+    ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Ivan Toney', 'FORWARD', '1996-03-16'),
     -- CRO (18-5)
     ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Dominic Livakovic', 'GOALKEEPER', '1995-01-09'),
     ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Dominik Kotarski', 'GOALKEEPER', '2000-02-10'),
@@ -656,37 +761,9 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Ante Budimir', 'FORWARD', '1991-07-22'),
     ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Marco Pasalic', 'FORWARD', '2000-09-14'),
     ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Petar Musa', 'FORWARD', '1998-03-04'),
-    ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Igor Matanovic', 'FORWARD', '2003-03-31'),
-    -- CZE (21-5)
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Lukas Hornicek', 'GOALKEEPER', '2002-07-13'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Matej Kovar', 'GOALKEEPER', '2000-05-17'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Jindrich Stanek', 'GOALKEEPER', '1996-04-27'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Vladimir Coufal', 'DEFENDER', '1992-08-22'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'David Doudera', 'DEFENDER', '1998-05-31'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Tomáš Holeš', 'DEFENDER', '1993-03-31'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Robin Hranac', 'DEFENDER', '2000-01-29'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Stepan Chaloupek', 'DEFENDER', '2003-05-09'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'David Jurásek', 'DEFENDER', '2000-08-07'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Ladislav Krejci', 'DEFENDER', '1999-04-20'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Jaroslav Zeleny', 'DEFENDER', '1992-08-20'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'David Zima', 'DEFENDER', '2000-11-08'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Pavel Bucha', 'MIDFIELDER', '1998-06-11'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Lukáš Cerv', 'MIDFIELDER', '2001-04-29'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Vladimír Darida', 'MIDFIELDER', '1990-08-08'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Tomás Ladra', 'MIDFIELDER', '1997-03-22'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Lukáš Provod', 'MIDFIELDER', '1996-10-23'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Michal Sadílek', 'MIDFIELDER', '1999-05-31'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Hugo Sochurek', 'MIDFIELDER', '2008-06-07'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Alexandr Sojka', 'MIDFIELDER', '2003-04-02'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Tomáš Souček', 'MIDFIELDER', '1995-02-27'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Pavel Sulc', 'MIDFIELDER', '2000-12-29'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Denis Visinsky', 'MIDFIELDER', '2003-03-21'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Adam Hložek', 'FORWARD', '2002-07-25'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Tomáš Chorý', 'FORWARD', '1995-01-26'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Mojmír Chytil', 'FORWARD', '1999-04-29'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Christophe Kabongo', 'FORWARD', '2003-08-27'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Jan Kuchta', 'FORWARD', '1997-01-08'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', 'Patrik Schick', 'FORWARD', '1996-01-24')
+    ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Igor Matanovic', 'FORWARD', '2003-03-31')
+    -- GHA (TBD)
+    -- PAN (TBD)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO matches (id, tournament_id, code, home_team_id, away_team_id, started_at, has_multiplier, home_quota, draw_quota, away_quota) VALUES
