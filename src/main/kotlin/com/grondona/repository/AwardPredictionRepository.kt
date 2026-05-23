@@ -23,7 +23,7 @@ interface AwardPredictionRepository : JpaRepository<AwardPrediction, UUID>, JpaS
         LEFT JOIN AwardPrediction p
             ON p.user.id = gu.user.id
             AND p.group.id = gu.group.id
-        WHERE gu.group.id = :groupId
+        WHERE gu.group.id = :groupId AND gu.role <> 'CANDIDATE'
         ORDER BY CASE WHEN gu.rank IS NULL THEN 1 ELSE 0 END, gu.rank ASC
     """
     )
