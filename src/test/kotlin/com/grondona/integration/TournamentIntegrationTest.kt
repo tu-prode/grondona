@@ -22,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @SpringBootTest
@@ -70,13 +71,6 @@ class TournamentIntegrationTest {
     @BeforeEach
     fun clearSecurityContext() {
         SecurityContextHolder.clearContext()
-    }
-
-    @AfterAll
-    fun tearDown() {
-        groupRepository.deleteAll()
-        tournamentRepository.deleteAll()
-        userRepository.deleteAll()
     }
 
     @Nested

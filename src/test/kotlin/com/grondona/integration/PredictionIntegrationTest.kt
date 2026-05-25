@@ -43,6 +43,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -120,19 +121,6 @@ class PredictionIntegrationTest {
         joinGroup(memberToken, groupId)
 
         nonMemberToken = createUser("nonmember").token
-    }
-
-    @AfterAll
-    fun tearDown() {
-        awardPredictionRepository.deleteAll()
-        matchPredictionRepository.deleteAll()
-        matchRepository.deleteAll()
-        membershipRepository.deleteAll()
-        groupRepository.deleteAll()
-        playerRepository.deleteAll()
-        teamRepository.deleteAll()
-        tournamentRepository.deleteAll()
-        userRepository.deleteAll()
     }
 
     @Nested

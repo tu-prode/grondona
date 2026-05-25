@@ -20,6 +20,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @SpringBootTest
@@ -92,13 +93,6 @@ class MembershipIntegrationTest {
                 ))
         ).andReturn()
         testGroupId = objectMapper.readValue(groupResult.response.contentAsString, GroupResponse::class.java).id.toString()
-    }
-
-    @AfterAll
-    fun tearDown() {
-        membershipRepository.deleteAll()
-        groupRepository.deleteAll()
-        userRepository.deleteAll()
     }
 
     @Nested

@@ -33,6 +33,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.util.UUID
@@ -118,17 +119,6 @@ class GroupIntegrationTest {
         val authResponse = objectMapper.readValue(result.response.contentAsString, AuthenticatedUserResponse::class.java)
         user1Id = authResponse.userId.toString()
         user1Token = authResponse.token
-    }
-
-    @AfterAll
-    fun tearDown() {
-        matchPredictionRepository.deleteAll()
-        membershipRepository.deleteAll()
-        groupRepository.deleteAll()
-        matchRepository.deleteAll()
-        teamRepository.deleteAll()
-        userRepository.deleteAll()
-        tournamentRepository.deleteAll()
     }
 
     @Nested
