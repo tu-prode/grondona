@@ -20,8 +20,8 @@ object PredictionsEngine {
 
     private const val POINTS_SINGLE_CHAMPION = 10
     private const val POINTS_DOUBLE_CHAMPION = 5
-    private const val POINTS_SINGLE_PLAYER = 12
-    private const val POINTS_DOUBLE_PLAYER = 8
+    private const val POINTS_SINGLE_PLAYER = 10
+    private const val POINTS_DOUBLE_PLAYER = 7
     private const val POINTS_TRIPLE_PLAYER = 4
 
     private const val MULTIPLIER_BONUS = 1.5f

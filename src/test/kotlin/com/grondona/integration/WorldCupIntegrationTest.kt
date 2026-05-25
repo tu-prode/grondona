@@ -6,7 +6,6 @@ import com.grondona.integration.utils.GrondonaClient
 import com.grondona.model.Awards
 import com.grondona.model.ExternalMatch
 import com.grondona.model.PredictionStatus
-import com.grondona.model.TournamentStatus
 import com.grondona.model.dto.request.CreateMatchRequest
 import com.grondona.model.dto.request.CreateMatchesRequest
 import com.grondona.model.dto.request.SubmitAwardPredictionRequest
@@ -138,14 +137,14 @@ class WorldCupIntegrationTest {
 
             val extraChampion = grondona.teamIds.otherRandom(champion)
             val extraTopScorer = grondona.playerIds.otherRandom(topScorer)
-            val extrBestPlayer = grondona.playerIds.otherRandom(bestPlayer)
+            val extraBestPlayer = grondona.playerIds.otherRandom(bestPlayer)
             val extraBestGoalkeeper = grondona.goalkeeperIds.otherRandom(bestGoalkeeper)
             val extraBestYoungPlayer = grondona.youngsterIds.otherRandom(bestYoungPlayer)
             grondona.submitAwardPredictionsToGroup(
                 user2Token, groupId, SubmitAwardPredictionRequest(
                     champions = listOf(champion, extraChampion),
                     topScorers = listOf(topScorer, extraTopScorer),
-                    bestPlayers = listOf(bestPlayer, extrBestPlayer),
+                    bestPlayers = listOf(bestPlayer, extraBestPlayer),
                     bestGoalkeepers = listOf(bestGoalkeeper, extraBestGoalkeeper),
                     bestYoungPlayers = listOf(bestYoungPlayer, extraBestYoungPlayer),
                 )
@@ -569,14 +568,14 @@ class WorldCupIntegrationTest {
                 assertEquals(2, standings.size)
                 assertEquals(1, standings[0].rank)
                 assertEquals(user1Id, standings[0].user.id)
-                assertEquals(359f, standings[0].points)
+                assertEquals(351f, standings[0].points)
                 assertEquals(
                     listOf(PredictionStatus.INCORRECT) + List(2) { PredictionStatus.BONUS } + List(2) { PredictionStatus.PARTIAL },
                     standings[0].lastPredictions
                 )
                 assertEquals(2, standings[1].rank)
                 assertEquals(user2Id, standings[1].user.id)
-                assertEquals(144f, standings[1].points)
+                assertEquals(140f, standings[1].points)
                 assertEquals(
                     listOf(PredictionStatus.INCORRECT) + List(2) { PredictionStatus.PARTIAL } + List(2) { PredictionStatus.CORRECT },
                     standings[1].lastPredictions
