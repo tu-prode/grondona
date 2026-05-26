@@ -68,6 +68,8 @@ class PredictionIntegrationTest {
     @Autowired private lateinit var matchPredictionRepository: MatchPredictionRepository
     @Autowired private lateinit var awardPredictionRepository: AwardPredictionRepository
 
+    @Autowired private lateinit var testDatabaseCleaner: TestDatabaseCleaner
+
     private lateinit var adminToken: String
     private lateinit var memberToken: String
     private lateinit var nonMemberToken: String
@@ -85,15 +87,7 @@ class PredictionIntegrationTest {
 
     @BeforeAll
     fun setUp() {
-        awardPredictionRepository.deleteAll()
-        matchPredictionRepository.deleteAll()
-        matchRepository.deleteAll()
-        membershipRepository.deleteAll()
-        groupRepository.deleteAll()
-        playerRepository.deleteAll()
-        teamRepository.deleteAll()
-        tournamentRepository.deleteAll()
-        userRepository.deleteAll()
+        testDatabaseCleaner.cleanAll()
 
         val adminResponse = createUser("admin")
         val adminUser = userRepository.findById(adminResponse.userId).get()

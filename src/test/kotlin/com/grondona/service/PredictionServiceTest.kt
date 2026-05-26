@@ -37,6 +37,7 @@ import com.grondona.service.engine.WorldCupEngine
 import io.mockk.*
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -162,6 +163,11 @@ class PredictionServiceTest {
         every { userRepository.findById(testUserId) } returns Optional.of(user)
         every { groupRepository.findById(testGroupId) } returns Optional.of(group)
         every { membershipRepository.isMember(testUserId, testGroupId) } returns true
+    }
+
+    @AfterEach
+    fun tearDown() {
+        unmockkAll()
     }
 
     @BeforeEach

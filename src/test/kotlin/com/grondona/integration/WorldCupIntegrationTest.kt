@@ -17,6 +17,7 @@ import com.grondona.repository.UserRepository
 import com.grondona.scheduler.MatchScheduler
 import com.grondona.service.engine.WorldCupEngine
 import com.ninjasquad.springmockk.MockkBean
+import io.mockk.clearMocks
 import io.mockk.every
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.*
@@ -54,12 +55,15 @@ class WorldCupIntegrationTest {
     @MockkBean
     lateinit var matchClient: MatchClient
 
+    @Autowired
+    private lateinit var testDatabaseCleaner: TestDatabaseCleaner
+
     lateinit var grondona: GrondonaClient
 
     @BeforeAll
     fun setUp() {
-        userRepository.deleteAll()
-        tournamentRepository.deleteAll()
+        testDatabaseCleaner.cleanAll()
+        clearMocks(matchClient)
 
         grondona = GrondonaClient(mockMvc, objectMapper).withRepositories(userRepository, tournamentRepository)
         grondona.init()

@@ -36,6 +36,8 @@ class MembershipIntegrationTest {
     @Autowired private lateinit var membershipRepository: MembershipRepository
     @Autowired private lateinit var userRepository: UserRepository
 
+    @Autowired private lateinit var testDatabaseCleaner: TestDatabaseCleaner
+
     private var authToken: String? = null
     private var secondUserToken: String? = null
     private var testGroupId: String? = null
@@ -43,9 +45,7 @@ class MembershipIntegrationTest {
 
     @BeforeAll
     fun setUp() {
-        membershipRepository.deleteAll()
-        groupRepository.deleteAll()
-        userRepository.deleteAll()
+        testDatabaseCleaner.cleanAll()
 
         // Create primary test user
         val userResult = mockMvc.perform(

@@ -72,6 +72,9 @@ class GroupIntegrationTest {
     @Autowired
     private lateinit var matchPredictionRepository: MatchPredictionRepository
 
+    @Autowired
+    private lateinit var testDatabaseCleaner: TestDatabaseCleaner
+
     private var adminToken: String? = null
 
     private var user1Id: String? = null
@@ -81,13 +84,7 @@ class GroupIntegrationTest {
 
     @BeforeAll
     fun setUp() {
-        matchPredictionRepository.deleteAll()
-        membershipRepository.deleteAll()
-        groupRepository.deleteAll()
-        matchRepository.deleteAll()
-        teamRepository.deleteAll()
-        userRepository.deleteAll()
-        tournamentRepository.deleteAll()
+        testDatabaseCleaner.cleanAll()
 
         // Create an admin user to create the first tournament
         val adminResult = mockMvc.perform(

@@ -60,6 +60,9 @@ class UserIntegrationTest {
     @MockkBean
     lateinit var matchClient: MatchClient
 
+    @Autowired
+    private lateinit var testDatabaseCleaner: TestDatabaseCleaner
+
     private var adminId: String? = null
     private var adminToken: String? = null
 
@@ -76,7 +79,7 @@ class UserIntegrationTest {
 
     @BeforeAll
     fun setUp() {
-        userRepository.deleteAll()
+        testDatabaseCleaner.cleanAll()
 
         // Create an admin user to create the first tournament
         val adminResult = mockMvc.perform(
