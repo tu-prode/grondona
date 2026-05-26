@@ -31,6 +31,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import org.springframework.transaction.annotation.Transactional
 import java.time.ZonedDateTime
 import java.util.UUID
 
@@ -59,6 +60,9 @@ class UserIntegrationTest {
     @MockkBean
     lateinit var matchClient: MatchClient
 
+    @Autowired
+    private lateinit var testDatabaseCleaner: TestDatabaseCleaner
+
     private var adminId: String? = null
     private var adminToken: String? = null
 
@@ -75,7 +79,7 @@ class UserIntegrationTest {
 
     @BeforeAll
     fun setUp() {
-        userRepository.deleteAll()
+        testDatabaseCleaner.cleanAll()
 
         // Create an admin user to create the first tournament
         val adminResult = mockMvc.perform(
@@ -130,11 +134,6 @@ class UserIntegrationTest {
                 "MT3" -> testMatch3Id = it.id
             }
         }
-    }
-
-    @AfterAll
-    fun tearDown() {
-        userRepository.deleteAll()
     }
 
     @Nested

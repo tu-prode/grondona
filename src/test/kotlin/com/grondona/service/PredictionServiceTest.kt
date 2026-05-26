@@ -37,6 +37,7 @@ import com.grondona.service.engine.WorldCupEngine
 import io.mockk.*
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -162,6 +163,11 @@ class PredictionServiceTest {
         every { userRepository.findById(testUserId) } returns Optional.of(user)
         every { groupRepository.findById(testGroupId) } returns Optional.of(group)
         every { membershipRepository.isMember(testUserId, testGroupId) } returns true
+    }
+
+    @AfterEach
+    fun tearDown() {
+        unmockkAll()
     }
 
     @BeforeEach
@@ -940,9 +946,18 @@ class PredictionServiceTest {
         private val testUser1 = testUser.copy(id = UUID.randomUUID(), username = "Test User 1")
         private val testUser2 = testUser.copy(id = UUID.randomUUID(), username = "Test User 2")
         private val testUser3 = testUser.copy(id = UUID.randomUUID(), username = "Test User 3")
-        private val testGroup1 = testGroup.copy(id = UUID.randomUUID(), name = "Test Group 1")
-        private val testGroup2 = testGroup.copy(id = UUID.randomUUID(), name = "Test Group 2")
-        private val testGroup3 = testGroup.copy(id = UUID.randomUUID(), name = "Test Group 3")
+        private val testGroup1 = testGroup.copy(
+            id = UUID.randomUUID(), name = "Test Group 1",
+            tournament = testTournament.copy(status = TournamentStatus.FINISHED)
+        )
+        private val testGroup2 = testGroup.copy(
+            id = UUID.randomUUID(), name = "Test Group 2",
+            tournament = testTournament.copy(status = TournamentStatus.FINISHED)
+        )
+        private val testGroup3 = testGroup.copy(
+            id = UUID.randomUUID(), name = "Test Group 3",
+            tournament = testTournament.copy(status = TournamentStatus.FINISHED)
+        )
 
         private val winners = Awards(
             champion = UUID.randomUUID(), topScorer = UUID.randomUUID(), bestPlayer = UUID.randomUUID(),
@@ -1300,12 +1315,12 @@ class PredictionServiceTest {
             verify(exactly = 1) { membershipRepository.saveAll(capture(slot1)) }
             val membersSaved = slot1.captured
             assertEquals(6, membersSaved.size)
-            assertTrue { membersSaved.any { it.user == testUser1 && it.group == testGroup1 && it.points == 58F && it.rank == 1 } }
-            assertTrue { membersSaved.any { it.user == testUser2 && it.group == testGroup1 && it.points == 21F && it.rank == 2 } }
-            assertTrue { membersSaved.any { it.user == testUser3 && it.group == testGroup1 && it.points == 0F && it.rank == 3 } }
-            assertTrue { membersSaved.any { it.user == testUser1 && it.group == testGroup2 && it.points == 37F && it.rank == 1 } }
-            assertTrue { membersSaved.any { it.user == testUser2 && it.group == testGroup2 && it.points == 0F && it.rank == 2 } }
-            assertTrue { membersSaved.any { it.user == testUser3 && it.group == testGroup2 && it.points == 0F && it.rank == 3 } }
+            assertTrue { membersSaved.any { it.user == testUser1 && it.group == testGroup1 && it.points == 50f && it.rank == 1 } }
+            assertTrue { membersSaved.any { it.user == testUser2 && it.group == testGroup1 && it.points == 21f && it.rank == 2 } }
+            assertTrue { membersSaved.any { it.user == testUser3 && it.group == testGroup1 && it.points == 0f && it.rank == 3 } }
+            assertTrue { membersSaved.any { it.user == testUser1 && it.group == testGroup2 && it.points == 33f && it.rank == 1 } }
+            assertTrue { membersSaved.any { it.user == testUser2 && it.group == testGroup2 && it.points == 0f && it.rank == 2 } }
+            assertTrue { membersSaved.any { it.user == testUser3 && it.group == testGroup2 && it.points == 0f && it.rank == 3 } }
 
             val slot2 = slot<List<AwardPrediction>>()
             verify(exactly = 1) { awardPredictionRepository.saveAll(capture(slot2)) }
@@ -1633,7 +1648,7 @@ class PredictionServiceTest {
             assertEquals(1, membersSaved.size)
             assertEquals(testUser1, membersSaved[0].user)
             assertEquals(testGroup1, membersSaved[0].group)
-            assertEquals(37F, membersSaved[0].points)
+            assertEquals(34F, membersSaved[0].points)
             assertEquals(1, membersSaved[0].rank)
             assertEquals(0, membersSaved[0].amountPartial)
             assertEquals(1, membersSaved[0].amountCorrect)

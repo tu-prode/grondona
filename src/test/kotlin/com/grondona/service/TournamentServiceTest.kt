@@ -31,6 +31,7 @@ import io.mockk.*
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
 import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -102,6 +103,11 @@ class TournamentServiceTest {
         team = awardId.takeIf { awardType == AwardType.CHAMPION }?.toTeam(),
         player = awardId.takeIf { awardType != AwardType.CHAMPION }?.toPlayer(),
     )
+
+    @AfterEach
+    fun tearDown() {
+        unmockkAll()
+    }
 
     @BeforeEach
     fun setUp() {

@@ -22,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @SpringBootTest
@@ -37,15 +38,15 @@ class TournamentIntegrationTest {
     @Autowired private lateinit var tournamentRepository: TournamentRepository
     @Autowired private lateinit var groupRepository: GroupRepository
 
+    @Autowired private lateinit var testDatabaseCleaner: TestDatabaseCleaner
+
     private var superuserToken: String? = null
     private var regularUserToken: String? = null
     private var createdTournamentId: String? = null
 
     @BeforeAll
     fun setUp() {
-        groupRepository.deleteAll()
-        tournamentRepository.deleteAll()
-        userRepository.deleteAll()
+        testDatabaseCleaner.cleanAll()
 
         // Create superuser
         val adminResult = mockMvc.perform(
@@ -70,13 +71,6 @@ class TournamentIntegrationTest {
     @BeforeEach
     fun clearSecurityContext() {
         SecurityContextHolder.clearContext()
-    }
-
-    @AfterAll
-    fun tearDown() {
-        groupRepository.deleteAll()
-        tournamentRepository.deleteAll()
-        userRepository.deleteAll()
     }
 
     @Nested

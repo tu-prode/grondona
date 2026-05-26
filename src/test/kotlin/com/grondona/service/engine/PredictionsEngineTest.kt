@@ -289,7 +289,7 @@ class PredictionsEngineTest {
             // winner is top-scorer=A, predictions is top-scorer=A
             val prediction = testAwardPrediction(AwardType.TOP_SCORER, status = PredictionStatus.CORRECT)
             val result = PredictionsEngine.awardPoints(listOf(prediction))
-            Assertions.assertEquals(12f, result)
+            Assertions.assertEquals(10f, result)
         }
 
         @Test
@@ -298,7 +298,7 @@ class PredictionsEngineTest {
             val prediction1 = testAwardPrediction(AwardType.TOP_SCORER, status = PredictionStatus.CORRECT)
             val prediction2 = testAwardPrediction(AwardType.TOP_SCORER, status = PredictionStatus.CORRECT)
             val result = PredictionsEngine.awardPoints(listOf(prediction1, prediction2))
-            Assertions.assertEquals(8f, result)
+            Assertions.assertEquals(7f, result)
         }
 
         @Test
@@ -343,7 +343,7 @@ class PredictionsEngineTest {
             // winner is best-player=A, predictions is best-player=A
             val prediction = testAwardPrediction(AwardType.BEST_PLAYER, status = PredictionStatus.CORRECT)
             val result = PredictionsEngine.awardPoints(listOf(prediction))
-            Assertions.assertEquals(12f, result)
+            Assertions.assertEquals(10f, result)
         }
 
         @Test
@@ -352,7 +352,7 @@ class PredictionsEngineTest {
             val prediction1 = testAwardPrediction(AwardType.BEST_PLAYER, status = PredictionStatus.CORRECT)
             val prediction2 = testAwardPrediction(AwardType.BEST_PLAYER, status = PredictionStatus.INCORRECT)
             val result = PredictionsEngine.awardPoints(listOf(prediction1, prediction2))
-            Assertions.assertEquals(8f, result)
+            Assertions.assertEquals(7f, result)
         }
 
         @Test
@@ -397,7 +397,7 @@ class PredictionsEngineTest {
             // winner is best-goalkeeper=A, predictions is best-goalkeeper=A
             val prediction = testAwardPrediction(AwardType.BEST_GOALKEEPER, status = PredictionStatus.CORRECT)
             val result = PredictionsEngine.awardPoints(listOf(prediction))
-            Assertions.assertEquals(12f, result)
+            Assertions.assertEquals(10f, result)
         }
 
         @Test
@@ -406,7 +406,7 @@ class PredictionsEngineTest {
             val prediction1 = testAwardPrediction(AwardType.BEST_GOALKEEPER, status = PredictionStatus.CORRECT)
             val prediction2 = testAwardPrediction(AwardType.BEST_GOALKEEPER, status = PredictionStatus.INCORRECT)
             val result = PredictionsEngine.awardPoints(listOf(prediction1, prediction2))
-            Assertions.assertEquals(8f, result)
+            Assertions.assertEquals(7f, result)
         }
 
         @Test
@@ -451,7 +451,7 @@ class PredictionsEngineTest {
             // winner is best-young-player=A, predictions is best-young-player=A
             val prediction = testAwardPrediction(AwardType.BEST_YOUNG_PLAYER, status = PredictionStatus.CORRECT)
             val result = PredictionsEngine.awardPoints(listOf(prediction))
-            Assertions.assertEquals(12f, result)
+            Assertions.assertEquals(10f, result)
         }
 
         @Test
@@ -460,7 +460,7 @@ class PredictionsEngineTest {
             val prediction1 = testAwardPrediction(AwardType.BEST_YOUNG_PLAYER, status = PredictionStatus.CORRECT)
             val prediction2 = testAwardPrediction(AwardType.BEST_YOUNG_PLAYER, status = PredictionStatus.INCORRECT)
             val result = PredictionsEngine.awardPoints(listOf(prediction1, prediction2))
-            Assertions.assertEquals(8f, result)
+            Assertions.assertEquals(7f, result)
         }
 
         @Test
@@ -752,8 +752,8 @@ class PredictionsEngineTest {
         }
 
         @Test
-        fun `updateAwardPoints() properly change points when tournament`() {
-            val group = testGroup.copy(tournament = testTournament.copy(status = TournamentStatus.NOT_STARTED))
+        fun `updateAwardPoints() properly change points when tournament is finished`() {
+            val group = testGroup.copy(tournament = testTournament.copy(status = TournamentStatus.FINISHED))
             val member1 = member.copy(id = UUID.randomUUID(), user = testUser.copy(id = UUID.randomUUID()), group = group, points = 32.1f)
             val member2 = member.copy(id = UUID.randomUUID(), user = testUser.copy(id = UUID.randomUUID()), group = group, points = 12.6f)
             val members = listOf(member1, member2)

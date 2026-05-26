@@ -20,6 +20,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @SpringBootTest
@@ -35,6 +36,8 @@ class MembershipIntegrationTest {
     @Autowired private lateinit var membershipRepository: MembershipRepository
     @Autowired private lateinit var userRepository: UserRepository
 
+    @Autowired private lateinit var testDatabaseCleaner: TestDatabaseCleaner
+
     private var authToken: String? = null
     private var secondUserToken: String? = null
     private var testGroupId: String? = null
@@ -42,9 +45,7 @@ class MembershipIntegrationTest {
 
     @BeforeAll
     fun setUp() {
-        membershipRepository.deleteAll()
-        groupRepository.deleteAll()
-        userRepository.deleteAll()
+        testDatabaseCleaner.cleanAll()
 
         // Create primary test user
         val userResult = mockMvc.perform(
@@ -92,13 +93,6 @@ class MembershipIntegrationTest {
                 ))
         ).andReturn()
         testGroupId = objectMapper.readValue(groupResult.response.contentAsString, GroupResponse::class.java).id.toString()
-    }
-
-    @AfterAll
-    fun tearDown() {
-        membershipRepository.deleteAll()
-        groupRepository.deleteAll()
-        userRepository.deleteAll()
     }
 
     @Nested
