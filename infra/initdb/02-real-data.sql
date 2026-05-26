@@ -2,8 +2,7 @@
 
 -- Create an entry for the World Cup 2026
 INSERT INTO tournaments (id, name, status) VALUES
-    ('28652183-a2d6-4f33-a624-0d24645ce3cd', 'Copa del Mundo 2026', 'NOT_STARTED')
-ON CONFLICT (id) DO NOTHING;
+    ('28652183-a2d6-4f33-a624-0d24645ce3cd', 'Copa del Mundo 2026', 'NOT_STARTED');
 
 -- Create an entry for each team in the World Cup 2026
 INSERT INTO teams (id, tournament_id, name, code, icon) VALUES
@@ -54,8 +53,7 @@ INSERT INTO teams (id, tournament_id, name, code, icon) VALUES
     ('fd93fbe8-8ea8-4cbf-a39f-f060891f63f1', '28652183-a2d6-4f33-a624-0d24645ce3cd','Bosnia-Herzegovina', 'BIH', 'https://flagcdn.com/w40/ba.png'),
     ('8c2ac206-1a3c-4ca6-89e1-5ff86c15f9ac', '28652183-a2d6-4f33-a624-0d24645ce3cd','Suecia', 'SWE', 'https://flagcdn.com/w40/se.png'),
     ('07782a28-4f6d-4037-86b8-ccff4c2de218', '28652183-a2d6-4f33-a624-0d24645ce3cd','Turquía', 'TUR', 'https://flagcdn.com/w40/tr.png'),
-    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', '28652183-a2d6-4f33-a624-0d24645ce3cd','Chequia', 'CZE', 'https://flagcdn.com/w40/cz.png')
-ON CONFLICT (id) DO NOTHING;
+    ('219c87e8-15ab-4ca1-b7f4-c5aed3dc33f4', '28652183-a2d6-4f33-a624-0d24645ce3cd','Chequia', 'CZE', 'https://flagcdn.com/w40/cz.png');
 
 -- Create an entry for each player in the World Cup 2026
 INSERT INTO players (team_id, name, position, birthdate) VALUES
@@ -201,7 +199,33 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07', 'Gabriel Martinelli', 'FORWARD', '2001-06-18'),
     ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07', 'Rayan', 'FORWARD', '2006-08-03'),
     ('2c5f8a1b-9d3e-4c7a-8b6f-1e2a9c3d4f07', 'Vinicius Jr.', 'FORWARD', '2000-07-12'),
-    -- MAR (TBD)
+    -- MAR (26-5)
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Yassine Bounou', 'GOALKEEPER', '1991-04-05'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Munir El Kajoui', 'GOALKEEPER', '1989-05-10'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Ahmed Reda Tagnaouti', 'GOALKEEPER', '1996-04-05'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Achraf Hakimi', 'DEFENDER', '1998-11-04'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Noussair Mazraoui', 'DEFENDER', '1997-11-14'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Anass Salah-Eddine', 'DEFENDER', '2002-01-18'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Youssef Belammari', 'DEFENDER', '1998-09-28'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Issa Diop', 'DEFENDER', '1997-01-09'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Chadi Riad', 'DEFENDER', '2003-06-17'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Zakaria El Ouahdi', 'DEFENDER', '2001-12-31'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Redouane Halhal', 'DEFENDER', '2003-03-21'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Nayef Aguerd', 'DEFENDER', '1996-03-30'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Neil El Aynaoui', 'MIDFIELDER', '2001-07-02'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Bilal El Khannouss', 'MIDFIELDER', '2004-05-10'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Azzedine Ounahi', 'MIDFIELDER', '2000-04-19'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Ayyoub Bouaddi', 'MIDFIELDER', '2007-10-02'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Ismael Saibari', 'MIDFIELDER', '2001-01-28'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Sofyan Amrabat', 'MIDFIELDER', '1996-08-21'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Samir El Mourabet', 'MIDFIELDER', '2005-10-06'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Brahim Díaz', 'FORWARD', '1999-08-03'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Ez Abde', 'FORWARD', '2001-12-17'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Ayoube Amaimouni', 'FORWARD', '2004-11-30'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Soufiane Rahimi', 'FORWARD', '1996-06-02'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Chemsdine Talbi', 'FORWARD', '2005-05-09'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Gessime Yassine', 'FORWARD', '2005-04-16'),
+    ('c7a3e1b5-9d2f-4c8a-9e6b-2f3a1c7d5b29', 'Ayoub El Kaabi', 'FORWARD', '1993-06-25'),
     -- HAI (15-5)
     ('d1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24', 'Johnny Placide', 'GOALKEEPER', '1988-01-29'),
     ('d1c5e7b3-2f9a-4a6c-8e1d-3c7a5f2b9e24', 'Alexandre Pierre', 'GOALKEEPER', '2001-02-25'),
@@ -507,7 +531,33 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', 'Sarpreet Singh', 'FORWARD', '1999-02-20'),
     ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', 'Ben Waine', 'FORWARD', '2001-06-11'),
     ('f7c3a1e5-2f9d-4a6c-8e1b-3d7a5c2f9e32', 'Chris Wood', 'FORWARD', '1991-12-07'),
-    -- ESP (TBD)
+    -- ESP (26-5)
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Unai Simón', 'GOALKEEPER', '1997-06-11'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'David Raya', 'GOALKEEPER', '1995-09-15'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Joan García', 'GOALKEEPER', '2001-05-04'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Pedro Porro', 'DEFENDER', '1999-09-13'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Marcos Llorente', 'DEFENDER', '1995-01-30'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Aymeric Laporte', 'DEFENDER', '1994-05-27'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Pau Cubarsí', 'DEFENDER', '2007-01-22'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Marc Pubill', 'DEFENDER', '2003-06-20'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Eric García', 'DEFENDER', '2001-01-09'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Marc Cucurella', 'DEFENDER', '1998-07-22'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Alejandro Grimaldo', 'DEFENDER', '1995-09-20'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Rodrigo Hernández', 'MIDFIELDER', '1996-06-22'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Martín Zubimendi', 'MIDFIELDER', '1999-02-02'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Pedri', 'MIDFIELDER', '2002-11-25'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Fabián Ruiz', 'MIDFIELDER', '1996-04-03'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Dani Olmo', 'MIDFIELDER', '1998-05-07'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Mikel Merino', 'MIDFIELDER', '1996-06-22'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Gavi', 'MIDFIELDER', '2004-08-05'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Álex Baena', 'MIDFIELDER', '2001-07-20'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Lamine Yamal', 'FORWARD', '2007-07-13'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Yeremy Pino', 'FORWARD', '2002-10-20'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Ferrán Torres', 'FORWARD', '2000-02-29'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Mikel Oyarzabal', 'FORWARD', '1997-04-21'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Borja Iglesias', 'FORWARD', '1993-01-17'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Nico Williams', 'FORWARD', '2002-07-12'),
+    ('f1e7c3a5-2f9d-4a6c-8e1b-3d7a5c2f9e20', 'Víctor Muñoz', 'FORWARD', '2003-07-13'),
     -- CPV (18-5)
     ('4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09', 'Josimar Dias', 'GOALKEEPER', '1986-06-03'),
     ('4d7a2c1e-8f3b-4c9a-9e1d-6b2f7a3c5e09', 'Márcio da Rosa', 'GOALKEEPER', '1997-02-23'),
@@ -707,7 +757,33 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('8f251495-81ba-4724-b575-f7ebecf213c4', 'Cedric Bakambu', 'FORWARD', '1991-04-11'),
     ('8f251495-81ba-4724-b575-f7ebecf213c4', 'Yoane Wissa', 'FORWARD', '1996-09-03'),
     -- UZB (TBD)
-    -- COL (TBD)
+    -- COL (26-5)
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Camilo Vargas', 'GOALKEEPER', '1989-01-09'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'David Ospina', 'GOALKEEPER', '1988-08-31'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Álvaro Montero', 'GOALKEEPER', '1995-03-29'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Daniel Muñoz', 'DEFENDER', '1996-05-26'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Santiago Arias', 'DEFENDER', '1992-01-13'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Yerry Mina', 'DEFENDER', '1994-09-23'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Davinson Sánchez', 'DEFENDER', '1996-06-12'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Jhon Lucumí', 'DEFENDER', '1998-06-26'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Willer Ditta', 'DEFENDER', '1997-06-23'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Yohan Mojica', 'DEFENDER', '1992-08-21'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Déiver Machado', 'DEFENDER', '1993-09-02'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Richard Ríos', 'MIDFIELDER', '2000-06-02'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Jefferson Lerma', 'MIDFIELDER', '1994-10-25'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Gustavo Puerta', 'MIDFIELDER', '2003-07-23'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Kevin Castaño', 'MIDFIELDER', '2000-09-29'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Jhon Arias', 'MIDFIELDER', '1997-09-21'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'James Rodríguez', 'MIDFIELDER', '1991-07-12'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Juan Fernando Quintero', 'MIDFIELDER', '1993-01-18'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Jorge Carrascal', 'MIDFIELDER', '1998-05-25'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Juan Camilo Portilla', 'MIDFIELDER', '1998-09-12'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Luis Díaz', 'FORWARD', '1997-01-13'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Luis Suárez', 'FORWARD', '1997-12-02'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Carlos Gómez', 'FORWARD', '2002-09-29'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Jaminton Campaz', 'FORWARD', '2000-05-24'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Jhon Córdoba', 'FORWARD', '1993-05-11'),
+    ('d7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'Juan Camilo Hernández', 'FORWARD', '1999-04-20'),
     -- ENG (22-5)
     ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Jordan Pickford', 'GOALKEEPER', '1994-03-07'),
     ('e9b3c1a7-5f2d-4c8a-9e6b-1a2f3d7c5b25', 'Dean Henderson', 'GOALKEEPER', '1997-03-12'),
@@ -761,10 +837,35 @@ INSERT INTO players (team_id, name, position, birthdate) VALUES
     ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Ante Budimir', 'FORWARD', '1991-07-22'),
     ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Marco Pasalic', 'FORWARD', '2000-09-14'),
     ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Petar Musa', 'FORWARD', '1998-03-04'),
-    ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Igor Matanovic', 'FORWARD', '2003-03-31')
+    ('a5c1e7b3-9d2f-4c8a-9e6b-2f3a1c7d5b15', 'Igor Matanovic', 'FORWARD', '2003-03-31'),
     -- GHA (TBD)
-    -- PAN (TBD)
-ON CONFLICT (id) DO NOTHING;
+    -- PAN (26-5)
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Orlando Mosquera', 'GOALKEEPER', '1995-12-29'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Luis Mejía', 'GOALKEEPER', '1991-03-16'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'César Samudio', 'GOALKEEPER', '1994-10-15'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'César Blackman', 'DEFENDER', '1998-04-02'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Jorge Gutiérrez', 'DEFENDER', '1998-09-21'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Amir Murillo', 'DEFENDER', '1996-02-11'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Fidel Escobar', 'DEFENDER', '1995-01-09'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Andrés Andrade', 'DEFENDER', '1998-10-16'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Edgardo Fariña', 'DEFENDER', '2001-07-12'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'José Córdoba', 'DEFENDER', '2001-09-03'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Eric Davis', 'DEFENDER', '1991-03-31'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Jiovany Ramos', 'DEFENDER', '1997-01-26'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Roderick Miller', 'DEFENDER', '1992-04-03'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Aníbal Godoy', 'MIDFIELDER', '1990-02-10'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Adalberto Carrasquilla', 'MIDFIELDER', '1998-11-28'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Carlos Harvey', 'MIDFIELDER', '2000-03-03'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Cristian Martínez', 'MIDFIELDER', '1997-05-06'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'José Luis Rodríguez', 'MIDFIELDER', '1998-06-19'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'César Yanis', 'MIDFIELDER', '1996-06-28'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Yoel Bárcenas', 'MIDFIELDER', '1993-10-23'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Alberto Quintero', 'MIDFIELDER', '1987-12-18'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Azarías Londoño', 'MIDFIELDER', '2001-06-05'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Ismael Díaz', 'FORWARD', '1997-05-12'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Cecilio Waterman', 'FORWARD', '1991-04-13'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'José Fajardo', 'FORWARD', '1993-08-18'),
+    ('b3c1e7a5-2f9d-4a6c-8e1b-3d7a5c2f9e34', 'Tomás Rodríguez', 'FORWARD', '1999-03-07');
 
 INSERT INTO matches (id, tournament_id, code, home_team_id, away_team_id, started_at, has_multiplier, home_quota, draw_quota, away_quota) VALUES
     ('6a7c9c74-9a3d-4b9e-9a45-0a5dce3a8f3a', '28652183-a2d6-4f33-a624-0d24645ce3cd', '1', 'd3c1e7b5-2f9a-4a6c-8e1d-3c7a5f2b9e30', 'f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38', '2026-06-11 13:00:00 -06:00'::timestamptz, false, 1+2*round(cast(log(1.45) as numeric), 2), 1+2*round(cast(log(4.10) as numeric), 2), 1+2*round(cast(log(5.75) as numeric), 2)),
@@ -838,5 +939,4 @@ INSERT INTO matches (id, tournament_id, code, home_team_id, away_team_id, starte
     ('11223344-5566-4855-69dc-7778899aabbc', '28652183-a2d6-4f33-a624-0d24645ce3cd', '69', '1a4d2b6c-5e7f-4c8a-9d1e-6b3f2a7c9d03', '7a9d3c1e-5b2f-4a6c-9e8d-2f1b3c7a6d06', '2026-06-27 21:00:00 -05:00'::timestamptz, false, 1+2*round(cast(log(15.0) as numeric), 2), 1+2*round(cast(log(6.50) as numeric), 2), 1+2*round(cast(log(1.15) as numeric), 2)),
     ('22334455-6677-4966-7aed-88899aabbccd', '28652183-a2d6-4f33-a624-0d24645ce3cd', '70', 'b5e1c7a3-2f9d-4a6c-8e1b-3d7a5c2f9e28', '9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04', '2026-06-27 21:00:00 -05:00'::timestamptz, false, 1+2*round(cast(log(3.10) as numeric), 2), 1+2*round(cast(log(3.20) as numeric), 2), 1+2*round(cast(log(2.25) as numeric), 2)),
     ('33445566-7788-4a77-8bfe-999aabbccdde', '28652183-a2d6-4f33-a624-0d24645ce3cd', '71', 'd7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'd7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36', '2026-06-27 19:30:00 -04:00'::timestamptz, false, 1+2*round(cast(log(3.20) as numeric), 2), 1+2*round(cast(log(3.25) as numeric), 2), 1+2*round(cast(log(2.15) as numeric), 2)),
-    ('44556677-8899-4b88-9c0f-aaabbccddeef', '28652183-a2d6-4f33-a624-0d24645ce3cd', '72', '8f251495-81ba-4724-b575-f7ebecf213c4', 'd9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42', '2026-06-27 19:30:00 -04:00'::timestamptz, true, 1+2*round(cast(log(3.00) as numeric), 2), 1+2*round(cast(log(3.10) as numeric), 2), 1+2*round(cast(log(2.40) as numeric), 2))
-ON CONFLICT (id) DO NOTHING;
+    ('44556677-8899-4b88-9c0f-aaabbccddeef', '28652183-a2d6-4f33-a624-0d24645ce3cd', '72', '8f251495-81ba-4724-b575-f7ebecf213c4', 'd9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42', '2026-06-27 19:30:00 -04:00'::timestamptz, true, 1+2*round(cast(log(3.00) as numeric), 2), 1+2*round(cast(log(3.10) as numeric), 2), 1+2*round(cast(log(2.40) as numeric), 2));
