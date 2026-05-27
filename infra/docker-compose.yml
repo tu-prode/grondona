@@ -27,12 +27,13 @@ services:
       dockerfile: infra/Dockerfile
     container_name: grondona-app
     environment:
+      ENV: local
       DB_HOST: db
       DB_PORT: 5432
       DB_NAME: grondona
       DB_USER: grondona
       DB_PASSWORD: grondona
-      JWT_SECRET: mySecretKeyForJwtTokenGenerationThatIsAtLeast256BitsLong!
+      JWT_SECRET: shhh!
       JWT_EXPIRATION: 86400000
     ports:
       - "8080:8080"

@@ -1,6 +1,6 @@
 package com.grondona.scheduler
 
-import com.grondona.model.Environments
+import com.grondona.model.Environment
 import com.grondona.model.Match
 import com.grondona.model.MatchStatus
 import com.grondona.model.SchedulerData
@@ -29,7 +29,7 @@ class MatchScheduler(
 ) {
 
     private var future: ScheduledFuture<*>? = null
-    private val env = Environments.valueOf(rawEnv.uppercase())
+    private val env = Environment.fromProfile(rawEnv)
 
     companion object {
         private val logger = LoggerFactory.getLogger(MatchService::class.java)
@@ -66,7 +66,7 @@ class MatchScheduler(
         }
 
         when {
-            env == Environments.LOCAL -> {
+            env == Environment.LOCAL -> {
                 scheduleAfterDelay(statusPollIntervalMs)
             }
 

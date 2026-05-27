@@ -63,7 +63,6 @@ class MatchService(
             tournamentRepository.save(tournament.copy(status = newTournamentStatus))
         }
 
-
         val matchesToSave = matchesToUpdate + if (prepareNewMatches)
             tournamentEngine.calculateNewMatches(consolidatedMatches, apiMatches)
         else emptyList()
