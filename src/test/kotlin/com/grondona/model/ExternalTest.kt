@@ -42,7 +42,7 @@ class ExternalTest {
         fun `toMatchUpdated returns null when the external match is not found between the stored ones`() {
             val dbMatches = (0..9).map { matchFromDB(home = "XX$it", away = "XY$it").copy(code = "$it") }
             val externalMatch = matchFromAPI(home = "XA1", away = "XB1", status = "IN_PLAY", homeOdds = 10f, drawOdds = 10f, awayOdds = 10f)
-            val match = externalMatch.toSystemMatch(dbMatches)
+            val match = externalMatch.toMatchUpdated(dbMatches)
             assertNull(match)
         }
 
@@ -50,7 +50,7 @@ class ExternalTest {
         fun `toMatchUpdated returns null when the external match is not started`() {
             val dbMatches = (0..9).map { matchFromDB(home = "XX$it", away = "XY$it").copy(code = "$it") }
             val externalMatch = matchFromAPI(home = "XX1", away = "XY1", status = "TO_START", homeGoals = 0, awayGoals = 0, minutes = 0, half = 1)
-            val match = externalMatch.toSystemMatch(dbMatches)
+            val match = externalMatch.toMatchUpdated(dbMatches)
             assertNull(match)
         }
 
@@ -58,7 +58,7 @@ class ExternalTest {
         fun `toMatchUpdated returns null when the correspondant stored match is finished`() {
             val dbMatches = (0..9).map { matchFromDB(home = "XX$it", away = "XY$it", status = MatchStatus.FINISHED).copy(code = "$it") }
             val externalMatch = matchFromAPI(home = "XX1", away = "XY1", status = "IN_PLAY", homeGoals = 0, awayGoals = 0, minutes = 0, half = 1)
-            val match = externalMatch.toSystemMatch(dbMatches)
+            val match = externalMatch.toMatchUpdated(dbMatches)
             assertNull(match)
         }
 
@@ -68,7 +68,7 @@ class ExternalTest {
                 (0..9).map { matchFromDB(home = "XX$it", away = "XY$it", homeQuota = 1f, drawQuota = 2f, awayQuota = 3f).copy(code = "$it") }
             val externalMatch = matchFromAPI(home = "XX1", away = "XY1", status = "IN_PLAY", homeOdds = 22f, drawOdds = 11f, awayOdds = 33f)
 
-            val match = externalMatch.toSystemMatch(dbMatches)
+            val match = externalMatch.toMatchUpdated(dbMatches)
             assertNotNull(match); match!!
             assertEquals(1f, match.homeQuota)
             assertEquals(2f, match.drawQuota)
@@ -80,7 +80,7 @@ class ExternalTest {
             val dbMatches = (0..9).map { matchFromDB(home = "XX$it", away = "XY$it").copy(code = "$it") }
             val externalMatch = matchFromAPI(home = "XX1", away = "XY1", status = "COMPLETED", homeGoals = 3, awayGoals = 2, minutes = 94, half = 2)
 
-            val match = externalMatch.toSystemMatch(dbMatches)
+            val match = externalMatch.toMatchUpdated(dbMatches)
             assertNotNull(match); match!!
             assertEquals(3, match.homeGoals)
             assertEquals(2, match.awayGoals)
@@ -94,7 +94,7 @@ class ExternalTest {
             val dbMatches = (0..9).map { matchFromDB(home = "XX$it", away = "XY$it").copy(code = "$it") }
             val externalMatch = matchFromAPI(home = "XX1", away = "XY1", status = "IN_PLAY", homeGoals = 2, awayGoals = 1, minutes = 25, half = 1)
 
-            val match = externalMatch.toSystemMatch(dbMatches)
+            val match = externalMatch.toMatchUpdated(dbMatches)
             assertNotNull(match); match!!
             assertEquals(2, match.homeGoals)
             assertEquals(1, match.awayGoals)
@@ -111,7 +111,7 @@ class ExternalTest {
         fun `toQuotasUpdated returns null when the external match is not found between the stored ones`() {
             val dbMatches = (0..9).map { matchFromDB(home = "XX$it", away = "XY$it").copy(code = "$it") }
             val externalMatch = matchFromAPI(home = "XA1", away = "XB1", status = "IN_PLAY", homeOdds = 10f, drawOdds = 10f, awayOdds = 10f)
-            val match = externalMatch.toSystemQuotas(dbMatches)
+            val match = externalMatch.toQuotasUpdated(dbMatches)
             assertNull(match)
         }
 
@@ -119,7 +119,7 @@ class ExternalTest {
         fun `toQuotasUpdated returns null when the stored match has already started`() {
             val dbMatches = (0..9).map { matchFromDB(home = "XX$it", away = "XY$it").copy(code = "$it", status = MatchStatus.IN_PROGRESS) }
             val externalMatch = matchFromAPI(home = "XX1", away = "XY1", status = "IN_PLAY", homeGoals = 0, awayGoals = 0, minutes = 0, half = 1)
-            val match = externalMatch.toSystemQuotas(dbMatches)
+            val match = externalMatch.toQuotasUpdated(dbMatches)
             assertNull(match)
         }
 
@@ -127,7 +127,7 @@ class ExternalTest {
         fun `toQuotasUpdated returns null when the stored match has already finished`() {
             val dbMatches = (0..9).map { matchFromDB(home = "XX$it", away = "XY$it").copy(code = "$it", status = MatchStatus.FINISHED) }
             val externalMatch = matchFromAPI(home = "XX1", away = "XY1", status = "COMPLETED", homeGoals = 2, awayGoals = 0, minutes = 94, half = 2)
-            val match = externalMatch.toSystemQuotas(dbMatches)
+            val match = externalMatch.toQuotasUpdated(dbMatches)
             assertNull(match)
         }
 
@@ -135,7 +135,7 @@ class ExternalTest {
         fun `toQuotasUpdated returns null when the match is already locked`() {
             val dbMatches = (0..9).map { matchFromDB(home = "XX$it", away = "XY$it").copy(code = "$it", startedAt = ZonedDateTime.now()) }
             val externalMatch = matchFromAPI(home = "XX1", away = "XY1", status = "TO_START")
-            val match = externalMatch.toSystemQuotas(dbMatches)
+            val match = externalMatch.toQuotasUpdated(dbMatches)
             assertNull(match)
         }
 
@@ -144,7 +144,7 @@ class ExternalTest {
             val dbMatches =
                 (0..9).map { matchFromDB(home = "XX$it", away = "XY$it").copy(code = "$it", startedAt = ZonedDateTime.now().plusDays(1L)) }
             val externalMatch = matchFromAPI(home = "XX1", away = "XY1", status = "TO_START", homeOdds = 2.34F, drawOdds = 1.91F, awayOdds = 1.13F)
-            val match = externalMatch.toSystemQuotas(dbMatches)
+            val match = externalMatch.toQuotasUpdated(dbMatches)
             assertNotNull(match); match!!
             assertEquals(externalMatch.homeOdds.oddsToQuota(), match.homeQuota)
             assertEquals(externalMatch.drawOdds.oddsToQuota(), match.drawQuota)
@@ -159,7 +159,7 @@ class ExternalTest {
         fun `the updated match substatus is correct during the first half`() {
             val dbMatches = listOf(matchFromDB(home = "XXX", away = "YYY"))
             val externalMatch = matchFromAPI(home = "XXX", away = "YYY", status = "IN_PLAY", half = 1, minutes = 23)
-            val match = externalMatch.toSystemMatch(dbMatches)
+            val match = externalMatch.toMatchUpdated(dbMatches)
             assertEquals("23' PT", match!!.substatus)
         }
 
@@ -167,7 +167,7 @@ class ExternalTest {
         fun `the updated match substatus is correct during the added time of the first half`() {
             val dbMatches = listOf(matchFromDB(home = "XXX", away = "YYY"))
             val externalMatch = matchFromAPI(home = "XXX", away = "YYY", status = "IN_PLAY", half = 1, minutes = 48)
-            val match = externalMatch.toSystemMatch(dbMatches)
+            val match = externalMatch.toMatchUpdated(dbMatches)
             assertEquals("45+3' PT", match!!.substatus)
         }
 
@@ -175,7 +175,7 @@ class ExternalTest {
         fun `the updated match substatus is correct during the half time`() {
             val dbMatches = listOf(matchFromDB(home = "XXX", away = "YYY"))
             val externalMatch = matchFromAPI(home = "XXX", away = "YYY", status = "HALF_TIME", half = 1, minutes = 23)
-            val match = externalMatch.toSystemMatch(dbMatches)
+            val match = externalMatch.toMatchUpdated(dbMatches)
             assertEquals("ET", match!!.substatus)
         }
 
@@ -183,7 +183,7 @@ class ExternalTest {
         fun `the updated match substatus is correct during the second half`() {
             val dbMatches = listOf(matchFromDB(home = "XXX", away = "YYY"))
             val externalMatch = matchFromAPI(home = "XXX", away = "YYY", status = "IN_PLAY", half = 2, minutes = 77)
-            val match = externalMatch.toSystemMatch(dbMatches)
+            val match = externalMatch.toMatchUpdated(dbMatches)
             assertEquals("32' ST", match!!.substatus)
         }
 
@@ -191,7 +191,7 @@ class ExternalTest {
         fun `the updated match substatus is correct during the added time of the second half`() {
             val dbMatches = listOf(matchFromDB(home = "XXX", away = "YYY"))
             val externalMatch = matchFromAPI(home = "XXX", away = "YYY", status = "IN_PLAY", half = 2, minutes = 91)
-            val match = externalMatch.toSystemMatch(dbMatches)
+            val match = externalMatch.toMatchUpdated(dbMatches)
             assertEquals("45+1' ST", match!!.substatus)
         }
 
@@ -199,7 +199,7 @@ class ExternalTest {
         fun `the updated match substatus is correct during the first extra time`() {
             val dbMatches = listOf(matchFromDB(home = "XXX", away = "YYY"))
             val externalMatch = matchFromAPI(home = "XXX", away = "YYY", status = "IN_PLAY", half = 3, minutes = 101)
-            val match = externalMatch.toSystemMatch(dbMatches)
+            val match = externalMatch.toMatchUpdated(dbMatches)
             assertEquals("11' PTE", match!!.substatus)
         }
 
@@ -207,7 +207,7 @@ class ExternalTest {
         fun `the updated match substatus is correct during the added time of the first extra time`() {
             val dbMatches = listOf(matchFromDB(home = "XXX", away = "YYY"))
             val externalMatch = matchFromAPI(home = "XXX", away = "YYY", status = "IN_PLAY", half = 3, minutes = 106)
-            val match = externalMatch.toSystemMatch(dbMatches)
+            val match = externalMatch.toMatchUpdated(dbMatches)
             assertEquals("15+1' PTE", match!!.substatus)
         }
 
@@ -215,7 +215,7 @@ class ExternalTest {
         fun `the updated match substatus is correct during the second extra time`() {
             val dbMatches = listOf(matchFromDB(home = "XXX", away = "YYY"))
             val externalMatch = matchFromAPI(home = "XXX", away = "YYY", status = "IN_PLAY", half = 4, minutes = 106)
-            val match = externalMatch.toSystemMatch(dbMatches)
+            val match = externalMatch.toMatchUpdated(dbMatches)
             assertEquals("1' STE", match!!.substatus)
         }
 
@@ -223,7 +223,7 @@ class ExternalTest {
         fun `the updated match substatus is correct during the added time of the second extra time`() {
             val dbMatches = listOf(matchFromDB(home = "XXX", away = "YYY"))
             val externalMatch = matchFromAPI(home = "XXX", away = "YYY", status = "IN_PLAY", half = 4, minutes = 123)
-            val match = externalMatch.toSystemMatch(dbMatches)
+            val match = externalMatch.toMatchUpdated(dbMatches)
             assertEquals("15+3' STE", match!!.substatus)
         }
 
@@ -231,7 +231,7 @@ class ExternalTest {
         fun `the updated match substatus is correct during the penalties`() {
             val dbMatches = listOf(matchFromDB(home = "XXX", away = "YYY"))
             val externalMatch = matchFromAPI(home = "XXX", away = "YYY", status = "PENALTIES")
-            val match = externalMatch.toSystemMatch(dbMatches)
+            val match = externalMatch.toMatchUpdated(dbMatches)
             assertEquals("PEN", match!!.substatus)
         }
 
@@ -239,7 +239,7 @@ class ExternalTest {
         fun `the updated match substatus is correct after match ended`() {
             val dbMatches = listOf(matchFromDB(home = "XXX", away = "YYY"))
             val externalMatch = matchFromAPI(home = "XXX", away = "YYY", status = "COMPLETED")
-            val match = externalMatch.toSystemMatch(dbMatches)
+            val match = externalMatch.toMatchUpdated(dbMatches)
             assertEquals("FIN", match!!.substatus)
         }
 

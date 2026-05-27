@@ -29,6 +29,10 @@ enum class MatchStatus {
     NOT_STARTED, IN_PROGRESS, FINISHED,
 }
 
+enum class MatchSubstatus(val label: String) {
+    HALFTIME("ET"), PENALTIES("PEN"), FINISHED("FIN"), SUSPENDED("SUSP")
+}
+
 @Entity
 @Table(name = "matches")
 @SQLDelete(sql = "UPDATE matches SET deleted_at = CURRENT_TIMESTAMP WHERE id=?")

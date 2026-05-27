@@ -10,7 +10,6 @@ import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.TaskScheduler
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -19,10 +18,10 @@ import java.util.Date
 import java.util.concurrent.ScheduledFuture
 
 @Service
-class MatchScheduler(
+class MatchStatusScheduler(
     private val matchService: MatchService,
     private val taskScheduler: TaskScheduler,
-    @Value("\${external.matches.poll-interval-ms}")
+    @Value("\${external.api.matches.poll-interval-ms}")
     private val statusPollIntervalMs: Long,
     @Value("\${app.env}")
     private val rawEnv: String
@@ -35,19 +34,9 @@ class MatchScheduler(
         private val logger = LoggerFactory.getLogger(MatchService::class.java)
     }
 
-    @Scheduled(cron = "0 0 7 * * *", zone = "America/Argentina/Buenos_Aires")
-    fun updateQuotas() {
-        logger.debug("Starting matches quotas polling job")
-        try {
-            matchService.updateMatchesQuotas(WorldCupEngine.SYSTEM_TOURNAMENT_ID)
-        } catch (ex: Exception) {
-            logger.error("Error while executing MatchScheduler (quotas)", ex)
-        }
-    }
-
     @PostConstruct
     fun start() {
-        val wait = 120000L
+        val wait = 120_000L
         logger.debug("Started MatchScheduler and waiting {}ms for system to be ready", wait)
         scheduleAfterDelay(wait)
     }

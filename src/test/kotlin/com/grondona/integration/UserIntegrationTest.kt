@@ -18,7 +18,7 @@ import com.grondona.model.dto.request.UpdateUserRequest
 import com.grondona.model.dto.response.CreatedMatchesResponse
 import com.grondona.repository.TournamentRepository
 import com.grondona.repository.UserRepository
-import com.grondona.scheduler.MatchScheduler
+import com.grondona.scheduler.MatchStatusScheduler
 import com.grondona.service.engine.WorldCupEngine
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
@@ -31,7 +31,6 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
-import org.springframework.transaction.annotation.Transactional
 import java.time.ZonedDateTime
 import java.util.UUID
 
@@ -55,7 +54,7 @@ class UserIntegrationTest {
     private lateinit var tournamentRepository: TournamentRepository
 
     @Autowired
-    lateinit var matchScheduler: MatchScheduler
+    lateinit var matchScheduler: MatchStatusScheduler
 
     @MockkBean
     lateinit var matchClient: MatchClient
