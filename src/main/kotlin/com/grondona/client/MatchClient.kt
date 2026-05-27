@@ -2,8 +2,6 @@ package com.grondona.client
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import com.fasterxml.jackson.databind.annotation.JsonNaming
-import com.grondona.client.MocknaldoMatchClient.Companion.logger
-import com.grondona.client.MocknaldoMatchClient.MocknaldoResponse
 import com.grondona.exception.ExternalServiceException
 import com.grondona.model.ExternalMatch
 import com.grondona.model.LOCAL
@@ -25,7 +23,46 @@ import java.util.UUID
 interface MatchClient {
     val matchWebClient: WebClient
 
-    fun getMatches(tournamentId: UUID): List<ExternalMatch>
+    fun buildRequest(): WebClient.RequestHeadersSpec<*>
+
+    fun matchesResponseClass(): Class<*>
+
+    fun parseMatchesResponse(body: Any?): List<ExternalMatch>
+
+    fun onMatchesResponseReceived(body: Any?) {}
+
+    fun getMatches(tournamentId: UUID): List<ExternalMatch> {
+        return try {
+            val body = buildRequest()
+                .retrieve()
+                .onStatus({ it.is4xxClientError }) { response ->
+                    response.bodyToMono(String::class.java)
+                        .flatMap { responseBody ->
+                            logger.error("Error 4xx calling Matches API: $responseBody")
+                            Mono.error(ExternalServiceException("Error 4xx calling Matches API: $responseBody"))
+                        }
+                }
+                .onStatus({ it.is5xxServerError }) { response ->
+                    response.bodyToMono(String::class.java)
+                        .flatMap { responseBody ->
+                            logger.error("Error 5xx calling Matches API: $responseBody")
+                            Mono.error(ExternalServiceException("Error 5xx calling Matches API: $responseBody"))
+                        }
+                }
+                .bodyToMono(matchesResponseClass())
+                .block()
+            onMatchesResponseReceived(body)
+            parseMatchesResponse(body)
+        } catch (ex: WebClientResponseException) {
+            throw ExternalServiceException("HTTP error calling matches service: ${ex.statusCode}", ex)
+        } catch (ex: Exception) {
+            throw ExternalServiceException("Unexpected error calling matches service: ${ex.message}", ex)
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(MatchClient::class.java)
+    }
 }
 
 @Component
@@ -35,7 +72,6 @@ class MocknaldoMatchClient(
 ) : MatchClient {
 
     companion object {
-        private val logger = LoggerFactory.getLogger(MatchClient::class.java)
         private const val MATCHES_PATH = "/matches"
     }
 
@@ -150,37 +186,17 @@ class MocknaldoMatchClient(
         fun parseMatches() = matches.map { it.toExternalMatch() }
     }
 
-    private fun buildRequest() = matchWebClient.get()
+    override fun buildRequest() = matchWebClient.get()
         .uri { uriBuilder -> uriBuilder.path(MATCHES_PATH).build() }
 
-    override fun getMatches(tournamentId: UUID): List<ExternalMatch> {
-        return try {
-            buildRequest()
-                .retrieve()
-                .onStatus({ it.is4xxClientError }) { response ->
-                    response.bodyToMono(String::class.java)
-                        .flatMap { body ->
-                            logger.error("Error 4xx calling Matches API: $body")
-                            Mono.error(ExternalServiceException("Error 4xx calling Matches API: $body"))
-                        }
-                }
-                .onStatus({ it.is5xxServerError }) { response ->
-                    response.bodyToMono(String::class.java)
-                        .flatMap { body ->
-                            logger.error("Error 5xx calling Matches API: $body")
-                            Mono.error(ExternalServiceException("Error 5xx calling Matches API: $body"))
-                        }
-                }
-                .bodyToMono(MocknaldoResponse::class.java)
-                .block().also {
-                    logger.debug("Set current-time at {}", it?.current)
-                    now = it?.current ?: LocalDateTime.now()
-                }?.parseMatches() ?: emptyList()
-        } catch (ex: WebClientResponseException) {
-            throw ExternalServiceException("HTTP error calling matches service: ${ex.statusCode}", ex)
-        } catch (ex: Exception) {
-            throw ExternalServiceException("Unexpected error calling matches service: ${ex.message}", ex)
-        }
+    override fun matchesResponseClass(): Class<*> = MocknaldoResponse::class.java
+
+    override fun parseMatchesResponse(body: Any?): List<ExternalMatch> =
+        (body as? MocknaldoResponse)?.parseMatches() ?: emptyList()
+
+    override fun onMatchesResponseReceived(body: Any?) {
+        val response = body as? MocknaldoResponse ?: return
+        now = response.current
     }
 }
 
@@ -195,12 +211,11 @@ class FootballDataMatchClient(
     // For more information, check: https://www.football-data.org/
 
     companion object {
-        private val logger = LoggerFactory.getLogger(MatchClient::class.java)
         private const val MATCHES_PATH = "/v4/competitions/WC/matches"
         private const val AUTH_TOKEN_HEADER = "x-auth-token"
     }
 
-    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
+    @JsonNaming(PropertyNamingStrategies.LowerCamelCaseStrategy::class)
     private class FootballDataResponse(
         val matches: List<Match> = emptyList(),
     ) {
@@ -336,34 +351,12 @@ class FootballDataMatchClient(
         fun parseMatches() = matches.map { it.toExternalMatch() }
     }
 
-    private fun buildRequest() = matchWebClient.get()
+    override fun buildRequest() = matchWebClient.get()
         .uri { uriBuilder -> uriBuilder.path(MATCHES_PATH).build() }
         .header(AUTH_TOKEN_HEADER, apiKey)
 
-    override fun getMatches(tournamentId: UUID): List<ExternalMatch> {
-        return try {
-            buildRequest()
-                .retrieve()
-                .onStatus({ it.is4xxClientError }) { response ->
-                    response.bodyToMono(String::class.java)
-                        .flatMap { body ->
-                            logger.error("Error 4xx calling Matches API: $body")
-                            Mono.error(ExternalServiceException("Error 4xx calling Matches API: $body"))
-                        }
-                }
-                .onStatus({ it.is5xxServerError }) { response ->
-                    response.bodyToMono(String::class.java)
-                        .flatMap { body ->
-                            logger.error("Error 5xx calling Matches API: $body")
-                            Mono.error(ExternalServiceException("Error 5xx calling Matches API: $body"))
-                        }
-                }
-                .bodyToMono(FootballDataResponse::class.java)
-                .block()?.parseMatches() ?: emptyList()
-        } catch (ex: WebClientResponseException) {
-            throw ExternalServiceException("HTTP error calling matches service: ${ex.statusCode}", ex)
-        } catch (ex: Exception) {
-            throw ExternalServiceException("Unexpected error calling matches service: ${ex.message}", ex)
-        }
-    }
+    override fun matchesResponseClass(): Class<*> = FootballDataResponse::class.java
+
+    override fun parseMatchesResponse(body: Any?): List<ExternalMatch> =
+        (body as? FootballDataResponse)?.parseMatches() ?: emptyList()
 }

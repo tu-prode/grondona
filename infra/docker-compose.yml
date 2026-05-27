@@ -5,9 +5,9 @@ services:
     image: postgres:15-alpine
     container_name: grondona-postgres
     environment:
-      POSTGRES_DB: grondona
-      POSTGRES_USER: grondona
-      POSTGRES_PASSWORD: grondona
+      POSTGRES_DB: "grondona"
+      POSTGRES_USER: "grondona"
+      POSTGRES_PASSWORD: "grondona"
     ports:
       - "5432:5432"
     volumes:
@@ -27,14 +27,22 @@ services:
       dockerfile: infra/Dockerfile
     container_name: grondona-app
     environment:
-      ENV: local
-      DB_HOST: db
+      # System configuration
+      ENV: "local"
+      NEW_MATCHES: "true"
+      UPDATED_QUOTAS: "true"
+      # DB configuration
+      DB_HOST: "db"
       DB_PORT: 5432
-      DB_NAME: grondona
-      DB_USER: grondona
-      DB_PASSWORD: grondona
-      JWT_SECRET: shhh!
+      DB_NAME: "grondona"
+      DB_USER: "grondona"
+      DB_PASSWORD: "grondona"
+      # JWT configuration
+      JWT_SECRET: "shhh!"
       JWT_EXPIRATION: 86400000
+      # Matches API configuration
+      MATCHES_API_URL: "http://mocknaldo:8085"
+      MATCHES_API_KEY: "siuuu"
     ports:
       - "8080:8080"
     depends_on:
