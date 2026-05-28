@@ -5,7 +5,9 @@ import com.grondona.client.MatchClient
 import com.grondona.integration.utils.GrondonaClient
 import com.grondona.model.Awards
 import com.grondona.model.ExternalMatch
+import com.grondona.model.MatchStatus
 import com.grondona.model.PredictionStatus
+import com.grondona.model.TEST
 import com.grondona.model.dto.request.CreateMatchRequest
 import com.grondona.model.dto.request.CreateMatchesRequest
 import com.grondona.model.dto.request.SubmitAwardPredictionRequest
@@ -14,7 +16,7 @@ import com.grondona.model.dto.request.UpdateTournamentRequest
 import com.grondona.otherRandom
 import com.grondona.repository.TournamentRepository
 import com.grondona.repository.UserRepository
-import com.grondona.scheduler.MatchScheduler
+import com.grondona.scheduler.MatchStatusScheduler
 import com.grondona.service.engine.WorldCupEngine
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.clearMocks
@@ -26,13 +28,12 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.transaction.annotation.Transactional
 import java.time.ZonedDateTime
 import java.util.UUID
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
+@ActiveProfiles(TEST)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class WorldCupIntegrationTest {
@@ -50,7 +51,7 @@ class WorldCupIntegrationTest {
     private lateinit var tournamentRepository: TournamentRepository
 
     @Autowired
-    lateinit var matchScheduler: MatchScheduler
+    lateinit var matchScheduler: MatchStatusScheduler
 
     @MockkBean
     lateinit var matchClient: MatchClient
@@ -72,7 +73,7 @@ class WorldCupIntegrationTest {
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-    inner class FullWorldcupTests {
+    inner class FullWorldCupTests {
 
         private lateinit var user1Id: UUID
         private lateinit var user2Id: UUID
@@ -159,9 +160,9 @@ class WorldCupIntegrationTest {
             val externalMatchesChunks = matchesToUpdate.chunked(12).map { matches ->
                 matches.map {
                     ExternalMatch(
-                        code = it.code, home = it.homeCode, away = it.awayCode, status = "COMPLETED",
-                        homeGoals = 0, awayGoals = 0, half = 2, minutes = 93,
-                        startedAt = ZonedDateTime.now().minusMinutes(118), endedAt = ZonedDateTime.now()
+                        code = it.code, home = it.homeCode, away = it.awayCode,
+                        homeGoals = 0, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
+                        startedAt = ZonedDateTime.now().minusMinutes(118), finishedAt = ZonedDateTime.now()
                     )
                 }
             }
@@ -229,9 +230,9 @@ class WorldCupIntegrationTest {
             val externalMatchesResponses = listOf(externalMatchesResponse1, externalMatchesResponse2).map { matches ->
                 matches.map {
                     ExternalMatch(
-                        code = it.code, home = it.homeCode, away = it.awayCode, status = "COMPLETED",
-                        homeGoals = 0, awayGoals = 0, half = 2, minutes = 93,
-                        startedAt = ZonedDateTime.now().minusMinutes(118), endedAt = ZonedDateTime.now()
+                        code = it.code, home = it.homeCode, away = it.awayCode,
+                        homeGoals = 0, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
+                        startedAt = ZonedDateTime.now().minusMinutes(118), finishedAt = ZonedDateTime.now()
                     )
                 }
             }
@@ -295,9 +296,9 @@ class WorldCupIntegrationTest {
         fun `should receive updates for every existing match in round of 16`() {
             every { matchClient.getMatches(any()) } returns grondona.matches.filter { it.code in WorldCupEngine.RO16_MATCHES_CODE }.map {
                 ExternalMatch(
-                    code = it.code, home = it.homeCode, away = it.awayCode, status = "COMPLETED",
-                    homeGoals = 0, awayGoals = 0, half = 2, minutes = 93,
-                    startedAt = ZonedDateTime.now().minusMinutes(118), endedAt = ZonedDateTime.now()
+                    code = it.code, home = it.homeCode, away = it.awayCode,
+                    homeGoals = 0, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
+                    startedAt = ZonedDateTime.now().minusMinutes(118), finishedAt = ZonedDateTime.now()
                 )
             }
 
@@ -366,9 +367,9 @@ class WorldCupIntegrationTest {
         fun `should receive updates for every existing match in the quarterfinals`() {
             every { matchClient.getMatches(any()) } returns grondona.matches.filter { it.code in WorldCupEngine.QUARTERFINALS_MATCHES_CODE }.map {
                 ExternalMatch(
-                    code = it.code, home = it.homeCode, away = it.awayCode, status = "COMPLETED",
-                    homeGoals = 1, awayGoals = 0, half = 2, minutes = 93,
-                    startedAt = ZonedDateTime.now().minusMinutes(118), endedAt = ZonedDateTime.now()
+                    code = it.code, home = it.homeCode, away = it.awayCode,
+                    homeGoals = 1, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
+                    startedAt = ZonedDateTime.now().minusMinutes(118), finishedAt = ZonedDateTime.now()
                 )
             }
 
@@ -437,9 +438,9 @@ class WorldCupIntegrationTest {
         fun `should receive updates for every existing match in the semifinals`() {
             every { matchClient.getMatches(any()) } returns grondona.matches.filter { it.code in WorldCupEngine.SEMIFINALS_MATCHES_CODE }.map {
                 ExternalMatch(
-                    code = it.code, home = it.homeCode, away = it.awayCode, status = "COMPLETED",
-                    homeGoals = 5, awayGoals = 0, half = 2, minutes = 93,
-                    startedAt = ZonedDateTime.now().minusMinutes(118), endedAt = ZonedDateTime.now()
+                    code = it.code, home = it.homeCode, away = it.awayCode,
+                    homeGoals = 5, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
+                    startedAt = ZonedDateTime.now().minusMinutes(118), finishedAt = ZonedDateTime.now()
                 )
             }
 
@@ -508,9 +509,9 @@ class WorldCupIntegrationTest {
         fun `should receive updates for every existing match in the last round`() {
             every { matchClient.getMatches(any()) } returns grondona.matches.filter { it.code in WorldCupEngine.LAST_ROUND_MATCHES_CODE }.map {
                 ExternalMatch(
-                    code = it.code, home = it.homeCode, away = it.awayCode, status = "COMPLETED",
-                    homeGoals = 3, awayGoals = 1, half = 2, minutes = 93,
-                    startedAt = ZonedDateTime.now().minusMinutes(118), endedAt = ZonedDateTime.now()
+                    code = it.code, home = it.homeCode, away = it.awayCode,
+                    homeGoals = 3, awayGoals = 1, status = MatchStatus.FINISHED, substatus = "FIN",
+                    startedAt = ZonedDateTime.now().minusMinutes(118), finishedAt = ZonedDateTime.now()
                 )
             }
 

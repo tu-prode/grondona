@@ -5,6 +5,8 @@ import com.grondona.client.MatchClient
 import com.grondona.createTestingUserRequest
 import com.grondona.integration.utils.GrondonaClient
 import com.grondona.model.ExternalMatch
+import com.grondona.model.MatchStatus
+import com.grondona.model.TEST
 import com.grondona.model.Tournament
 import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.CreateMatchRequest
@@ -18,7 +20,7 @@ import com.grondona.model.dto.request.UpdateUserRequest
 import com.grondona.model.dto.response.CreatedMatchesResponse
 import com.grondona.repository.TournamentRepository
 import com.grondona.repository.UserRepository
-import com.grondona.scheduler.MatchScheduler
+import com.grondona.scheduler.MatchStatusScheduler
 import com.grondona.service.engine.WorldCupEngine
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
@@ -31,13 +33,12 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
-import org.springframework.transaction.annotation.Transactional
 import java.time.ZonedDateTime
 import java.util.UUID
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
+@ActiveProfiles(TEST)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class UserIntegrationTest {
@@ -55,7 +56,7 @@ class UserIntegrationTest {
     private lateinit var tournamentRepository: TournamentRepository
 
     @Autowired
-    lateinit var matchScheduler: MatchScheduler
+    lateinit var matchScheduler: MatchStatusScheduler
 
     @MockkBean
     lateinit var matchClient: MatchClient
@@ -592,16 +593,16 @@ class UserIntegrationTest {
         fun `it starts match 1 and lock its predictions`() {
             every { matchClient.getMatches(any()) } returns listOf(
                 ExternalMatch(
-                    code = "MT1", home = testTeam1Id!!, away = testTeam2Id!!, status = "IN_PLAY",
-                    homeGoals = 1, awayGoals = 0, half = 1, minutes = 25, startedAt = ZonedDateTime.now().minusMinutes(25)
+                    code = "MT1", home = testTeam1Id!!, away = testTeam2Id!!, status = MatchStatus.IN_PROGRESS,
+                    homeGoals = 1, awayGoals = 0, substatus = "25' PT", startedAt = ZonedDateTime.now().minusMinutes(25)
                 ),
                 ExternalMatch(
-                    code = "MT2", home = testTeam3Id!!, away = testTeam4Id!!, status = "TO_START",
-                    homeGoals = 0, awayGoals = 0, half = 0, minutes = 0, startedAt = ZonedDateTime.now().plusDays(1)
+                    code = "MT2", home = testTeam3Id!!, away = testTeam4Id!!, status = MatchStatus.NOT_STARTED,
+                    homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().plusDays(1)
                 ),
                 ExternalMatch(
-                    code = "MT3", home = testTeam4Id!!, away = testTeam5Id!!, status = "TO_START",
-                    homeGoals = 0, awayGoals = 0, half = 0, minutes = 0, startedAt = ZonedDateTime.now().plusDays(2)
+                    code = "MT3", home = testTeam4Id!!, away = testTeam5Id!!, status = MatchStatus.NOT_STARTED,
+                    homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().plusDays(2)
                 ),
             )
 
@@ -739,16 +740,16 @@ class UserIntegrationTest {
         fun `it starts match 2 and lock its predictions`() {
             every { matchClient.getMatches(any()) } returns listOf(
                 ExternalMatch(
-                    code = "MT1", home = testTeam1Id!!, away = testTeam2Id!!, status = "COMPLETED",
-                    homeGoals = 5, awayGoals = 0, half = 2, minutes = 93, startedAt = ZonedDateTime.now().minusDays(2)
+                    code = "MT1", home = testTeam1Id!!, away = testTeam2Id!!, status = MatchStatus.FINISHED,
+                    homeGoals = 5, awayGoals = 0, substatus = "FIN", startedAt = ZonedDateTime.now().minusDays(2)
                 ),
                 ExternalMatch(
-                    code = "MT2", home = testTeam3Id!!, away = testTeam4Id!!, status = "IN_PLAY",
-                    homeGoals = 0, awayGoals = 2, half = 1, minutes = 14, startedAt = ZonedDateTime.now().minusMinutes(14)
+                    code = "MT2", home = testTeam3Id!!, away = testTeam4Id!!, status = MatchStatus.IN_PROGRESS,
+                    homeGoals = 0, awayGoals = 2, substatus = "14' PT", startedAt = ZonedDateTime.now().minusMinutes(14)
                 ),
                 ExternalMatch(
-                    code = "MT3", home = testTeam4Id!!, away = testTeam5Id!!, status = "TO_START",
-                    homeGoals = 0, awayGoals = 0, half = 0, minutes = 0, startedAt = ZonedDateTime.now().plusDays(2)
+                    code = "MT3", home = testTeam4Id!!, away = testTeam5Id!!, status = MatchStatus.NOT_STARTED,
+                    homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().plusDays(2)
                 ),
             )
 

@@ -1049,15 +1049,6 @@ class ResultsMockerHandler(BaseHTTPRequestHandler):
                 return 400, {"error": "Invalid number format"}
         return 400, {"error": "Missing delta"}
 
-    def _process_matches_request(self):
-        parsed_url = urlparse(self.path)
-        params = parse_qs(parsed_url.query)
-
-        competition_id = params.get("competition_id", [None])[0]
-        if competition_id != WORLD_CUP_COMPETITION_ID:
-            return 404, {"error": f"Tournament {competition_id} not found"}
-        return 200, None
-
     def _process_new_matches(self):
         content_length = int(self.headers.get("Content-Length", 0))
         body_bytes = self.rfile.read(content_length)
@@ -1105,11 +1096,8 @@ class ResultsMockerHandler(BaseHTTPRequestHandler):
                 match_copy[field] = value.isoformat() + "-03:00"
         return match_copy
 
-    def _send_matches(self, code, payload=None):
-        if payload is not None:
-            self._send_json(code, payload)
-            return
-        self.send_response(code)
+    def _send_matches(self):
+        self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.end_headers()
         TIME_LOCK.acquire()
@@ -1130,9 +1118,8 @@ class ResultsMockerHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(payload, default=str).encode())
 
     def do_GET(self):
-        if urlparse(self.path).path == "/api-client/matches/live.json":
-            status_code, response = self._process_matches_request()
-            self._send_matches(status_code, response)
+        if urlparse(self.path).path == "/matches":
+            self._send_matches()
         else:
             self._reject()
 
