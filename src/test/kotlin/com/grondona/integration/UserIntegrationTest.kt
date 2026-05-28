@@ -71,12 +71,12 @@ class UserIntegrationTest {
     private var testMatch1Id: UUID? = null
     private var testMatch2Id: UUID? = null
     private var testMatch3Id: UUID? = null
-    private var testTeam1Id: String? = null
-    private var testTeam2Id: String? = null
-    private var testTeam3Id: String? = null
-    private var testTeam4Id: String? = null
-    private var testTeam5Id: String? = null
-    private var testTeam6Id: String? = null
+    private var testTeam1Code: String? = null
+    private var testTeam2Code: String? = null
+    private var testTeam3Code: String? = null
+    private var testTeam4Code: String? = null
+    private var testTeam5Code: String? = null
+    private var testTeam6Code: String? = null
 
     @BeforeAll
     fun setUp() {
@@ -99,7 +99,7 @@ class UserIntegrationTest {
         Assertions.assertTrue(tournamentRepository.existsById(WorldCupEngine.SYSTEM_TOURNAMENT_ID))
         testTournamentId = WorldCupEngine.SYSTEM_TOURNAMENT_ID.toString()
 
-        val teamIds = (1..6).map {
+        val teamCodes = (1..6).map {
             val request = CreateTeamRequest(name = "Team $it", code = "T$it", icon = "unknown")
             val result = mockMvc.perform(
                 post("/api/tournaments/{tournamentId}/teams", testTournamentId)
@@ -107,20 +107,23 @@ class UserIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             ).andExpect(status().isCreated).andReturn()
-            UUID.fromString(objectMapper.readTree(result.response.contentAsString).get("id").asText())
+            UUID.fromString(objectMapper.readTree(result.response.contentAsString).get("id").asText()) to
+                    objectMapper.readTree(result.response.contentAsString).get("code").asText()
         }
-        testTeam1Id = teamIds[0].toString()
-        testTeam2Id = teamIds[1].toString()
-        testTeam3Id = teamIds[2].toString()
-        testTeam4Id = teamIds[3].toString()
-        testTeam5Id = teamIds[4].toString()
-        testTeam6Id = teamIds[5].toString()
+        testTeam1Code = teamCodes[0].second
+        testTeam2Code = teamCodes[1].second
+        testTeam3Code = teamCodes[2].second
+        testTeam4Code = teamCodes[3].second
+        testTeam5Code = teamCodes[4].second
+        testTeam6Code = teamCodes[5].second
 
-        val createMatchesRequest = CreateMatchesRequest(matches = listOf(
-            CreateMatchRequest(code = "MT1", homeTeam = teamIds[0], awayTeam = teamIds[1], startedAt = ZonedDateTime.now().plusDays(10)),
-            CreateMatchRequest(code = "MT2", homeTeam = teamIds[2], awayTeam = teamIds[3], startedAt = ZonedDateTime.now().plusDays(11)),
-            CreateMatchRequest(code = "MT3", homeTeam = teamIds[4], awayTeam = teamIds[5], startedAt = ZonedDateTime.now().plusDays(11))
-        ))
+        val createMatchesRequest = CreateMatchesRequest(
+            matches = listOf(
+                CreateMatchRequest(code = "MT1", homeTeam = teamCodes[0].first, awayTeam = teamCodes[1].first, startedAt = ZonedDateTime.now().plusDays(10)),
+                CreateMatchRequest(code = "MT2", homeTeam = teamCodes[2].first, awayTeam = teamCodes[3].first, startedAt = ZonedDateTime.now().plusDays(11)),
+                CreateMatchRequest(code = "MT3", homeTeam = teamCodes[4].first, awayTeam = teamCodes[5].first, startedAt = ZonedDateTime.now().plusDays(11))
+            )
+        )
         val result = mockMvc.perform(
             post("/api/tournaments/{tournamentId}/matches", testTournamentId)
                 .header("Authorization", "Bearer $adminToken")
@@ -447,7 +450,7 @@ class UserIntegrationTest {
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
     inner class PredictionUniquenessFlowTests {
-        
+
         private val client = GrondonaClient(mockMvc, objectMapper)
             .withAdminToken(adminToken!!)
             .withTournament(testTournamentId!!)
@@ -464,7 +467,14 @@ class UserIntegrationTest {
                 patch("/api/users", userId)
                     .header("Authorization", "Bearer $userToken")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(UpdateUserRequest(uniquePredictions = uniqueness, uniquePredictionsMaster = masterGroup)))
+                    .content(
+                        objectMapper.writeValueAsString(
+                            UpdateUserRequest(
+                                uniquePredictions = uniqueness,
+                                uniquePredictionsMaster = masterGroup
+                            )
+                        )
+                    )
             ).andExpect(status().isOk).andReturn()
         }
 
@@ -530,10 +540,12 @@ class UserIntegrationTest {
                         Assertions.assertEquals(0, it.prediction!!.homeGoals)
                         Assertions.assertEquals(0, it.prediction!!.awayGoals)
                     }
+
                     testMatch2Id -> {
                         Assertions.assertEquals(1, it.prediction!!.homeGoals)
                         Assertions.assertEquals(0, it.prediction!!.awayGoals)
                     }
+
                     testMatch3Id -> {
                         Assertions.assertEquals(2, it.prediction!!.homeGoals)
                         Assertions.assertEquals(0, it.prediction!!.awayGoals)
@@ -547,16 +559,17 @@ class UserIntegrationTest {
         fun `user checks predictions in group 2 and are the same as submitted`() {
             val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group2Id)
             matchPredictions.forEach {
-                it.prediction!!
                 when (it.match.id) {
                     testMatch1Id -> {
                         Assertions.assertEquals(1, it.prediction!!.homeGoals)
                         Assertions.assertEquals(1, it.prediction!!.awayGoals)
                     }
+
                     testMatch2Id -> {
                         Assertions.assertEquals(2, it.prediction!!.homeGoals)
                         Assertions.assertEquals(1, it.prediction!!.awayGoals)
                     }
+
                     testMatch3Id -> {
                         Assertions.assertEquals(3, it.prediction!!.homeGoals)
                         Assertions.assertEquals(1, it.prediction!!.awayGoals)
@@ -570,16 +583,17 @@ class UserIntegrationTest {
         fun `user checks predictions in group 3 and are the same as submitted`() {
             val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group3Id)
             matchPredictions.forEach {
-                it.prediction!!
                 when (it.match.id) {
                     testMatch1Id -> {
                         Assertions.assertEquals(2, it.prediction!!.homeGoals)
                         Assertions.assertEquals(2, it.prediction!!.awayGoals)
                     }
+
                     testMatch2Id -> {
                         Assertions.assertEquals(3, it.prediction!!.homeGoals)
                         Assertions.assertEquals(2, it.prediction!!.awayGoals)
                     }
+
                     testMatch3Id -> {
                         Assertions.assertEquals(4, it.prediction!!.homeGoals)
                         Assertions.assertEquals(2, it.prediction!!.awayGoals)
@@ -593,15 +607,15 @@ class UserIntegrationTest {
         fun `it starts match 1 and lock its predictions`() {
             every { matchClient.getMatches(any()) } returns listOf(
                 ExternalMatch(
-                    code = "MT1", home = testTeam1Id!!, away = testTeam2Id!!, status = MatchStatus.IN_PROGRESS,
+                    code = "MT1", home = testTeam1Code!!, away = testTeam2Code!!, status = MatchStatus.IN_PROGRESS,
                     homeGoals = 1, awayGoals = 0, substatus = "25' PT", startedAt = ZonedDateTime.now().minusMinutes(25)
                 ),
                 ExternalMatch(
-                    code = "MT2", home = testTeam3Id!!, away = testTeam4Id!!, status = MatchStatus.NOT_STARTED,
+                    code = "MT2", home = testTeam3Code!!, away = testTeam4Code!!, status = MatchStatus.NOT_STARTED,
                     homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().plusDays(1)
                 ),
                 ExternalMatch(
-                    code = "MT3", home = testTeam4Id!!, away = testTeam5Id!!, status = MatchStatus.NOT_STARTED,
+                    code = "MT3", home = testTeam5Code!!, away = testTeam6Code!!, status = MatchStatus.NOT_STARTED,
                     homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().plusDays(2)
                 ),
             )
@@ -620,16 +634,17 @@ class UserIntegrationTest {
         fun `user checks predictions in group 1 and they are still the same`() {
             val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group1Id)
             matchPredictions.forEach {
-                it.prediction!!
                 when (it.match.id) {
                     testMatch1Id -> {
                         Assertions.assertEquals(0, it.prediction!!.homeGoals)
                         Assertions.assertEquals(0, it.prediction!!.awayGoals)
                     }
+
                     testMatch2Id -> {
                         Assertions.assertEquals(1, it.prediction!!.homeGoals)
                         Assertions.assertEquals(0, it.prediction!!.awayGoals)
                     }
+
                     testMatch3Id -> {
                         Assertions.assertEquals(2, it.prediction!!.homeGoals)
                         Assertions.assertEquals(0, it.prediction!!.awayGoals)
@@ -643,16 +658,17 @@ class UserIntegrationTest {
         fun `user checks predictions in group 2 and only the active ones were updated`() {
             val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group2Id)
             matchPredictions.forEach {
-                it.prediction!!
                 when (it.match.id) {
                     testMatch1Id -> {
-                        Assertions.assertEquals(0, it.prediction!!.homeGoals)
-                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                        Assertions.assertEquals(1, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(1, it.prediction!!.awayGoals)
                     }
+
                     testMatch2Id -> {
                         Assertions.assertEquals(1, it.prediction!!.homeGoals)
                         Assertions.assertEquals(0, it.prediction!!.awayGoals)
                     }
+
                     testMatch3Id -> {
                         Assertions.assertEquals(2, it.prediction!!.homeGoals)
                         Assertions.assertEquals(0, it.prediction!!.awayGoals)
@@ -666,16 +682,17 @@ class UserIntegrationTest {
         fun `user checks predictions in group 3 and only the active ones were updated`() {
             val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group3Id)
             matchPredictions.forEach {
-                it.prediction!!
                 when (it.match.id) {
                     testMatch1Id -> {
-                        Assertions.assertEquals(0, it.prediction!!.homeGoals)
-                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                        Assertions.assertEquals(2, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(2, it.prediction!!.awayGoals)
                     }
+
                     testMatch2Id -> {
                         Assertions.assertEquals(1, it.prediction!!.homeGoals)
                         Assertions.assertEquals(0, it.prediction!!.awayGoals)
                     }
+
                     testMatch3Id -> {
                         Assertions.assertEquals(2, it.prediction!!.homeGoals)
                         Assertions.assertEquals(0, it.prediction!!.awayGoals)
@@ -740,15 +757,15 @@ class UserIntegrationTest {
         fun `it starts match 2 and lock its predictions`() {
             every { matchClient.getMatches(any()) } returns listOf(
                 ExternalMatch(
-                    code = "MT1", home = testTeam1Id!!, away = testTeam2Id!!, status = MatchStatus.FINISHED,
+                    code = "MT1", home = testTeam1Code!!, away = testTeam2Code!!, status = MatchStatus.FINISHED,
                     homeGoals = 5, awayGoals = 0, substatus = "FIN", startedAt = ZonedDateTime.now().minusDays(2)
                 ),
                 ExternalMatch(
-                    code = "MT2", home = testTeam3Id!!, away = testTeam4Id!!, status = MatchStatus.IN_PROGRESS,
+                    code = "MT2", home = testTeam3Code!!, away = testTeam4Code!!, status = MatchStatus.IN_PROGRESS,
                     homeGoals = 0, awayGoals = 2, substatus = "14' PT", startedAt = ZonedDateTime.now().minusMinutes(14)
                 ),
                 ExternalMatch(
-                    code = "MT3", home = testTeam4Id!!, away = testTeam5Id!!, status = MatchStatus.NOT_STARTED,
+                    code = "MT3", home = testTeam5Code!!, away = testTeam6Code!!, status = MatchStatus.NOT_STARTED,
                     homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().plusDays(2)
                 ),
             )
@@ -766,6 +783,7 @@ class UserIntegrationTest {
                         Assertions.assertEquals(1, it.prediction!!.homeGoals)
                         Assertions.assertEquals(1, it.prediction!!.awayGoals)
                     }
+
                     testMatch3Id -> {
                         Assertions.assertEquals(2, it.prediction!!.homeGoals)
                         Assertions.assertEquals(0, it.prediction!!.awayGoals)
@@ -784,6 +802,7 @@ class UserIntegrationTest {
                         Assertions.assertEquals(1, it.prediction!!.homeGoals)
                         Assertions.assertEquals(1, it.prediction!!.awayGoals)
                     }
+
                     testMatch3Id -> {
                         Assertions.assertEquals(2, it.prediction!!.homeGoals)
                         Assertions.assertEquals(0, it.prediction!!.awayGoals)
@@ -802,6 +821,7 @@ class UserIntegrationTest {
                         Assertions.assertEquals(1, it.prediction!!.homeGoals)
                         Assertions.assertEquals(1, it.prediction!!.awayGoals)
                     }
+
                     testMatch3Id -> {
                         Assertions.assertEquals(2, it.prediction!!.homeGoals)
                         Assertions.assertEquals(0, it.prediction!!.awayGoals)
