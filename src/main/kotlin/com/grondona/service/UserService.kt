@@ -15,6 +15,7 @@ import com.grondona.model.dto.response.UserResponse
 import com.grondona.repository.MembershipRepository
 import com.grondona.repository.UserRepository
 import com.grondona.security.JwtService
+import com.grondona.service.mailing.EmailService
 import com.grondona.utils.hashMD5
 import java.time.LocalDateTime
 import java.util.UUID
@@ -28,6 +29,7 @@ class UserService(
     private val userRepository: UserRepository,
     private val predictionService: PredictionService,
     private val membershipRepository: MembershipRepository,
+    private val emailService: EmailService,
 ) {
 
     companion object {
@@ -107,10 +109,11 @@ class UserService(
             user = userRepository.save(user.copy(resetToken = null))
         }
 
-        val token = jwtService.generateToken(user.id!!, user.username)
+        val userId = user.id!!
+        val token = jwtService.generateToken(userId, user.username)
         return AuthenticatedUserResponse(
             token = token,
-            userId = user.id,
+            userId = userId,
             username = user.username,
             email = user.email,
             fullname = user.fullname,
@@ -131,8 +134,9 @@ class UserService(
         }
 
         val resetToken = generateResetToken()
-        user = userRepository.save(user.copy(resetToken = resetToken))
-        logger.info("Reset token generated for user={}", request.user)
+        user = userRepository.save(user.copy(resetToken = hashMD5(resetToken)))
+        emailService.sendPasswordResetEmail(to = user.email, token = resetToken)
+        logger.info("Reset token generated and emailed for user={}", request.user)
     }
 
     @Transactional

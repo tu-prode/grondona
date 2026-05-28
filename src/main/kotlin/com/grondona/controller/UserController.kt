@@ -2,6 +2,7 @@ package com.grondona.controller
 
 import com.grondona.exception.UnauthorizedException
 import com.grondona.model.dto.request.CreateUserRequest
+import com.grondona.model.dto.request.ForgottenPasswordRequest
 import com.grondona.model.dto.request.LoginUserRequest
 import com.grondona.model.dto.request.UpdateUserRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
@@ -45,6 +46,15 @@ class UserController(
         val response = userService.login(request)
         logger.info("POST /api/users/login - Login successful: userId={}", response.userId)
         return ResponseEntity.ok(response)
+    }
+
+    @PostMapping("/forgot-password")
+    fun forgotPassword(@Valid @RequestBody request: ForgottenPasswordRequest): ResponseEntity<Void> {
+        val request = request.sanitized()
+        logger.info("POST /api/users/forgot-password - Reset requested for user='{}'", request.user)
+        userService.forgottenPasswordToken(request)
+        logger.info("POST /api/users/forgot-password - Reset email sent for user='{}'", request.user)
+        return ResponseEntity.noContent().build()
     }
 
     @PatchMapping

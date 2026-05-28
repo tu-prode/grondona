@@ -9,11 +9,14 @@ import com.grondona.model.GroupRole
 import com.grondona.model.GroupUser
 import com.grondona.model.User
 import com.grondona.model.dto.request.CreateUserRequest
+import com.grondona.model.dto.request.ForgottenPasswordRequest
 import com.grondona.model.dto.request.LoginUserRequest
 import com.grondona.model.dto.request.UpdateUserRequest
+import com.grondona.utils.hashMD5
 import com.grondona.repository.MembershipRepository
 import com.grondona.repository.UserRepository
 import com.grondona.security.JwtService
+import com.grondona.service.mailing.EmailService
 import com.grondona.testGroup
 import com.grondona.testTournament
 import io.mockk.*
@@ -40,6 +43,9 @@ class UserServiceTest {
 
     @MockK
     private lateinit var membershipRepository: MembershipRepository
+
+    @MockK
+    private lateinit var emailService: EmailService
 
     @InjectMockKs
     private lateinit var userService: UserService
@@ -187,6 +193,40 @@ class UserServiceTest {
                 userService.login(request)
             }
             assertEquals("User or password incorrect", exception.message)
+        }
+    }
+
+    @Nested
+    inner class ForgottenPasswordTests {
+
+        @Test
+        fun `forgottenPasswordToken should save hashed token and send email`() {
+            val request = ForgottenPasswordRequest(user = "testuser")
+            val savedSlot = slot<User>()
+            val resetTokenSlot = slot<String>()
+            every { userRepository.findByUsername(request.user) } returns Optional.of(testUser)
+            every { userRepository.save(capture(savedSlot)) } answers { firstArg() }
+            every { emailService.sendPasswordResetEmail(to = testUser.email, token = capture(resetTokenSlot)) } just Runs
+
+            userService.forgottenPasswordToken(request)
+
+            assertTrue(resetTokenSlot.captured.startsWith("AGUANTE-EL-ROJO::"))
+            assertEquals(hashMD5(resetTokenSlot.captured), savedSlot.captured.resetToken)
+            verify { userRepository.save(any()) }
+            verify { emailService.sendPasswordResetEmail(to = testUser.email, token = resetTokenSlot.captured) }
+        }
+
+        @Test
+        fun `forgottenPasswordToken should throw when user not found`() {
+            val request = ForgottenPasswordRequest(user = "missing")
+            every { userRepository.findByUsername(request.user) } returns Optional.empty()
+            every { userRepository.findByEmail(request.user) } returns Optional.empty()
+
+            val exception = assertThrows<BadRequestException> {
+                userService.forgottenPasswordToken(request)
+            }
+            assertEquals("User not found", exception.message)
+            verify(exactly = 0) { emailService.sendPasswordResetEmail(any(), any()) }
         }
     }
 

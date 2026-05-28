@@ -9,6 +9,7 @@ import com.grondona.model.GroupRole
 import com.grondona.model.MembershipView
 import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.CreateUserRequest
+import com.grondona.model.dto.request.ForgottenPasswordRequest
 import com.grondona.model.dto.request.LoginUserRequest
 import com.grondona.model.dto.request.UpdateUserRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
@@ -146,6 +147,23 @@ class UserControllerTest {
                 .andExpect(status().isConflict)
                 .andExpect(jsonPath("$.data.field").value("username"))
                 .andExpect(jsonPath("$.data.rejectedValue").value("existinguser"))
+        }
+    }
+
+    @Nested
+    inner class ForgotPasswordEndpointTests {
+
+        @Test
+        fun `POST api users forgot-password should return 204`() {
+            val request = ForgottenPasswordRequest(user = "testuser")
+            every { userService.forgottenPasswordToken(any()) } just Runs
+
+            mockMvc.perform(
+                post("/api/users/forgot-password")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            )
+                .andExpect(status().isNoContent)
         }
     }
 

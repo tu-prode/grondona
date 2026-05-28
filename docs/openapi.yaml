@@ -172,6 +172,38 @@ paths:
                 message: Invalid username or password
                 timestamp: "2024-01-01T12:00:00"
 
+  /api/users/forgot-password:
+    post:
+      tags:
+        - Users
+      summary: User reset password
+      description: |
+        Triggers the workflow to create a temporary access token for the user
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequest"
+            example:
+              user: johndoe
+              password: secret123
+      responses:
+        "204":
+          description: Reset token successful
+        "400":
+          description: Invalid username or password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: 400
+                error: Bad Request
+                message: Invalid username or password
+                timestamp: "2024-01-01T12:00:00"
+
   /api/users/me:
     get:
       tags:
@@ -1724,6 +1756,16 @@ components:
           description: User password (min 6 characters)
           minLength: 6
           example: secret123
+
+    ForgotPasswordRequest:
+      type: object
+      required:
+        - user
+      properties:
+        user:
+          type: string
+          description: User for authentication (either username or email)
+          example: johndoe
 
     LoginRequest:
       type: object
