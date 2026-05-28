@@ -8,6 +8,7 @@ import com.grondona.model.LOCAL
 import com.grondona.model.MatchStatus
 import com.grondona.model.MatchSubstatus
 import com.grondona.model.PROD
+import com.grondona.model.TEST
 import com.grondona.now
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -66,7 +67,7 @@ interface MatchClient {
 }
 
 @Component
-@Profile(LOCAL)
+@Profile(LOCAL, TEST)
 class MocknaldoMatchClient(
     override val matchWebClient: WebClient,
 ) : MatchClient {

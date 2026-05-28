@@ -7,6 +7,7 @@ import com.grondona.model.Awards
 import com.grondona.model.ExternalMatch
 import com.grondona.model.MatchStatus
 import com.grondona.model.PredictionStatus
+import com.grondona.model.TEST
 import com.grondona.model.dto.request.CreateMatchRequest
 import com.grondona.model.dto.request.CreateMatchesRequest
 import com.grondona.model.dto.request.SubmitAwardPredictionRequest
@@ -32,7 +33,7 @@ import java.util.UUID
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
+@ActiveProfiles(TEST)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class WorldCupIntegrationTest {
@@ -72,7 +73,7 @@ class WorldCupIntegrationTest {
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-    inner class FullWorldcupTests {
+    inner class FullWorldCupTests {
 
         private lateinit var user1Id: UUID
         private lateinit var user2Id: UUID

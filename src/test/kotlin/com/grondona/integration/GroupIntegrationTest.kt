@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.grondona.createTestingTournamentRequest
 import com.grondona.createTestingUserRequest
 import com.grondona.model.GroupRole
+import com.grondona.model.TEST
 import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.CreateMatchRequest
@@ -40,7 +41,7 @@ import java.util.UUID
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
+@ActiveProfiles(TEST)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class GroupIntegrationTest {

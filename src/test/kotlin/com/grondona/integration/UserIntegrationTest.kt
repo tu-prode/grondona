@@ -6,6 +6,7 @@ import com.grondona.createTestingUserRequest
 import com.grondona.integration.utils.GrondonaClient
 import com.grondona.model.ExternalMatch
 import com.grondona.model.MatchStatus
+import com.grondona.model.TEST
 import com.grondona.model.Tournament
 import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.CreateMatchRequest
@@ -37,7 +38,7 @@ import java.util.UUID
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
+@ActiveProfiles(TEST)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class UserIntegrationTest {
