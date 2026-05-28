@@ -14,7 +14,7 @@ data class ExternalMatch(
     val homeGoals: Int,
     val awayGoals: Int,
     val status: MatchStatus,
-    val substatus: String?,
+    val substatus: String? = null,
     val code: String? = null,
     val homePenalties: Int? = null,
     val awayPenalties: Int? = null,

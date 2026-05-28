@@ -5,6 +5,7 @@ import com.grondona.client.MatchClient
 import com.grondona.integration.utils.GrondonaClient
 import com.grondona.model.Awards
 import com.grondona.model.ExternalMatch
+import com.grondona.model.MatchStatus
 import com.grondona.model.PredictionStatus
 import com.grondona.model.dto.request.CreateMatchRequest
 import com.grondona.model.dto.request.CreateMatchesRequest
@@ -158,8 +159,8 @@ class WorldCupIntegrationTest {
             val externalMatchesChunks = matchesToUpdate.chunked(12).map { matches ->
                 matches.map {
                     ExternalMatch(
-                        code = it.code, home = it.homeCode, away = it.awayCode, status = "COMPLETED",
-                        homeGoals = 0, awayGoals = 0, half = 2, minutes = 93,
+                        code = it.code, home = it.homeCode, away = it.awayCode,
+                        homeGoals = 0, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
                         startedAt = ZonedDateTime.now().minusMinutes(118), finishedAt = ZonedDateTime.now()
                     )
                 }
@@ -228,8 +229,8 @@ class WorldCupIntegrationTest {
             val externalMatchesResponses = listOf(externalMatchesResponse1, externalMatchesResponse2).map { matches ->
                 matches.map {
                     ExternalMatch(
-                        code = it.code, home = it.homeCode, away = it.awayCode, status = "COMPLETED",
-                        homeGoals = 0, awayGoals = 0, half = 2, minutes = 93,
+                        code = it.code, home = it.homeCode, away = it.awayCode,
+                        homeGoals = 0, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
                         startedAt = ZonedDateTime.now().minusMinutes(118), finishedAt = ZonedDateTime.now()
                     )
                 }
@@ -294,8 +295,8 @@ class WorldCupIntegrationTest {
         fun `should receive updates for every existing match in round of 16`() {
             every { matchClient.getMatches(any()) } returns grondona.matches.filter { it.code in WorldCupEngine.RO16_MATCHES_CODE }.map {
                 ExternalMatch(
-                    code = it.code, home = it.homeCode, away = it.awayCode, status = "COMPLETED",
-                    homeGoals = 0, awayGoals = 0, half = 2, minutes = 93,
+                    code = it.code, home = it.homeCode, away = it.awayCode,
+                    homeGoals = 0, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
                     startedAt = ZonedDateTime.now().minusMinutes(118), finishedAt = ZonedDateTime.now()
                 )
             }
@@ -365,8 +366,8 @@ class WorldCupIntegrationTest {
         fun `should receive updates for every existing match in the quarterfinals`() {
             every { matchClient.getMatches(any()) } returns grondona.matches.filter { it.code in WorldCupEngine.QUARTERFINALS_MATCHES_CODE }.map {
                 ExternalMatch(
-                    code = it.code, home = it.homeCode, away = it.awayCode, status = "COMPLETED",
-                    homeGoals = 1, awayGoals = 0, half = 2, minutes = 93,
+                    code = it.code, home = it.homeCode, away = it.awayCode,
+                    homeGoals = 1, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
                     startedAt = ZonedDateTime.now().minusMinutes(118), finishedAt = ZonedDateTime.now()
                 )
             }
@@ -436,8 +437,8 @@ class WorldCupIntegrationTest {
         fun `should receive updates for every existing match in the semifinals`() {
             every { matchClient.getMatches(any()) } returns grondona.matches.filter { it.code in WorldCupEngine.SEMIFINALS_MATCHES_CODE }.map {
                 ExternalMatch(
-                    code = it.code, home = it.homeCode, away = it.awayCode, status = "COMPLETED",
-                    homeGoals = 5, awayGoals = 0, half = 2, minutes = 93,
+                    code = it.code, home = it.homeCode, away = it.awayCode,
+                    homeGoals = 5, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
                     startedAt = ZonedDateTime.now().minusMinutes(118), finishedAt = ZonedDateTime.now()
                 )
             }
@@ -507,8 +508,8 @@ class WorldCupIntegrationTest {
         fun `should receive updates for every existing match in the last round`() {
             every { matchClient.getMatches(any()) } returns grondona.matches.filter { it.code in WorldCupEngine.LAST_ROUND_MATCHES_CODE }.map {
                 ExternalMatch(
-                    code = it.code, home = it.homeCode, away = it.awayCode, status = "COMPLETED",
-                    homeGoals = 3, awayGoals = 1, half = 2, minutes = 93,
+                    code = it.code, home = it.homeCode, away = it.awayCode,
+                    homeGoals = 3, awayGoals = 1, status = MatchStatus.FINISHED, substatus = "FIN",
                     startedAt = ZonedDateTime.now().minusMinutes(118), finishedAt = ZonedDateTime.now()
                 )
             }

@@ -26,7 +26,7 @@ data class Score(
 }
 
 enum class MatchStatus {
-    NOT_STARTED, IN_PROGRESS, FINISHED,
+    NOT_STARTED, IN_PROGRESS, FINISHED, SUSPENDED
 }
 
 enum class MatchSubstatus(val label: String) {

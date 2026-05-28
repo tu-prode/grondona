@@ -76,12 +76,12 @@ class MocknaldoMatchClient(
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
-    private class MocknaldoResponse(
+    internal class Response(
         val current: LocalDateTime,
-        val matches: List<MocknaldoMatch>,
+        val matches: List<Match>,
     ) {
         @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
-        private class MocknaldoMatch(
+        internal class Match(
             val code: String,
             val home: String,
             val away: String,
@@ -98,7 +98,7 @@ class MocknaldoMatchClient(
             val startedAt: ZonedDateTime,
             val endedAt: ZonedDateTime? = null,
         ) {
-            private enum class Status { TO_START, IN_PLAY, HALF_TIME, PENALTIES, COMPLETED }
+            internal enum class Status { TO_START, IN_PLAY, HALF_TIME, PENALTIES, COMPLETED }
 
             fun toExternalMatch(): ExternalMatch {
                 var newHomeGoals = 0
@@ -189,13 +189,13 @@ class MocknaldoMatchClient(
     override fun buildRequest() = matchWebClient.get()
         .uri { uriBuilder -> uriBuilder.path(MATCHES_PATH).build() }
 
-    override fun matchesResponseClass(): Class<*> = MocknaldoResponse::class.java
+    override fun matchesResponseClass(): Class<*> = Response::class.java
 
     override fun parseMatchesResponse(body: Any?): List<ExternalMatch> =
-        (body as? MocknaldoResponse)?.parseMatches() ?: emptyList()
+        (body as? Response)?.parseMatches() ?: emptyList()
 
     override fun onMatchesResponseReceived(body: Any?) {
-        val response = body as? MocknaldoResponse ?: return
+        val response = body as? Response ?: return
         now = response.current
     }
 }
@@ -216,11 +216,11 @@ class FootballDataMatchClient(
     }
 
     @JsonNaming(PropertyNamingStrategies.LowerCamelCaseStrategy::class)
-    private class FootballDataResponse(
+    internal class Response(
         val matches: List<Match> = emptyList(),
     ) {
         @JsonNaming(PropertyNamingStrategies.LowerCamelCaseStrategy::class)
-        private class Match(
+        internal class Match(
             val utcDate: ZonedDateTime,
             val lastUpdated: ZonedDateTime? = null,
             val status: String,
@@ -231,23 +231,23 @@ class FootballDataMatchClient(
             val injuryTime: Int? = null,
             val odds: Odds,
         ) {
-            private enum class Status { SCHEDULED, TIMED, IN_PLAY, PAUSED, FINISHED, POSTPONED, SUSPENDED, CANCELLED }
-            private enum class ScoreDuration { REGULAR, EXTRA_TIME, PENALTY_SHOOTOUT }
+            internal enum class Status { SCHEDULED, TIMED, IN_PLAY, PAUSED, FINISHED, POSTPONED, SUSPENDED, CANCELLED }
+            internal enum class ScoreDuration { REGULAR, EXTRA_TIME, PENALTY_SHOOTOUT }
 
             @JsonNaming(PropertyNamingStrategies.LowerCamelCaseStrategy::class)
-            private class Team(val tla: String)
+            internal class Team(val tla: String)
 
             @JsonNaming(PropertyNamingStrategies.LowerCamelCaseStrategy::class)
-            private class Score(
-                val duration: String?,
-                val fullTime: InnerScore?, val regularTime: InnerScore?, val extraTime: InnerScore?, val penalties: InnerScore?
+            internal class Score(
+                val duration: String? = null, val fullTime: InnerScore? = null,
+                val regularTime: InnerScore? = null, val extraTime: InnerScore? = null, val penalties: InnerScore? = null
             )
 
             @JsonNaming(PropertyNamingStrategies.LowerCamelCaseStrategy::class)
-            private class InnerScore(val home: Int?, val away: Int?)
+            internal class InnerScore(val home: Int? = null, val away: Int? = null)
 
             @JsonNaming(PropertyNamingStrategies.LowerCamelCaseStrategy::class)
-            private class Odds(val homeWin: Float, val draw: Float, val awayWin: Float)
+            internal class Odds(val homeWin: Float, val draw: Float, val awayWin: Float)
 
             private class ParsedScore(val homeGoals: Int, val awayGoals: Int, val homePenalties: Int? = null, val awayPenalties: Int? = null)
 
@@ -296,6 +296,7 @@ class FootballDataMatchClient(
                         newHomePenalties = parsedScore.homePenalties
                         newAwayPenalties = parsedScore.awayPenalties
                         newSubstatus = when {
+                            score.duration == ScoreDuration.PENALTY_SHOOTOUT.name -> MatchSubstatus.PENALTIES.label
                             minute == null -> "0' PT"
                             minute <= 45 && (injuryTime ?: 0) == 0 -> "$minute' PT"
                             minute == 45 -> "$minute+${injuryTime ?: 0}' PT"
@@ -305,7 +306,6 @@ class FootballDataMatchClient(
                             minute == 105 -> "${minute - 90}+${injuryTime ?: 0}' PTE"
                             minute <= 120 && (injuryTime ?: 0) == 0 -> "${minute - 105}' STE"
                             minute == 120 -> "${minute - 105}+${injuryTime ?: 0}' STE"
-                            score.duration == ScoreDuration.PENALTY_SHOOTOUT.name -> MatchSubstatus.PENALTIES.label
                             else -> null
                         }
                     }
@@ -321,6 +321,17 @@ class FootballDataMatchClient(
                     Status.FINISHED.name -> {
                         newStatus = MatchStatus.FINISHED
                         newSubstatus = MatchSubstatus.FINISHED.label
+                        val parsedScore = score()
+                        newHomeGoals = parsedScore.homeGoals
+                        newAwayGoals = parsedScore.awayGoals
+                        newHomePenalties = parsedScore.homePenalties
+                        newAwayPenalties = parsedScore.awayPenalties
+                        newFinishedAt = lastUpdated ?: ZonedDateTime.now()
+                    }
+
+                    Status.POSTPONED.name, Status.SUSPENDED.name, Status.CANCELLED.name -> {
+                        newStatus = MatchStatus.SUSPENDED
+                        newSubstatus = MatchSubstatus.SUSPENDED.label
                         val parsedScore = score()
                         newHomeGoals = parsedScore.homeGoals
                         newAwayGoals = parsedScore.awayGoals
@@ -355,8 +366,8 @@ class FootballDataMatchClient(
         .uri { uriBuilder -> uriBuilder.path(MATCHES_PATH).build() }
         .header(AUTH_TOKEN_HEADER, apiKey)
 
-    override fun matchesResponseClass(): Class<*> = FootballDataResponse::class.java
+    override fun matchesResponseClass(): Class<*> = Response::class.java
 
     override fun parseMatchesResponse(body: Any?): List<ExternalMatch> =
-        (body as? FootballDataResponse)?.parseMatches() ?: emptyList()
+        (body as? Response)?.parseMatches() ?: emptyList()
 }

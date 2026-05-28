@@ -27,6 +27,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.springframework.beans.factory.config.YamlProcessor
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.util.*
@@ -86,8 +87,8 @@ class MatchServiceTest {
     )
 
     private fun matchFromAPI(code: String, home: String, away: String) = ExternalMatch(
-        code = code, home = home, away = away, homeGoals = 1, awayGoals = 1, status = "IN_PLAY",
-        minutes = 30, half = 0, homeOdds = 1f, drawOdds = 1f, awayOdds = 1f, startedAt = ZonedDateTime.now(),
+        code = code, home = home, away = away, homeGoals = 1, awayGoals = 1, status = MatchStatus.IN_PROGRESS,
+        substatus = "30' PT", homeOdds = 1f, drawOdds = 1f, awayOdds = 1f, startedAt = ZonedDateTime.now(),
     )
 
     private fun predictionFromDB(
@@ -195,7 +196,7 @@ class MatchServiceTest {
         @Test
         fun `updateMatchesStatuses does not save matches that were not updated`() {
             val nonStartedCode = externalMatches.last().code
-            val externalMatches = externalMatches.dropLast(1) + externalMatches.last().copy(status = "TO_START")
+            val externalMatches = externalMatches.dropLast(1) + externalMatches.last().copy(status = MatchStatus.NOT_STARTED, substatus = null)
             every { matchClient.getMatches(testTournamentId) } returns externalMatches
             every { matchRepository.findByTournamentId(testTournamentId) } returns systemMatches
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
@@ -257,7 +258,8 @@ class MatchServiceTest {
 
         @Test
         fun `updateMatchesStatuses ignores system finished matches`() {
-            val externalMatches = externalMatches.dropLast(1) + externalMatches.last().copy(status = "COMPLETED")
+            val externalMatches = externalMatches.dropLast(1) +
+                    externalMatches.last().copy(status = MatchStatus.FINISHED, substatus = "FIN", finishedAt = ZonedDateTime.now())
             every { matchClient.getMatches(testTournamentId) } returns externalMatches
 
             val systemMatches = systemMatches.map { it.copy(status = MatchStatus.IN_PROGRESS, homeGoals = 1, awayGoals = 1) }.dropLast(1) +
@@ -285,7 +287,8 @@ class MatchServiceTest {
 
         @Test
         fun `updateMatchesStatuses updates match predictions when any of the matches has finished`() {
-            val externalMatches = externalMatches.dropLast(1) + externalMatches.last().copy(status = "COMPLETED", finishedAt = ZonedDateTime.now())
+            val externalMatches = externalMatches.dropLast(1) +
+                    externalMatches.last().copy(status = MatchStatus.FINISHED, substatus = "FIN", finishedAt = ZonedDateTime.now())
             every { matchClient.getMatches(testTournamentId) } returns externalMatches
 
             val systemMatches = systemMatches.map { it.copy(status = MatchStatus.IN_PROGRESS, homeGoals = 1, awayGoals = 1) }
@@ -407,7 +410,8 @@ class MatchServiceTest {
                 matchFromDB(code = "$it", home = "H$it", away = "A$it")
             }
             val externalMatches = (1..10).map {
-                matchFromAPI(code = "$it", home = "H$it", away = "A$it").copy(status = "TO_START", homeOdds = 1F, drawOdds = 2F, awayOdds = 3F)
+                matchFromAPI(code = "$it", home = "H$it", away = "A$it")
+                    .copy(status = MatchStatus.NOT_STARTED, substatus = null, homeOdds = 1F, drawOdds = 2F, awayOdds = 3F)
             }
 
             every { matchClient.getMatches(testTournamentId) } returns externalMatches

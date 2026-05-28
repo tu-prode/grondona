@@ -35,11 +35,11 @@ class WorldCupEngineTest {
 
     private fun matchFromAPI(
         home: String = "XXX", away: String = "XXX", homeGoals: Int = 0, awayGoals: Int = 0,
-        code: String = "XXX", minutes: Int = 0, half: Int = 0, status: String = "TO_START",
+        code: String = "XXX", status: MatchStatus = MatchStatus.NOT_STARTED, substatus: String? = null,
         homeOdds: Float = 1f, drawOdds: Float = 1f, awayOdds: Float = 1f,
     ) = ExternalMatch(
-        code = code, home = home, away = away, homeGoals = homeGoals, awayGoals = awayGoals, status = status,
-        minutes = minutes, half = half, homeOdds = homeOdds, drawOdds = drawOdds, awayOdds = awayOdds, startedAt = ZonedDateTime.now(),
+        code = code, home = home, away = away, homeGoals = homeGoals, awayGoals = awayGoals, status = status, substatus = substatus,
+        homeOdds = homeOdds, drawOdds = drawOdds, awayOdds = awayOdds, startedAt = ZonedDateTime.now(),
     )
 
     @BeforeEach
