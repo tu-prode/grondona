@@ -1805,6 +1805,10 @@ components:
           type: string
           description: Full name
           example: John Doe
+        should_reset_password:
+          type: boolean
+          description: Nullable flag indicating if the user has forgotten is password
+          example: true
 
     UserPermissions:
       description: The permissions of a user
