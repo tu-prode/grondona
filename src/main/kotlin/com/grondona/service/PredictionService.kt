@@ -10,6 +10,7 @@ import com.grondona.model.Group
 import com.grondona.model.GroupUser
 import com.grondona.model.Match
 import com.grondona.model.MatchPrediction
+import com.grondona.model.MatchStatus
 import com.grondona.model.PlayerPosition
 import com.grondona.model.TournamentStatus
 import com.grondona.model.User
@@ -34,7 +35,6 @@ import com.grondona.service.engine.PredictionsEngine
 import com.grondona.service.engine.WorldCupEngine
 import com.grondona.utils.consolidateGroupMatchPredictions
 import org.slf4j.LoggerFactory
-import org.springframework.beans.propertyeditors.ZoneIdEditor
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -59,7 +59,7 @@ class PredictionService(
         private val logger = LoggerFactory.getLogger(PredictionService::class.java)
 
         fun isMatchUnlocked(match: Match): Boolean =
-            match.startedAt.isAfter(now.atZone(ZoneId.systemDefault()).plus(15, ChronoUnit.MINUTES))
+            match.status == MatchStatus.NOT_STARTED && match.startedAt.isAfter(now.atZone(ZoneId.systemDefault()).plus(15, ChronoUnit.MINUTES))
     }
 
     internal fun checkMembership(userId: UUID, groupId: UUID): Pair<User, Group> {
@@ -318,10 +318,11 @@ class PredictionService(
         }
 
         val otherGroupsIds = userGroupsIds.filter { it != masterGroupId }
-        val masterGroupMatchPredictions = matchPredictionRepository.findByUserIdAndGroupId(userId, masterGroupId)
+        val masterGroupClonableMatchPredictions = matchPredictionRepository.findByUserIdAndGroupId(userId, masterGroupId)
+            .filter { isMatchUnlocked(it.match) }
         val matchPredictionsToClone = userGroups
             .filter { it.group.id in otherGroupsIds }
-            .flatMap { membership -> masterGroupMatchPredictions.map { it.copy(id = null, group = membership.group) } }
+            .flatMap { membership -> masterGroupClonableMatchPredictions.map { it.copy(id = null, group = membership.group) } }
         matchPredictionRepository.upsertAll(matchPredictionsToClone)
 
         val masterGroupAwardPredictions = awardPredictionRepository.findByUserIdAndGroupId(userId, masterGroupId)
@@ -376,8 +377,10 @@ class PredictionService(
             val updatedMembers = members.zip(recalculatedMembers).filter { (old, new) -> old != new }.map { it.second }
             membersToSave.addAll(updatedMembers)
 
-            logger.info("Updated elements for group={} in tournament={}, match-predictions={} award-predictions={} members={}",
-                groupId, tournamentId, updatedGroupMatchPredictions.size, updatedGroupAwardPredictions.size, updatedMembers.size)
+            logger.info(
+                "Updated elements for group={} in tournament={}, match-predictions={} award-predictions={} members={}",
+                groupId, tournamentId, updatedGroupMatchPredictions.size, updatedGroupAwardPredictions.size, updatedMembers.size
+            )
         }
 
         membershipRepository.saveAll(membersToSave)
