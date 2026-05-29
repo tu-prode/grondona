@@ -26,6 +26,8 @@ services:
       context: ..
       dockerfile: infra/Dockerfile
     container_name: grondona-app
+    env_file:
+      - infra/.env
     environment:
       # System configuration
       ENV: "local"
@@ -36,13 +38,13 @@ services:
       DB_PORT: 5432
       DB_NAME: "grondona"
       DB_USER: "grondona"
-      DB_PASSWORD: "grondona"
       # JWT configuration
-      JWT_SECRET: "shhh!"
       JWT_EXPIRATION: 86400000
       # Matches API configuration
       MATCHES_API_URL: "http://mocknaldo:8085"
-      MATCHES_API_KEY: "siuuu"
+      # Mailing configuration
+      MAIL_HOST: "smtp.sendgrid.net"
+      MAIL_PORT: "587"
     ports:
       - "8080:8080"
     depends_on:
