@@ -67,3 +67,10 @@ data class LoginUserRequest(
         password = password.trim()
     )
 }
+
+data class ForgottenPasswordRequest(
+    @field:NotBlank(message = "User is required")
+    val user: String,
+) {
+    fun sanitized() = ForgottenPasswordRequest(user = user.trim().lowercase())
+}

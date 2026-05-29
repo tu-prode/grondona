@@ -31,6 +31,9 @@ data class User(
     @Column(name = "password_hash", nullable = false)
     val passwordHash: String,
 
+    @Column(name = "reset_token")
+    val resetToken: String? = null,
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     val permissions: UserPermissions = UserPermissions.USER,
