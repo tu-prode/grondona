@@ -829,155 +829,153 @@ def all_in(target, elements):
 #######################################################################################################################
 
 def simulate_matches():
-    while not stop:
-        time.sleep(1)
-        if active:
+    if active:
 
-            global checkpoint, current, delta
-            TIME_LOCK.acquire()
-            current = current + timedelta(seconds=delta)
-            TIME_LOCK.release()
-            if not checkpoint or current.date() != checkpoint:
-                logger.debug(f"Simulating @ {current.date()}")
-                checkpoint = current.date()
+        global checkpoint, current, delta
+        TIME_LOCK.acquire()
+        current = current + (datetime.now() - current) * delta
+        TIME_LOCK.release()
+        if not checkpoint or current.date() != checkpoint:
+            logger.debug(f"Simulating @ {current.date()}")
+            checkpoint = current.date()
 
-            for match in MATCHES:
-                if match["status"] == "COMPLETED":
-                    continue
+        for match in MATCHES:
+            if match["status"] == "COMPLETED":
+                continue
 
-                match_ended = False
-                if current > match["started_at"]:
-                    new_status = "IN_PLAY"
-                    minutes = diff_minutes(current, match["started_at"])
-                    logger.debug(f'Updating match: {match["home"]}-{match["away"]}')
-                    logger.debug(f'Minutes from start timestamp: {minutes}\'')
+            match_ended = False
+            if current > match["started_at"]:
+                new_status = "IN_PLAY"
+                minutes = diff_minutes(current, match["started_at"])
+                logger.debug(f'Updating match: {match["home"]}-{match["away"]}')
+                logger.debug(f'Minutes from start timestamp: {minutes}\'')
 
-                    over90 = False
-                    new_half, new_minutes, new_ended_at = None, None, None
-                    home_yellows, away_yellows, home_reds, away_reds = None, None, None, None
-                    new_home_penalties, new_away_penalties = None, None
-                    new_added_time1, new_added_time2 = match["first_half_added_time"], match["second_half_added_time"]
-                    new_added_time3, new_added_time4 = match["first_overtime_added_time"], match["second_overtime_added_time"]
-                    if minutes < 45:
-                        # First half
+                over90 = False
+                new_half, new_minutes, new_ended_at = None, None, None
+                home_yellows, away_yellows, home_reds, away_reds = None, None, None, None
+                new_home_penalties, new_away_penalties = None, None
+                new_added_time1, new_added_time2 = match["first_half_added_time"], match["second_half_added_time"]
+                new_added_time3, new_added_time4 = match["first_overtime_added_time"], match["second_overtime_added_time"]
+                if minutes < 45:
+                    # First half
+                    new_half = 1
+                    new_minutes = minutes
+                else:
+                    if not new_added_time1:
+                        new_added_time1 = simulate_added(half=1)
+                        logger.debug(f'Added time for first half: {new_added_time1}\'')
+                    if minutes < 50 + new_added_time1:
+                        # First half (added time)
                         new_half = 1
-                        new_minutes = minutes
+                        new_minutes = 45 + new_added_time1
+                    elif minutes < 65 + new_added_time1:
+                        # Half-time
+                        new_half = 1
+                        new_minutes = 45 + new_added_time1
+                        new_status = "HALF_TIME"
+                    elif minutes < 110 + new_added_time1:
+                        # Second half
+                        new_half = 2
+                        new_minutes = minutes - (20 + new_added_time1)
                     else:
-                        if not new_added_time1:
-                            new_added_time1 = simulate_added(half=1)
-                            logger.debug(f'Added time for first half: {new_added_time1}\'')
-                        if minutes < 50 + new_added_time1:
-                            # First half (added time)
-                            new_half = 1
-                            new_minutes = 45 + new_added_time1
-                        elif minutes < 65 + new_added_time1:
-                            # Half-time
-                            new_half = 1
-                            new_minutes = 45 + new_added_time1
-                            new_status = "HALF_TIME"
-                        elif minutes < 110 + new_added_time1:
-                            # Second half
+                        # Second half (added time)
+                        over90 = True
+                        new_half = 2
+                        new_added_time2 = simulate_added(half=2)
+                        logger.debug(f'Added time for second half: {new_added_time1}\'')
+                        new_minutes = 90 + new_added_time2
+
+                home_goals, away_goals = simulate_score(new_minutes + or_zero(new_added_time1) + or_zero(new_added_time2), match)
+                new_home_goals = max(match["home_goals"], home_goals)
+                new_away_goals = max(match["away_goals"], away_goals)
+
+                if over90:
+                    home_yellows, away_yellows, home_reds, away_reds = simulate_cards(match)
+                    if int(match["code"]) <= 72:
+                        match_ended = True
+                        new_status = "COMPLETED"
+                    elif new_home_goals != new_away_goals:
+                        match_ended = True
+                        new_status = "COMPLETED"
+                    else:
+                        # Half-time
+                        if minutes < 115 + new_added_time1 + new_added_time2:
                             new_half = 2
-                            new_minutes = minutes - (20 + new_added_time1)
-                        else:
-                            # Second half (added time)
-                            over90 = True
-                            new_half = 2
-                            new_added_time2 = simulate_added(half=2)
-                            logger.debug(f'Added time for second half: {new_added_time1}\'')
                             new_minutes = 90 + new_added_time2
-
-                    home_goals, away_goals = simulate_score(new_minutes + or_zero(new_added_time1) + or_zero(new_added_time2), match)
-                    new_home_goals = max(match["home_goals"], home_goals)
-                    new_away_goals = max(match["away_goals"], away_goals)
-
-                    if over90:
-                        home_yellows, away_yellows, home_reds, away_reds = simulate_cards(match)
-                        if int(match["code"]) <= 72:
-                            match_ended = True
-                            new_status = "COMPLETED"
-                        elif new_home_goals != new_away_goals:
-                            match_ended = True
-                            new_status = "COMPLETED"
+                            new_status = "HALF_TIME"
                         else:
-                            # Half-time
-                            if minutes < 115 + new_added_time1 + new_added_time2:
-                                new_half = 2
-                                new_minutes = 90 + new_added_time2
+                            if not new_added_time3:
+                                new_added_time3 = simulate_added(half=3)
+                                logger.debug(f'Added time for first extra time: {new_added_time3}\'')
+                            if minutes < 130 + new_added_time1 + new_added_time2 + new_added_time3:
+                                new_half = 3
+                                new_minutes = minutes - (30 + new_added_time1 + new_added_time2)
+                                new_status = "IN_PLAY"
+                            elif minutes < 135 + new_added_time1 + new_added_time2 + new_added_time3:
+                                new_half = 3
+                                new_minutes = 105 + new_added_time3
                                 new_status = "HALF_TIME"
                             else:
-                                if not new_added_time3:
-                                    new_added_time3 = simulate_added(half=3)
-                                    logger.debug(f'Added time for first extra time: {new_added_time3}\'')
-                                if minutes < 130 + new_added_time1 + new_added_time2 + new_added_time3:
-                                    new_half = 3
-                                    new_minutes = minutes - (30 + new_added_time1 + new_added_time2)
-                                    new_status = "IN_PLAY"
-                                elif minutes < 135 + new_added_time1 + new_added_time2 + new_added_time3:
-                                    new_half = 3
-                                    new_minutes = 105 + new_added_time3
-                                    new_status = "HALF_TIME"
-                                else:
-                                    if not new_added_time4:
-                                        new_added_time4 = simulate_added(half=4)
-                                        logger.debug(f'Added time for second extra time: {new_added_time4}\'')
-                                    if minutes < 150 + new_added_time1 + new_added_time2 + new_added_time3 + new_added_time4:
-                                        new_half = 4
-                                        new_minutes = minutes - (35 + new_added_time1 + new_added_time2 + new_added_time3)
-                                        new_status = "IN_PLAY"
-                                    else:
-                                        match_ended = True
-                                        new_status = "COMPLETED"
-                                        new_minutes = 120 + new_added_time4
-                                        extra_home_yellows, extra_away_yellows, extra_home_red, extra_away_red = simulate_cards(match)
-                                        home_yellows += int(extra_home_yellows / 3)
-                                        away_yellows += int(extra_away_yellows / 3)
-                                        home_reds += int(extra_home_red / 3)
-                                        away_reds += int(extra_away_red / 3)
-
-                            home_extra_goals, away_extra_goals = simulate_score(new_minutes - 90 + or_zero(new_added_time3) + or_zero(new_added_time4), match)
-                            new_home_goals += home_extra_goals
-                            new_away_goals += away_extra_goals
-
-                            if match_ended and new_home_goals == new_away_goals:
-                                new_home_penalties, new_away_penalties = simulate_penalties()
+                                if not new_added_time4:
+                                    new_added_time4 = simulate_added(half=4)
+                                    logger.debug(f'Added time for second extra time: {new_added_time4}\'')
                                 if minutes < 150 + new_added_time1 + new_added_time2 + new_added_time3 + new_added_time4:
-                                    new_status = "PENALTIES"
+                                    new_half = 4
+                                    new_minutes = minutes - (35 + new_added_time1 + new_added_time2 + new_added_time3)
+                                    new_status = "IN_PLAY"
+                                else:
+                                    match_ended = True
+                                    new_status = "COMPLETED"
+                                    new_minutes = 120 + new_added_time4
+                                    extra_home_yellows, extra_away_yellows, extra_home_red, extra_away_red = simulate_cards(match)
+                                    home_yellows += int(extra_home_yellows / 3)
+                                    away_yellows += int(extra_away_yellows / 3)
+                                    home_reds += int(extra_home_red / 3)
+                                    away_reds += int(extra_away_red / 3)
 
-                    logger.debug(f'Updated match: ({new_status}) {match["home"]} {new_home_goals}-{new_away_goals} {match["away"]}, {new_minutes}\' ({new_half}H)')
-                    if match_ended:
-                        logger.info(f'Match ended: {match["home"]} {new_home_goals}-{new_away_goals} {match["away"]} [{or_zero(home_yellows)}A+{or_zero(home_reds)}R|{or_zero(away_yellows)}A+{or_zero(away_reds)}R]')
-                        new_ended_at = match["started_at"] + timedelta(minutes=(115 + new_added_time1 + new_added_time2))
+                        home_extra_goals, away_extra_goals = simulate_score(new_minutes - 90 + or_zero(new_added_time3) + or_zero(new_added_time4), match)
+                        new_home_goals += home_extra_goals
+                        new_away_goals += away_extra_goals
 
-                    MATCHES_LOCK.acquire()
-                    match["status"] = new_status
-                    match["home_goals"] = int(new_home_goals)
-                    match["away_goals"] = int(new_away_goals)
-                    match["half"] = int(new_half)
-                    match["minutes"] = int(new_minutes)
-                    match["first_half_added_time"] = new_added_time1
-                    match["second_half_added_time"] = new_added_time2
-                    match["first_overtime_added_time"] = new_added_time3
-                    match["second_overtime_added_time"] = new_added_time4
-                    match["home_yellows"] = home_yellows
-                    match["away_yellows"] = away_yellows
-                    match["home_reds"] = home_reds
-                    match["away_reds"] = away_reds
-                    match["ended_at"] = new_ended_at
-                    match["home_penalties"] = new_home_penalties
-                    match["away_penalties"] = new_away_penalties
-                    MATCHES_LOCK.release()
+                        if match_ended and new_home_goals == new_away_goals:
+                            new_home_penalties, new_away_penalties = simulate_penalties()
+                            if minutes < 150 + new_added_time1 + new_added_time2 + new_added_time3 + new_added_time4:
+                                new_status = "PENALTIES"
 
-                    if match_ended:
-                        check_round(match)
+                logger.debug(f'Updated match: ({new_status}) {match["home"]} {new_home_goals}-{new_away_goals} {match["away"]}, {new_minutes}\' ({new_half}H)')
+                if match_ended:
+                    logger.info(f'Match ended: {match["home"]} {new_home_goals}-{new_away_goals} {match["away"]} [{or_zero(home_yellows)}A+{or_zero(home_reds)}R|{or_zero(away_yellows)}A+{or_zero(away_reds)}R]')
+                    new_ended_at = match["started_at"] + timedelta(minutes=(115 + new_added_time1 + new_added_time2))
 
-                else:
-                    # Not yet played
-                    if not match["odds_calculated_at"] or diff_hours(current, match["odds_calculated_at"]) >= 24:
-                        match["home_odds"] = round(match["home_odds"] + random.choice([-1, 0, 1]) * match["home_odds"] * 0.02, 2)
-                        match["draw_odds"] = round(match["draw_odds"] + random.choice([-1, 0, 1]) * match["home_odds"] * 0.02, 2)
-                        match["away_odds"] = round(match["away_odds"] + random.choice([-1, 0, 1]) * match["home_odds"] * 0.02, 2)
-                        match["odds_calculated_at"] = current
+                MATCHES_LOCK.acquire()
+                match["status"] = new_status
+                match["home_goals"] = int(new_home_goals)
+                match["away_goals"] = int(new_away_goals)
+                match["half"] = int(new_half)
+                match["minutes"] = int(new_minutes)
+                match["first_half_added_time"] = new_added_time1
+                match["second_half_added_time"] = new_added_time2
+                match["first_overtime_added_time"] = new_added_time3
+                match["second_overtime_added_time"] = new_added_time4
+                match["home_yellows"] = home_yellows
+                match["away_yellows"] = away_yellows
+                match["home_reds"] = home_reds
+                match["away_reds"] = away_reds
+                match["ended_at"] = new_ended_at
+                match["home_penalties"] = new_home_penalties
+                match["away_penalties"] = new_away_penalties
+                MATCHES_LOCK.release()
+
+                if match_ended:
+                    check_round(match)
+
+            else:
+                # Not yet played
+                if not match["odds_calculated_at"] or diff_hours(current, match["odds_calculated_at"]) >= 24:
+                    match["home_odds"] = round(match["home_odds"] + random.choice([-1, 0, 1]) * match["home_odds"] * 0.02, 2)
+                    match["draw_odds"] = round(match["draw_odds"] + random.choice([-1, 0, 1]) * match["home_odds"] * 0.02, 2)
+                    match["away_odds"] = round(match["away_odds"] + random.choice([-1, 0, 1]) * match["home_odds"] * 0.02, 2)
+                    match["odds_calculated_at"] = current
 
 
 #######################################################################################################################
@@ -1100,14 +1098,11 @@ class ResultsMockerHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.end_headers()
-        TIME_LOCK.acquire()
-        MATCHES_LOCK.acquire()
+        simulate_matches()
         self.wfile.write(json.dumps({
             "current": current,
             "matches": [self.serialize_match(match) for match in MATCHES]
         }, default=json_serializer).encode())
-        MATCHES_LOCK.release()
-        TIME_LOCK.release()
 
     def _send_json(self, code, payload=None):
         self.send_response(code)
@@ -1158,10 +1153,6 @@ class ResultsMockerHandler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    logger.info("Starting daemon")
-    thread = threading.Thread(target=simulate_matches, daemon=True)
-    thread.start()
-
     server = HTTPServer((HOST, PORT), ResultsMockerHandler)
     logger.info(f"Server running on http://{HOST}:{PORT}")
     server.serve_forever()

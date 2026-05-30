@@ -27,7 +27,7 @@ services:
       dockerfile: infra/Dockerfile
     container_name: grondona-app
     env_file:
-      - infra/.env
+      - .env
     environment:
       # System configuration
       ENV: "local"
