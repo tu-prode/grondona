@@ -1,6 +1,8 @@
 package com.grondona.model.dto.response
 
 import com.grondona.model.Match
+import com.grondona.model.MatchGroup
+import com.grondona.model.MatchStage
 import com.grondona.model.MatchStatus
 import com.grondona.model.Tournament
 import java.time.LocalDateTime
@@ -13,6 +15,8 @@ data class MatchResponse(
     val code: String,
     val homeTeam: TeamResponse,
     val awayTeam: TeamResponse,
+    val stage: MatchStage,
+    val group: MatchGroup? = null,
     val homeQuota: Float,
     val awayQuota: Float,
     val drawQuota: Float,
@@ -32,6 +36,8 @@ data class MatchResponse(
             code = match.code,
             homeTeam = TeamResponse.from(match.homeTeam),
             awayTeam = TeamResponse.from(match.awayTeam),
+            stage = match.stage,
+            group = match.group,
             homeQuota = match.homeQuota,
             awayQuota = match.awayQuota,
             drawQuota = match.drawQuota,

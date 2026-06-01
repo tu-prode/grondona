@@ -14,8 +14,9 @@ data class ExternalMatch(
     val homeGoals: Int,
     val awayGoals: Int,
     val status: MatchStatus,
+    val stage: MatchStage,
+    val group: MatchGroup? = null,
     val substatus: String? = null,
-    val code: String? = null,
     val homePenalties: Int? = null,
     val awayPenalties: Int? = null,
     val homeOdds: Float? = null,
@@ -24,18 +25,20 @@ data class ExternalMatch(
     val startedAt: ZonedDateTime? = null,
     val finishedAt: ZonedDateTime? = null,
 ) {
-    fun toNewMatch(tournament: Tournament, availableTeams: Map<String, Team>): Match {
-        if (code == null || startedAt == null) {
-            throw ExternalServiceException(message = "Missing required parameters from the external service: code=$code, startedAt=$startedAt")
+    fun toNewMatch(tournament: Tournament, tournamentTeams: Map<String, Team>): Match {
+        if (startedAt == null) {
+            throw ExternalServiceException(message = "Missing required parameters from the external service: startedAt=$startedAt")
         }
 
-        val homeTeam = availableTeams[home]!!
-        val awayTeam = availableTeams[away]!!
+        val homeTeam = tournamentTeams[home]!!
+        val awayTeam = tournamentTeams[away]!!
         return Match(
-            code = code,
+            code = "XX",
             tournament = tournament,
             homeTeam = homeTeam,
             awayTeam = awayTeam,
+            stage = stage,
+            group = group,
             homeQuota = homeOdds?.oddsToQuota() ?: 0f,
             drawQuota = drawOdds?.oddsToQuota() ?: 0f,
             awayQuota = awayOdds?.oddsToQuota() ?: 0f,
@@ -44,25 +47,11 @@ data class ExternalMatch(
         )
     }
 
-    fun toMatchUpdated(matches: List<Match>): Match? =
-        matches.takeIf { status != MatchStatus.NOT_STARTED }
-            ?.filter { systemMatch -> systemMatch.status != MatchStatus.FINISHED }
-            ?.firstOrNull { systemMatch -> systemMatch.homeTeam.code == home && systemMatch.awayTeam.code == away }
+    fun toExistingMatch(matches: List<Match>): Match? =
+        matches.firstOrNull { systemMatch -> stage == systemMatch.stage && systemMatch.homeTeam.code == home && systemMatch.awayTeam.code == away }
             ?.copy(
                 homeGoals = homeGoals, awayGoals = awayGoals, homePenalties = homePenalties, awayPenalties = awayPenalties,
+                homeQuota = homeOdds?.oddsToQuota() ?: 0f, drawQuota = drawOdds?.oddsToQuota() ?: 0f, awayQuota = awayOdds?.oddsToQuota() ?: 0f,
                 status = status, substatus = substatus, finishedAt = if (status == MatchStatus.FINISHED) finishedAt ?: ZonedDateTime.now() else null,
             )
-
-    fun toQuotasUpdated(matches: List<Match>): Match? =
-        if (homeOdds == null || drawOdds == null || awayOdds == null) {
-            throw ExternalServiceException(message = "Missing required parameters from the external service: homeOdds=$homeOdds, drawOdds=$drawOdds, awayOdds=$awayOdds")
-        } else {
-            matches.filter { systemMatch -> systemMatch.status == MatchStatus.NOT_STARTED && PredictionService.isMatchUnlocked(systemMatch) }
-                .firstOrNull { it.homeTeam.name == home && it.awayTeam.name == away }
-                ?.takeIf { status == MatchStatus.NOT_STARTED }?.copy(
-                    homeQuota = homeOdds.oddsToQuota(),
-                    drawQuota = drawOdds.oddsToQuota(),
-                    awayQuota = awayOdds.oddsToQuota(),
-                )
-        }
 }

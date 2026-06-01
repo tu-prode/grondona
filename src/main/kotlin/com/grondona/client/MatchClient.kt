@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming
 import com.grondona.exception.ExternalServiceException
 import com.grondona.model.ExternalMatch
 import com.grondona.model.LOCAL
+import com.grondona.model.MatchGroup
+import com.grondona.model.MatchStage
 import com.grondona.model.MatchStatus
 import com.grondona.model.MatchSubstatus
 import com.grondona.model.PROD
@@ -89,6 +91,8 @@ class MocknaldoMatchClient(
             val away: String,
             val homeGoals: Int,
             val awayGoals: Int,
+            val stage: String,
+            val group: String? = null,
             val homePenalties: Int? = null,
             val awayPenalties: Int? = null,
             val minutes: Int,
@@ -101,8 +105,10 @@ class MocknaldoMatchClient(
             val endedAt: ZonedDateTime? = null,
         ) {
             internal enum class Status { TO_START, IN_PLAY, HALF_TIME, PENALTIES, COMPLETED }
+            internal enum class Stage { GS, R32, R16, QF, SF, TP, F }
+            internal enum class Group { A, B, C, D, E, F, G, H, I, J, K, L }
 
-            fun toExternalMatch(): ExternalMatch {
+            fun toExternalMatch(): ExternalMatch? {
                 var newHomeGoals = 0
                 var newAwayGoals = 0
                 var newStatus = MatchStatus.NOT_STARTED
@@ -166,10 +172,42 @@ class MocknaldoMatchClient(
                     }
                 }
 
+                val newStage = when (stage) {
+                    Stage.GS.name -> MatchStage.GROUP_STAGE
+                    Stage.R32.name -> MatchStage.ROUND_OF_32
+                    Stage.R16.name -> MatchStage.ROUND_OF_16
+                    Stage.QF.name -> MatchStage.QUARTERFINALS
+                    Stage.SF.name -> MatchStage.SEMIFINALS
+                    Stage.TP.name -> MatchStage.THIRD_PLACE
+                    Stage.F.name -> MatchStage.FINAL
+                    else -> null
+                }
+
+                if (newStage == null) {
+                    return null
+                }
+
+                val newGroup = when (group) {
+                    Group.A.name -> MatchGroup.GROUP_A
+                    Group.B.name -> MatchGroup.GROUP_B
+                    Group.C.name -> MatchGroup.GROUP_C
+                    Group.D.name -> MatchGroup.GROUP_D
+                    Group.E.name -> MatchGroup.GROUP_E
+                    Group.F.name -> MatchGroup.GROUP_F
+                    Group.G.name -> MatchGroup.GROUP_G
+                    Group.H.name -> MatchGroup.GROUP_H
+                    Group.I.name -> MatchGroup.GROUP_I
+                    Group.J.name -> MatchGroup.GROUP_J
+                    Group.K.name -> MatchGroup.GROUP_K
+                    Group.L.name -> MatchGroup.GROUP_L
+                    else -> null
+                }
+
                 return ExternalMatch(
-                    code = code,
                     home = home,
                     away = away,
+                    stage = newStage,
+                    group = newGroup,
                     homeGoals = newHomeGoals,
                     awayGoals = newAwayGoals,
                     status = newStatus,
@@ -185,7 +223,7 @@ class MocknaldoMatchClient(
             }
         }
 
-        fun parseMatches() = matches.map { it.toExternalMatch() }
+        fun parseMatches() = matches.mapNotNull { it.toExternalMatch() }
     }
 
     override fun buildRequest() = matchWebClient.get()
@@ -229,6 +267,7 @@ class FootballDataMatchClient(
             val homeTeam: Team,
             val awayTeam: Team,
             val stage: String,
+            val group: String? = null,
             val score: Score,
             val minute: Int? = null,
             val injuryTime: Int? = null,
@@ -237,6 +276,7 @@ class FootballDataMatchClient(
             internal enum class Status { SCHEDULED, TIMED, IN_PLAY, PAUSED, FINISHED, POSTPONED, SUSPENDED, CANCELLED }
             internal enum class ScoreDuration { REGULAR, EXTRA_TIME, PENALTY_SHOOTOUT }
             internal enum class Stage { GROUP_STAGE, LAST_32, LAST_16, QUARTER_FINALS, SEMI_FINALS, THIRD_PLACE, FINAL }
+            internal enum class Group { GROUP_A, GROUP_B, GROUP_C, GROUP_D, GROUP_E, GROUP_F, GROUP_G, GROUP_H, GROUP_I, GROUP_J, GROUP_K, GROUP_L }
 
             @JsonNaming(PropertyNamingStrategies.LowerCamelCaseStrategy::class)
             internal class Team(val tla: String? = null)
@@ -349,10 +389,42 @@ class FootballDataMatchClient(
                     }
                 }
 
+                val newStage = when (stage) {
+                    Stage.GROUP_STAGE.name -> MatchStage.GROUP_STAGE
+                    Stage.LAST_32.name -> MatchStage.ROUND_OF_32
+                    Stage.LAST_16.name -> MatchStage.ROUND_OF_16
+                    Stage.QUARTER_FINALS.name -> MatchStage.QUARTERFINALS
+                    Stage.SEMI_FINALS.name -> MatchStage.SEMIFINALS
+                    Stage.THIRD_PLACE.name -> MatchStage.THIRD_PLACE
+                    Stage.FINAL.name -> MatchStage.FINAL
+                    else -> null
+                }
+
+                if (newStage == null) {
+                    return null
+                }
+
+                val newGroup = when (group) {
+                    Group.GROUP_A.name -> MatchGroup.GROUP_A
+                    Group.GROUP_B.name -> MatchGroup.GROUP_B
+                    Group.GROUP_C.name -> MatchGroup.GROUP_C
+                    Group.GROUP_D.name -> MatchGroup.GROUP_D
+                    Group.GROUP_E.name -> MatchGroup.GROUP_E
+                    Group.GROUP_F.name -> MatchGroup.GROUP_F
+                    Group.GROUP_G.name -> MatchGroup.GROUP_G
+                    Group.GROUP_H.name -> MatchGroup.GROUP_H
+                    Group.GROUP_I.name -> MatchGroup.GROUP_I
+                    Group.GROUP_J.name -> MatchGroup.GROUP_J
+                    Group.GROUP_K.name -> MatchGroup.GROUP_K
+                    Group.GROUP_L.name -> MatchGroup.GROUP_L
+                    else -> null
+                }
+
                 return ExternalMatch(
-                    code = WorldCupEngine.calculateKnockoutCode(utcDate),
                     home = homeTeam.tla,
                     away = awayTeam.tla,
+                    stage = newStage,
+                    group = newGroup,
                     homeGoals = newHomeGoals,
                     awayGoals = newAwayGoals,
                     status = newStatus,

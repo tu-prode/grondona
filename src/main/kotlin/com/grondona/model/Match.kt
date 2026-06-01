@@ -29,6 +29,10 @@ enum class MatchStage {
     GROUP_STAGE, ROUND_OF_32, ROUND_OF_16, QUARTERFINALS, SEMIFINALS, THIRD_PLACE, FINAL
 }
 
+enum class MatchGroup {
+    GROUP_A, GROUP_B, GROUP_C, GROUP_D, GROUP_E, GROUP_F, GROUP_G, GROUP_H, GROUP_I, GROUP_J, GROUP_K, GROUP_L
+}
+
 enum class MatchStatus {
     NOT_STARTED, IN_PROGRESS, FINISHED, SUSPENDED
 }
@@ -63,6 +67,14 @@ data class Match(
     @JoinColumn(name = "away_team_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     val awayTeam: Team,
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    val stage: MatchStage,
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = true)
+    val group: MatchGroup? = null,
 
     @Column(name = "home_quota", nullable = false)
     val homeQuota: Float = 0F,

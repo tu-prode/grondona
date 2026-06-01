@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.grondona.consistsOf
 import com.grondona.createTestingGroupRequest
 import com.grondona.createTestingUserRequest
+import com.grondona.model.MatchGroup
+import com.grondona.model.MatchStage
 import com.grondona.model.PlayerPosition
 import com.grondona.model.Tournament
 import com.grondona.model.UserPermissions
@@ -14,7 +16,6 @@ import com.grondona.model.dto.request.CreateTeamRequest
 import com.grondona.model.dto.request.SubmitAwardPredictionRequest
 import com.grondona.model.dto.request.SubmitBulkMatchPredictionsRequest
 import com.grondona.model.dto.request.SubmitMatchPredictionRequest
-import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.model.dto.request.UpdateTournamentRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
 import com.grondona.model.dto.response.AwardPredictionsResponse
@@ -46,10 +47,17 @@ class GrondonaClient(
     val objectMapper: ObjectMapper,
 ) {
 
-    data class MinimalMatch(val id: UUID, val code: String, val homeId: UUID, val homeCode: String, val awayId: UUID, val awayCode: String)
+    data class MinimalMatch(
+        val id: UUID, val code: String, val stage: MatchStage, val group: MatchGroup?,
+        val homeId: UUID, val homeCode: String, val awayId: UUID, val awayCode: String
+    )
+
+    data class MinimalTeam(
+        val id: UUID, val code: String
+    )
 
     var teamsToCreate = 48
-    var matchesToCreate = WorldCupEngine.GS_MATCHES_CODE.last().toInt()
+    var matchesToCreate = 72
 
     lateinit var adminId: UUID
     lateinit var adminToken: String
@@ -58,7 +66,7 @@ class GrondonaClient(
     var userRepository: UserRepository? = null
     var tournamentRepository: TournamentRepository? = null
 
-    val teamIds: MutableList<UUID> = mutableListOf()
+    val teams: MutableList<MinimalTeam> = mutableListOf()
     val matches: MutableList<MinimalMatch> = mutableListOf()
 
     val playerIds: MutableList<UUID> = mutableListOf()
@@ -111,16 +119,16 @@ class GrondonaClient(
         assertTrue(tournamentRepository!!.existsById(WorldCupEngine.SYSTEM_TOURNAMENT_ID))
         tournamentId = WorldCupEngine.SYSTEM_TOURNAMENT_ID.toString()
 
-        teamIds.addAll((1..teamsToCreate).map {
+        teams.addAll((1..teamsToCreate).map {
             createTeam(adminToken, CreateTeamRequest(name = randomString(), code = randomString(maxSize = 3).uppercase(), icon = "---"))
         })
 
-        val playerIds = teamIds.flatMap {
+        val playerIds = teams.flatMap {
             listOf(
                 createPlayer(
                     adminToken,
                     CreatePlayerRequest(
-                        team = it,
+                        team = it.id,
                         name = randomString(),
                         position = PlayerPosition.MIDFIELDER,
                         birthdate = LocalDate.now().minusYears(27)
@@ -129,12 +137,12 @@ class GrondonaClient(
             )
         }
 
-        val goalkeeperIds = teamIds.flatMap {
+        val goalkeeperIds = teams.flatMap {
             listOf(
                 createPlayer(
                     adminToken,
                     CreatePlayerRequest(
-                        team = it,
+                        team = it.id,
                         name = randomString(),
                         position = PlayerPosition.GOALKEEPER,
                         birthdate = LocalDate.now().minusYears(32)
@@ -143,12 +151,12 @@ class GrondonaClient(
             )
         }
 
-        val youngsterIds = teamIds.flatMap {
+        val youngsterIds = teams.flatMap {
             listOf(
                 createPlayer(
                     adminToken,
                     CreatePlayerRequest(
-                        team = it,
+                        team = it.id,
                         name = randomString(),
                         position = PlayerPosition.FORWARD,
                         birthdate = LocalDate.now().minusYears(18)
@@ -165,9 +173,12 @@ class GrondonaClient(
         createMatches(
             adminToken, CreateMatchesRequest(
             matches = (1..matchesToCreate).map {
-                val homeTeam = teamIds.random()
-                val awayTeam = teamIds.otherRandom(homeTeam)
-                CreateMatchRequest(code = it.toString(), startedAt = ZonedDateTime.now().plusDays(1), homeTeam = homeTeam, awayTeam = awayTeam)
+                val homeTeam = teams.random()
+                val awayTeam = teams.otherRandom(homeTeam)
+                CreateMatchRequest(
+                    code = it.toString(), homeTeam = homeTeam.id, awayTeam = awayTeam.id,
+                    stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().plusDays(1)
+                )
             }
         ))
 
@@ -205,14 +216,15 @@ class GrondonaClient(
         return objectMapper.readValue(rawResponse.response.contentAsString, PlayerResponse::class.java).id
     }
 
-    private fun createTeam(token: String? = null, request: CreateTeamRequest): UUID {
+    private fun createTeam(token: String? = null, request: CreateTeamRequest): MinimalTeam {
         val rawResponse = mockMvc.perform(
             post("/api/tournaments/{tournamentId}/teams", tournamentId)
                 .header("Authorization", "Bearer ${token ?: adminToken}")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         ).andExpect(status().isCreated).andReturn()
-        return objectMapper.readValue(rawResponse.response.contentAsString, TeamResponse::class.java).id
+        val teamResponse = objectMapper.readValue(rawResponse.response.contentAsString, TeamResponse::class.java)
+        return MinimalTeam(id = teamResponse.id, code = teamResponse.code)
     }
 
     fun createMatches(token: String? = null, request: CreateMatchesRequest): List<MinimalMatch> {
@@ -225,8 +237,9 @@ class GrondonaClient(
         val newMatches = objectMapper.readValue(rawResponse.response.contentAsString, CreatedMatchesResponse::class.java)
             .matches.map {
                 MinimalMatch(
-                    id = it.id, code = it.code, homeId = it.homeTeam.id,
-                    homeCode = it.homeTeam.code, awayId = it.awayTeam.id, awayCode = it.awayTeam.code,
+                    id = it.id, code = it.code, stage = it.stage, group = it.group,
+                    homeId = it.homeTeam.id, homeCode = it.homeTeam.code,
+                    awayId = it.awayTeam.id, awayCode = it.awayTeam.code,
                 )
             }
         matches.addAll(newMatches)

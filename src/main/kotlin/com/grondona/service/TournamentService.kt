@@ -249,7 +249,7 @@ class TournamentService(
 
             Match(
                 code = matchReq.code, tournament = tournament,
-                homeTeam = homeTeam, awayTeam = awayTeam,
+                homeTeam = homeTeam, awayTeam = awayTeam, stage = matchReq.stage, group = matchReq.group,
                 startedAt = matchReq.startedAt, hasMultiplier = matchReq.hasMultiplier ?: false,
             )
         }

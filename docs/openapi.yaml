@@ -2310,6 +2310,7 @@ components:
         - code
         - home_team
         - away_team
+        - stage
         - started_at
       properties:
         code:
@@ -2331,6 +2332,10 @@ components:
           format: date-time
           description: The timestamp for the match start
           example: '2026-06-12 13:30:00 +03:00'
+        stage:
+          $ref: '#/components/schemas/MatchStage'
+        group:
+          $ref: '#/components/schemas/MatchGroup'
         has_multiplier:
           type: boolean
           description: Flag indicating if the match is a special match with a multiplier bonus
@@ -2358,6 +2363,35 @@ components:
           items:
             $ref: '#/components/schemas/MatchResponse'
 
+    MatchStage:
+      description: The stage of the match
+      type: string
+      enum:
+        - GROUP_STAGE
+        - ROUND_OF_32
+        - ROUND_OF_16
+        - QUARTERFINALS
+        - SEMIFINALS
+        - THIRD_PLACE
+        - FINAL
+
+    MatchGroup:
+      description: The group of the match
+      type: string
+      enum:
+        - GROUP_A
+        - GROUP_B
+        - GROUP_C
+        - GROUP_D
+        - GROUP_E
+        - GROUP_F
+        - GROUP_G
+        - GROUP_H
+        - GROUP_I
+        - GROUP_J
+        - GROUP_K
+        - GROUP_L
+
     MatchResponse:
       description: A match of a tournament
       type: object
@@ -2366,6 +2400,7 @@ components:
         - code
         - home_team
         - away_team
+        - stage
         - home_quota
         - away_quota
         - draw_quota
@@ -2382,6 +2417,10 @@ components:
           type: string
           description: Unique identifier for the match within the tournament
           example: "QF2"
+        stage:
+          $ref: '#/components/schemas/MatchStage'
+        group:
+          $ref: '#/components/schemas/MatchGroup'
         home_team:
           $ref: '#/components/schemas/TeamResponse'
         away_team:

@@ -3,6 +3,7 @@ package com.grondona.integration
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.grondona.createTestingTournamentRequest
 import com.grondona.createTestingUserRequest
+import com.grondona.model.MatchStage
 import com.grondona.model.PlayerPosition
 import com.grondona.model.TEST
 import com.grondona.model.UserPermissions
@@ -586,7 +587,7 @@ class PredictionIntegrationTest {
 
     private fun createMatch(code: String, homeTeamId: UUID, awayTeamId: UUID, startedAt: ZonedDateTime): MatchResponse {
         val request = CreateMatchesRequest(
-            matches = listOf(CreateMatchRequest(code = code, homeTeam = homeTeamId, awayTeam = awayTeamId, startedAt = startedAt))
+            matches = listOf(CreateMatchRequest(code = code, homeTeam = homeTeamId, awayTeam = awayTeamId, stage = MatchStage.GROUP_STAGE, startedAt = startedAt))
         )
         val result = mockMvc.perform(
             post("/api/tournaments/{tournamentId}/matches", tournamentId)

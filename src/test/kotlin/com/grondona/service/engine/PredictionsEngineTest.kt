@@ -7,6 +7,7 @@ import com.grondona.model.Group
 import com.grondona.model.GroupUser
 import com.grondona.model.Match
 import com.grondona.model.MatchPrediction
+import com.grondona.model.MatchStage
 import com.grondona.model.MatchStatus
 import com.grondona.model.Player
 import com.grondona.model.PlayerPosition
@@ -51,19 +52,13 @@ class PredictionsEngineTest {
     )
 
     private fun testMatch(
-        homeGoals: Int,
-        awayGoals: Int,
-        homeQuota: Float = 0f,
-        awayQuota: Float = 0f,
-        drawQuota: Float = 0f,
-        hasMultiplier: Boolean = false
+        homeGoals: Int, awayGoals: Int, hasMultiplier: Boolean = false,
+        homeQuota: Float = 0f, awayQuota: Float = 0f, drawQuota: Float = 0f
     ) = Match(
-        id = UUID.randomUUID(), code = "MATCH", tournament = anyTournament,
-        homeTeam = anyTeam, awayTeam = anyTeam, status = MatchStatus.FINISHED,
-        homeGoals = homeGoals, awayGoals = awayGoals, hasMultiplier = hasMultiplier,
-        homeQuota = homeQuota, awayQuota = awayQuota, drawQuota = drawQuota,
-        startedAt = ZonedDateTime.now().minusHours(2),
-        finishedAt = ZonedDateTime.now().minusHours(1),
+        id = UUID.randomUUID(), code = "MATCH", tournament = anyTournament, stage = MatchStage.GROUP_STAGE,
+        homeTeam = anyTeam, awayTeam = anyTeam, status = MatchStatus.FINISHED, homeGoals = homeGoals, awayGoals = awayGoals,
+        hasMultiplier = hasMultiplier, homeQuota = homeQuota, awayQuota = awayQuota, drawQuota = drawQuota,
+        startedAt = ZonedDateTime.now().minusHours(2), finishedAt = ZonedDateTime.now().minusHours(1),
     )
 
     private fun testMatchPrediction(match: Match, homeGoals: Int, awayGoals: Int): MatchPrediction {

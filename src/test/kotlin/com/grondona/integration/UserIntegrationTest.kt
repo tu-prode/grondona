@@ -5,6 +5,8 @@ import com.grondona.client.MatchClient
 import com.grondona.createTestingUserRequest
 import com.grondona.integration.utils.GrondonaClient
 import com.grondona.model.ExternalMatch
+import com.grondona.model.MatchGroup
+import com.grondona.model.MatchStage
 import com.grondona.model.MatchStatus
 import com.grondona.model.TEST
 import com.grondona.model.Tournament
@@ -119,9 +121,18 @@ class UserIntegrationTest {
 
         val createMatchesRequest = CreateMatchesRequest(
             matches = listOf(
-                CreateMatchRequest(code = "MT1", homeTeam = teamCodes[0].first, awayTeam = teamCodes[1].first, startedAt = ZonedDateTime.now().plusDays(10)),
-                CreateMatchRequest(code = "MT2", homeTeam = teamCodes[2].first, awayTeam = teamCodes[3].first, startedAt = ZonedDateTime.now().plusDays(11)),
-                CreateMatchRequest(code = "MT3", homeTeam = teamCodes[4].first, awayTeam = teamCodes[5].first, startedAt = ZonedDateTime.now().plusDays(11))
+                CreateMatchRequest(
+                    code = "MT1", homeTeam = teamCodes[0].first, awayTeam = teamCodes[1].first,
+                    stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().plusDays(10),
+                ),
+                CreateMatchRequest(
+                    code = "MT2", homeTeam = teamCodes[2].first, awayTeam = teamCodes[3].first,
+                    stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().plusDays(11),
+                ),
+                CreateMatchRequest(
+                    code = "MT3", homeTeam = teamCodes[4].first, awayTeam = teamCodes[5].first,
+                    stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().plusDays(11)
+                )
             )
         )
         val result = mockMvc.perform(
@@ -607,16 +618,16 @@ class UserIntegrationTest {
         fun `it starts match 1 and lock its predictions`() {
             every { matchClient.getMatches(any()) } returns listOf(
                 ExternalMatch(
-                    code = "MT1", home = testTeam1Code!!, away = testTeam2Code!!, status = MatchStatus.IN_PROGRESS,
-                    homeGoals = 1, awayGoals = 0, substatus = "25' PT", startedAt = ZonedDateTime.now().minusMinutes(25)
+                    home = testTeam1Code!!, away = testTeam2Code!!, stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A,
+                    status = MatchStatus.IN_PROGRESS, homeGoals = 1, awayGoals = 0, substatus = "25' PT", startedAt = ZonedDateTime.now().minusMinutes(25)
                 ),
                 ExternalMatch(
-                    code = "MT2", home = testTeam3Code!!, away = testTeam4Code!!, status = MatchStatus.NOT_STARTED,
-                    homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().plusDays(1)
+                    home = testTeam3Code!!, away = testTeam4Code!!, stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A,
+                    status = MatchStatus.NOT_STARTED, homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().plusDays(1)
                 ),
                 ExternalMatch(
-                    code = "MT3", home = testTeam5Code!!, away = testTeam6Code!!, status = MatchStatus.NOT_STARTED,
-                    homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().plusDays(2)
+                    home = testTeam5Code!!, away = testTeam6Code!!, stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A,
+                    status = MatchStatus.NOT_STARTED, homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().plusDays(2)
                 ),
             )
 
@@ -757,16 +768,16 @@ class UserIntegrationTest {
         fun `it starts match 2 and lock its predictions`() {
             every { matchClient.getMatches(any()) } returns listOf(
                 ExternalMatch(
-                    code = "MT1", home = testTeam1Code!!, away = testTeam2Code!!, status = MatchStatus.FINISHED,
-                    homeGoals = 5, awayGoals = 0, substatus = "FIN", startedAt = ZonedDateTime.now().minusDays(2)
+                    home = testTeam1Code!!, away = testTeam2Code!!, stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A,
+                    status = MatchStatus.FINISHED, homeGoals = 5, awayGoals = 0, substatus = "FIN", startedAt = ZonedDateTime.now().minusDays(2)
                 ),
                 ExternalMatch(
-                    code = "MT2", home = testTeam3Code!!, away = testTeam4Code!!, status = MatchStatus.IN_PROGRESS,
-                    homeGoals = 0, awayGoals = 2, substatus = "14' PT", startedAt = ZonedDateTime.now().minusMinutes(14)
+                    home = testTeam3Code!!, away = testTeam4Code!!, stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A,
+                    status = MatchStatus.IN_PROGRESS, homeGoals = 0, awayGoals = 2, substatus = "14' PT", startedAt = ZonedDateTime.now().minusMinutes(14)
                 ),
                 ExternalMatch(
-                    code = "MT3", home = testTeam5Code!!, away = testTeam6Code!!, status = MatchStatus.NOT_STARTED,
-                    homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().plusDays(2)
+                    home = testTeam5Code!!, stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A, away = testTeam6Code!!,
+                    status = MatchStatus.NOT_STARTED, homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().plusDays(2)
                 ),
             )
 

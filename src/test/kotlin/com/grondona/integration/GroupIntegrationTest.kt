@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.grondona.createTestingTournamentRequest
 import com.grondona.createTestingUserRequest
 import com.grondona.model.GroupRole
+import com.grondona.model.MatchStage
 import com.grondona.model.TEST
 import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.CreateGroupRequest
@@ -839,12 +840,14 @@ class GroupIntegrationTest {
                         code = "FLOW-1",
                         homeTeam = UUID.fromString(team1Id),
                         awayTeam = UUID.fromString(team2Id),
+                        stage = MatchStage.GROUP_STAGE,
                         startedAt = ZonedDateTime.now().plusDays(10),
                     ),
                     CreateMatchRequest(
                         code = "FLOW-2",
                         homeTeam = UUID.fromString(team2Id),
                         awayTeam = UUID.fromString(team1Id),
+                        stage = MatchStage.GROUP_STAGE,
                         startedAt = ZonedDateTime.now().plusDays(11),
                     )
                 )

@@ -1,6 +1,8 @@
 package com.grondona.model.dto.request
 
 import com.grondona.model.Awards
+import com.grondona.model.MatchGroup
+import com.grondona.model.MatchStage
 import com.grondona.model.PlayerPosition
 import com.grondona.model.TournamentStatus
 import jakarta.validation.constraints.NotBlank
@@ -70,6 +72,11 @@ data class CreateMatchRequest(
 
     @field:NotNull(message = "Start date is required")
     val startedAt: ZonedDateTime,
+
+    @field:NotNull(message = "Stage is required")
+    val stage: MatchStage,
+
+    val group: MatchGroup? = null,
 
     val hasMultiplier: Boolean? = null,
 )
