@@ -61,41 +61,40 @@ class WorldCupIntegrationTest {
 
     lateinit var grondona: GrondonaClient
 
-    private val ROUND_OF_32_MATCHES_CODE = (73..88).map { it.toString() }
-    private val ROUND_OF_16_MATCHES_CODE = (89..96).map { it.toString() }
-    private val QUARTERFINALS_MATCHES_CODE = (97..100).map { it.toString() }
-    private val SEMIFINALS_MATCHES_CODE = (100..102).map { it.toString() }
-    private val LAST_ROUND_MATCHES_CODE = (100..102).map { it.toString() }
+    private lateinit var user1Id: UUID
+    private lateinit var user2Id: UUID
+    private lateinit var user1Token: String
+    private lateinit var user2Token: String
 
-    @BeforeAll
-    fun setUp() {
-        testDatabaseCleaner.cleanAll()
-        clearMocks(matchClient)
+    private lateinit var groupId: UUID
 
-        grondona = GrondonaClient(mockMvc, objectMapper).withRepositories(userRepository, tournamentRepository)
-        grondona.init()
-    }
+    private lateinit var champion: UUID
+    private lateinit var topScorer: UUID
+    private lateinit var bestPlayer: UUID
+    private lateinit var bestGoalkeeper: UUID
+    private lateinit var bestYoungPlayer: UUID
+
+    private val codesForLast32 = (73..88).map { it.toString() }
+    private val codesForLast16 = (89..96).map { it.toString() }
+    private val codesForQuarterfinals = (97..100).map { it.toString() }
+    private val codesForSemifinals = (101..102).map { it.toString() }
+    private val codesForLastRound = (103..104).map { it.toString() }
 
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
     inner class ManualWorldCupTests {
 
-        private lateinit var user1Id: UUID
-        private lateinit var user2Id: UUID
-        private lateinit var user1Token: String
-        private lateinit var user2Token: String
-
-        private lateinit var groupId: UUID
-
         private var qualifiedTeams = mutableListOf<UUID>()
 
-        private lateinit var champion: UUID
-        private lateinit var topScorer: UUID
-        private lateinit var bestPlayer: UUID
-        private lateinit var bestGoalkeeper: UUID
-        private lateinit var bestYoungPlayer: UUID
+        @BeforeAll
+        fun setUp() {
+            testDatabaseCleaner.cleanAll()
+            clearMocks(matchClient)
 
+            grondona = GrondonaClient(mockMvc, objectMapper).withRepositories(userRepository, tournamentRepository)
+            grondona.init()
+        }
 
         @Test
         @Order(1)
@@ -201,7 +200,7 @@ class WorldCupIntegrationTest {
         @Order(6)
         fun `should create new matches, for round of 32`() {
             qualifiedTeams = mutableListOf()
-            val newMatchesRequests = ROUND_OF_32_MATCHES_CODE.map {
+            val newMatchesRequests = codesForLast32.map {
                 val homeTeam: UUID = grondona.teams.map { team -> team.id }.otherRandom(*qualifiedTeams.toTypedArray())
                 qualifiedTeams.add(homeTeam)
                 val awayTeam = grondona.teams.map { team -> team.id }.otherRandom(*qualifiedTeams.toTypedArray())
@@ -218,11 +217,11 @@ class WorldCupIntegrationTest {
         @Test
         @Order(7)
         fun `should submit predictions for every match in the round of 32, for both users`() {
-            grondona.submitMatchPredictionsToGroup(user1Token, groupId, grondona.matches.filter { it.code in ROUND_OF_32_MATCHES_CODE }.map {
+            grondona.submitMatchPredictionsToGroup(user1Token, groupId, grondona.matches.filter { it.code in codesForLast32 }.map {
                 SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 0, awayGoals = 0)
             }, withAssertions = true)
 
-            grondona.submitMatchPredictionsToGroup(user2Token, groupId, grondona.matches.filter { it.code in ROUND_OF_32_MATCHES_CODE }.map {
+            grondona.submitMatchPredictionsToGroup(user2Token, groupId, grondona.matches.filter { it.code in codesForLast32 }.map {
                 SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 1, awayGoals = 1)
             }, withAssertions = true)
         }
@@ -230,7 +229,7 @@ class WorldCupIntegrationTest {
         @Test
         @Order(8)
         fun `should receive updates for every existing match in round of 32`() {
-            val matchesToUpdate = grondona.matches.filter { it.code in ROUND_OF_32_MATCHES_CODE }
+            val matchesToUpdate = grondona.matches.filter { it.code in codesForLast32 }
             val middle = (matchesToUpdate.size / 2) + 1
 
             val externalMatchesResponse1 = matchesToUpdate.take(middle)
@@ -276,7 +275,7 @@ class WorldCupIntegrationTest {
         @Order(10)
         fun `should create new matches, for round of 16`() {
             val newQualifiedTeams = mutableListOf<UUID>()
-            val newMatchesRequests = ROUND_OF_16_MATCHES_CODE.map {
+            val newMatchesRequests = codesForLast16.map {
                 val homeTeam: UUID = qualifiedTeams.otherRandom(*newQualifiedTeams.toTypedArray())
                 newQualifiedTeams.add(homeTeam)
                 val awayTeam = qualifiedTeams.otherRandom(*newQualifiedTeams.toTypedArray())
@@ -294,11 +293,11 @@ class WorldCupIntegrationTest {
         @Test
         @Order(11)
         fun `should submit predictions for every match in the round of 16, for both users`() {
-            grondona.submitMatchPredictionsToGroup(user1Token, groupId, grondona.matches.filter { it.code in ROUND_OF_16_MATCHES_CODE }.map {
+            grondona.submitMatchPredictionsToGroup(user1Token, groupId, grondona.matches.filter { it.code in codesForLast16 }.map {
                 SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 0, awayGoals = 0)
             }, withAssertions = true)
 
-            grondona.submitMatchPredictionsToGroup(user2Token, groupId, grondona.matches.filter { it.code in ROUND_OF_16_MATCHES_CODE }.map {
+            grondona.submitMatchPredictionsToGroup(user2Token, groupId, grondona.matches.filter { it.code in codesForLast16 }.map {
                 SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 1, awayGoals = 1)
             }, withAssertions = true)
         }
@@ -306,7 +305,7 @@ class WorldCupIntegrationTest {
         @Test
         @Order(12)
         fun `should receive updates for every existing match in round of 16`() {
-            every { matchClient.getMatches(any()) } returns grondona.matches.filter { it.code in ROUND_OF_16_MATCHES_CODE }.map {
+            every { matchClient.getMatches(any()) } returns grondona.matches.filter { it.code in codesForLast16 }.map {
                 ExternalMatch(
                     home = it.homeCode, away = it.awayCode, stage = it.stage, group = it.group,
                     homeGoals = 0, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
@@ -340,7 +339,7 @@ class WorldCupIntegrationTest {
         @Order(14)
         fun `should create new matches, for quarterfinals`() {
             val newQualifiedTeams = mutableListOf<UUID>()
-            val newMatchesRequests = QUARTERFINALS_MATCHES_CODE.map {
+            val newMatchesRequests = codesForQuarterfinals.map {
                 val homeTeam: UUID = qualifiedTeams.otherRandom(*newQualifiedTeams.toTypedArray())
                 newQualifiedTeams.add(homeTeam)
                 val awayTeam = qualifiedTeams.otherRandom(*newQualifiedTeams.toTypedArray())
@@ -361,7 +360,7 @@ class WorldCupIntegrationTest {
             grondona.submitMatchPredictionsToGroup(
                 user1Token,
                 groupId,
-                grondona.matches.filter { it.code in QUARTERFINALS_MATCHES_CODE }.map {
+                grondona.matches.filter { it.code in codesForQuarterfinals }.map {
                     SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 0, awayGoals = 0)
                 },
                 withAssertions = true
@@ -370,7 +369,7 @@ class WorldCupIntegrationTest {
             grondona.submitMatchPredictionsToGroup(
                 user2Token,
                 groupId,
-                grondona.matches.filter { it.code in QUARTERFINALS_MATCHES_CODE }.map {
+                grondona.matches.filter { it.code in codesForQuarterfinals }.map {
                     SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 1, awayGoals = 1)
                 },
                 withAssertions = true
@@ -380,7 +379,7 @@ class WorldCupIntegrationTest {
         @Test
         @Order(16)
         fun `should receive updates for every existing match in the quarterfinals`() {
-            every { matchClient.getMatches(any()) } returns grondona.matches.filter { it.code in QUARTERFINALS_MATCHES_CODE }.map {
+            every { matchClient.getMatches(any()) } returns grondona.matches.filter { it.code in codesForQuarterfinals }.map {
                 ExternalMatch(
                     home = it.homeCode, away = it.awayCode, stage = it.stage, group = it.group,
                     homeGoals = 1, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
@@ -414,7 +413,7 @@ class WorldCupIntegrationTest {
         @Order(18)
         fun `should create new matches, for the semifinals`() {
             val newQualifiedTeams = mutableListOf<UUID>()
-            val newMatchesRequests = SEMIFINALS_MATCHES_CODE.map {
+            val newMatchesRequests = codesForSemifinals.map {
                 val homeTeam: UUID = qualifiedTeams.otherRandom(*newQualifiedTeams.toTypedArray())
                 newQualifiedTeams.add(homeTeam)
                 val awayTeam = qualifiedTeams.otherRandom(*newQualifiedTeams.toTypedArray())
@@ -435,7 +434,7 @@ class WorldCupIntegrationTest {
             grondona.submitMatchPredictionsToGroup(
                 user1Token,
                 groupId,
-                grondona.matches.filter { it.code in SEMIFINALS_MATCHES_CODE }.map {
+                grondona.matches.filter { it.code in codesForSemifinals }.map {
                     SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 5, awayGoals = 0)
                 },
                 withAssertions = true
@@ -444,7 +443,7 @@ class WorldCupIntegrationTest {
             grondona.submitMatchPredictionsToGroup(
                 user2Token,
                 groupId,
-                grondona.matches.filter { it.code in SEMIFINALS_MATCHES_CODE }.map {
+                grondona.matches.filter { it.code in codesForSemifinals }.map {
                     SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 5, awayGoals = 1)
                 },
                 withAssertions = true
@@ -454,7 +453,7 @@ class WorldCupIntegrationTest {
         @Test
         @Order(20)
         fun `should receive updates for every existing match in the semifinals`() {
-            every { matchClient.getMatches(any()) } returns grondona.matches.filter { it.code in SEMIFINALS_MATCHES_CODE }.map {
+            every { matchClient.getMatches(any()) } returns grondona.matches.filter { it.code in codesForSemifinals }.map {
                 ExternalMatch(
                     home = it.homeCode, away = it.awayCode, stage = it.stage, group = it.group,
                     homeGoals = 5, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
@@ -488,7 +487,7 @@ class WorldCupIntegrationTest {
         @Order(22)
         fun `should create new matches, for the last round`() {
             val newQualifiedTeams = mutableListOf<UUID>()
-            val newMatchesRequests = LAST_ROUND_MATCHES_CODE.mapIndexed { idx, code ->
+            val newMatchesRequests = codesForLastRound.mapIndexed { idx, code ->
                 val homeTeam: UUID = qualifiedTeams.otherRandom(*newQualifiedTeams.toTypedArray())
                 newQualifiedTeams.add(homeTeam)
                 val awayTeam = qualifiedTeams.otherRandom(*newQualifiedTeams.toTypedArray())
@@ -509,7 +508,7 @@ class WorldCupIntegrationTest {
             grondona.submitMatchPredictionsToGroup(
                 user1Token,
                 groupId,
-                grondona.matches.filter { it.code in LAST_ROUND_MATCHES_CODE }.map {
+                grondona.matches.filter { it.code in codesForLastRound }.map {
                     SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 1, awayGoals = 0)
                 },
                 withAssertions = true
@@ -518,7 +517,7 @@ class WorldCupIntegrationTest {
             grondona.submitMatchPredictionsToGroup(
                 user2Token,
                 groupId,
-                grondona.matches.filter { it.code in LAST_ROUND_MATCHES_CODE }.map {
+                grondona.matches.filter { it.code in codesForLastRound }.map {
                     SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 3, awayGoals = 1)
                 },
                 withAssertions = true
@@ -528,7 +527,7 @@ class WorldCupIntegrationTest {
         @Test
         @Order(24)
         fun `should receive updates for every existing match in the last round`() {
-            every { matchClient.getMatches(any()) } returns grondona.matches.filter { it.code in LAST_ROUND_MATCHES_CODE }.map {
+            every { matchClient.getMatches(any()) } returns grondona.matches.filter { it.code in codesForLastRound }.map {
                 ExternalMatch(
                     home = it.homeCode, away = it.awayCode, stage = it.stage, group = it.group,
                     homeGoals = 3, awayGoals = 1, status = MatchStatus.FINISHED, substatus = "FIN",
@@ -611,6 +610,8 @@ class WorldCupIntegrationTest {
     @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
     inner class AutoWorldCupTests {
 
+        private var qualifiedTeams = mutableListOf<String>()
+
         private val codesToDates = mapOf(
             "73" to ZonedDateTime.parse("2026-06-28T12:00:00-07:00"),
             "74" to ZonedDateTime.parse("2026-06-29T16:30:00-04:00"),
@@ -646,22 +647,16 @@ class WorldCupIntegrationTest {
             "104" to ZonedDateTime.parse("2026-07-19T15:00:00-04:00"),
         )
 
-        private lateinit var user1Id: UUID
-        private lateinit var user2Id: UUID
-        private lateinit var user1Token: String
-        private lateinit var user2Token: String
-
-        private lateinit var groupId: UUID
-
-        private var qualifiedTeams = mutableListOf<String>()
-
-        private lateinit var champion: UUID
-        private lateinit var topScorer: UUID
-        private lateinit var bestPlayer: UUID
-        private lateinit var bestGoalkeeper: UUID
-        private lateinit var bestYoungPlayer: UUID
-
         private val externalMatches = mutableListOf<ExternalMatch>()
+
+        @BeforeAll
+        fun setUp() {
+            testDatabaseCleaner.cleanAll()
+            clearMocks(matchClient)
+
+            grondona = GrondonaClient(mockMvc, objectMapper).withRepositories(userRepository, tournamentRepository)
+            grondona.init()
+        }
 
         @Test
         @Order(1)
@@ -736,7 +731,7 @@ class WorldCupIntegrationTest {
                     homeGoals = 0, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
                     startedAt = ZonedDateTime.now().minusHours(2), finishedAt = ZonedDateTime.now()
                 )
-            } + ROUND_OF_32_MATCHES_CODE.map { code ->
+            } + codesForLast32.map { code ->
                 val homeTeam = grondona.teams.map { team -> team.code }.otherRandom(*qualifiedTeams.toTypedArray())
                 qualifiedTeams.add(homeTeam)
                 val awayTeam = grondona.teams.map { team -> team.code }.otherRandom(*qualifiedTeams.toTypedArray())
@@ -777,11 +772,11 @@ class WorldCupIntegrationTest {
         @Test
         @Order(6)
         fun `should submit predictions for every match in the round of 32, for both users`() {
-            grondona.submitMatchPredictionsToGroup(user1Token, groupId, grondona.matches.filter { it.code in ROUND_OF_32_MATCHES_CODE }.map {
+            grondona.submitMatchPredictionsToGroup(user1Token, groupId, grondona.matches.filter { it.code in codesForLast32 }.map {
                 SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 0, awayGoals = 0)
             }, withAssertions = true)
 
-            grondona.submitMatchPredictionsToGroup(user2Token, groupId, grondona.matches.filter { it.code in ROUND_OF_32_MATCHES_CODE }.map {
+            grondona.submitMatchPredictionsToGroup(user2Token, groupId, grondona.matches.filter { it.code in codesForLast32 }.map {
                 SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 1, awayGoals = 1)
             }, withAssertions = true)
         }
@@ -789,7 +784,7 @@ class WorldCupIntegrationTest {
         @Test
         @Order(7)
         fun `should receive updates for every existing match in round of 32, including new matches for round of 16`() {
-            val matchesToUpdate = grondona.matches.filter { it.code in ROUND_OF_32_MATCHES_CODE }
+            val matchesToUpdate = grondona.matches.filter { it.code in codesForLast32 }
             val newQualifiedTeams = mutableListOf<String>()
             qualifiedTeams = mutableListOf()
 
@@ -799,7 +794,7 @@ class WorldCupIntegrationTest {
                     homeGoals = 0, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
                     startedAt = ZonedDateTime.now().minusHours(2), finishedAt = ZonedDateTime.now()
                 )
-            } + ROUND_OF_16_MATCHES_CODE.map { code ->
+            } + codesForLast16.map { code ->
                 val homeTeam = grondona.teams.map { team -> team.code }.otherRandom(*qualifiedTeams.toTypedArray())
                 newQualifiedTeams.add(homeTeam)
                 val awayTeam = grondona.teams.map { team -> team.code }.otherRandom(*qualifiedTeams.toTypedArray())
@@ -840,11 +835,11 @@ class WorldCupIntegrationTest {
         @Test
         @Order(9)
         fun `should submit predictions for every match in the round of 16, for both users`() {
-            grondona.submitMatchPredictionsToGroup(user1Token, groupId, grondona.matches.filter { it.code in ROUND_OF_16_MATCHES_CODE }.map {
+            grondona.submitMatchPredictionsToGroup(user1Token, groupId, grondona.matches.filter { it.code in codesForLast16 }.map {
                 SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 0, awayGoals = 0)
             }, withAssertions = true)
 
-            grondona.submitMatchPredictionsToGroup(user2Token, groupId, grondona.matches.filter { it.code in ROUND_OF_16_MATCHES_CODE }.map {
+            grondona.submitMatchPredictionsToGroup(user2Token, groupId, grondona.matches.filter { it.code in codesForLast16 }.map {
                 SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 1, awayGoals = 1)
             }, withAssertions = true)
         }
@@ -852,7 +847,7 @@ class WorldCupIntegrationTest {
         @Test
         @Order(10)
         fun `should receive updates for every existing match in round of 16, including new matches for quarterfinals`() {
-            val matchesToUpdate = grondona.matches.filter { it.code in ROUND_OF_16_MATCHES_CODE }
+            val matchesToUpdate = grondona.matches.filter { it.code in codesForLast16 }
             val newQualifiedTeams = mutableListOf<String>()
             qualifiedTeams = mutableListOf()
 
@@ -862,7 +857,7 @@ class WorldCupIntegrationTest {
                     homeGoals = 0, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
                     startedAt = ZonedDateTime.now().minusHours(2), finishedAt = ZonedDateTime.now()
                 )
-            } + QUARTERFINALS_MATCHES_CODE.map { code ->
+            } + codesForQuarterfinals.map { code ->
                 val homeTeam = grondona.teams.map { team -> team.code }.otherRandom(*qualifiedTeams.toTypedArray())
                 newQualifiedTeams.add(homeTeam)
                 val awayTeam = grondona.teams.map { team -> team.code }.otherRandom(*qualifiedTeams.toTypedArray())
@@ -906,7 +901,7 @@ class WorldCupIntegrationTest {
             grondona.submitMatchPredictionsToGroup(
                 user1Token,
                 groupId,
-                grondona.matches.filter { it.code in QUARTERFINALS_MATCHES_CODE }.map {
+                grondona.matches.filter { it.code in codesForQuarterfinals }.map {
                     SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 0, awayGoals = 0)
                 },
                 withAssertions = true
@@ -915,7 +910,7 @@ class WorldCupIntegrationTest {
             grondona.submitMatchPredictionsToGroup(
                 user2Token,
                 groupId,
-                grondona.matches.filter { it.code in QUARTERFINALS_MATCHES_CODE }.map {
+                grondona.matches.filter { it.code in codesForQuarterfinals }.map {
                     SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 1, awayGoals = 1)
                 },
                 withAssertions = true
@@ -925,7 +920,7 @@ class WorldCupIntegrationTest {
         @Test
         @Order(13)
         fun `should receive updates for every existing match in the quarterfinals, including new matches for semifinals`() {
-            val matchesToUpdate = grondona.matches.filter { it.code in QUARTERFINALS_MATCHES_CODE }
+            val matchesToUpdate = grondona.matches.filter { it.code in codesForQuarterfinals }
             val newQualifiedTeams = mutableListOf<String>()
             qualifiedTeams = mutableListOf()
 
@@ -935,7 +930,7 @@ class WorldCupIntegrationTest {
                     homeGoals = 1, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
                     startedAt = ZonedDateTime.now().minusHours(2), finishedAt = ZonedDateTime.now()
                 )
-            } + SEMIFINALS_MATCHES_CODE.map { code ->
+            } + codesForSemifinals.map { code ->
                 val homeTeam = grondona.teams.map { team -> team.code }.otherRandom(*qualifiedTeams.toTypedArray())
                 newQualifiedTeams.add(homeTeam)
                 val awayTeam = grondona.teams.map { team -> team.code }.otherRandom(*qualifiedTeams.toTypedArray())
@@ -979,7 +974,7 @@ class WorldCupIntegrationTest {
             grondona.submitMatchPredictionsToGroup(
                 user1Token,
                 groupId,
-                grondona.matches.filter { it.code in SEMIFINALS_MATCHES_CODE }.map {
+                grondona.matches.filter { it.code in codesForSemifinals }.map {
                     SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 5, awayGoals = 0)
                 },
                 withAssertions = true
@@ -988,7 +983,7 @@ class WorldCupIntegrationTest {
             grondona.submitMatchPredictionsToGroup(
                 user2Token,
                 groupId,
-                grondona.matches.filter { it.code in SEMIFINALS_MATCHES_CODE }.map {
+                grondona.matches.filter { it.code in codesForSemifinals }.map {
                     SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 5, awayGoals = 1)
                 },
                 withAssertions = true
@@ -998,7 +993,7 @@ class WorldCupIntegrationTest {
         @Test
         @Order(16)
         fun `should receive updates for every existing match in the semifinals, including new matches for the last round`() {
-            val matchesToUpdate = grondona.matches.filter { it.code in QUARTERFINALS_MATCHES_CODE }
+            val matchesToUpdate = grondona.matches.filter { it.code in codesForQuarterfinals }
             val newQualifiedTeams = mutableListOf<String>()
             qualifiedTeams = mutableListOf()
 
@@ -1008,7 +1003,7 @@ class WorldCupIntegrationTest {
                     homeGoals = 5, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
                     startedAt = ZonedDateTime.now().minusHours(2), finishedAt = ZonedDateTime.now()
                 )
-            } + SEMIFINALS_MATCHES_CODE.map { code ->
+            } + codesForSemifinals.map { code ->
                 val homeTeam = grondona.teams.map { team -> team.code }.otherRandom(*qualifiedTeams.toTypedArray())
                 newQualifiedTeams.add(homeTeam)
                 val awayTeam = grondona.teams.map { team -> team.code }.otherRandom(*qualifiedTeams.toTypedArray())
@@ -1051,7 +1046,7 @@ class WorldCupIntegrationTest {
             grondona.submitMatchPredictionsToGroup(
                 user1Token,
                 groupId,
-                grondona.matches.filter { it.code in LAST_ROUND_MATCHES_CODE }.map {
+                grondona.matches.filter { it.code in codesForLastRound }.map {
                     SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 1, awayGoals = 0)
                 },
                 withAssertions = true
@@ -1060,7 +1055,7 @@ class WorldCupIntegrationTest {
             grondona.submitMatchPredictionsToGroup(
                 user2Token,
                 groupId,
-                grondona.matches.filter { it.code in LAST_ROUND_MATCHES_CODE }.map {
+                grondona.matches.filter { it.code in codesForLastRound }.map {
                     SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 3, awayGoals = 1)
                 },
                 withAssertions = true
@@ -1070,7 +1065,7 @@ class WorldCupIntegrationTest {
         @Test
         @Order(19)
         fun `should receive updates for every existing match in the last round`() {
-            val newExternalMatches = grondona.matches.filter { it.code in LAST_ROUND_MATCHES_CODE }.map {
+            val newExternalMatches = grondona.matches.filter { it.code in codesForLastRound }.map {
                 ExternalMatch(
                     home = it.homeCode, away = it.awayCode, stage = it.stage, group = it.group,
                     homeGoals = 3, awayGoals = 1, status = MatchStatus.FINISHED, substatus = "FIN",
