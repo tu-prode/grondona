@@ -30,7 +30,7 @@ services:
       - .env
     environment:
       # System configuration
-      ENV: "local"
+      ENV: "prod"
       NEW_MATCHES: "true"
       UPDATED_QUOTAS: "true"
       # DB configuration
@@ -41,7 +41,7 @@ services:
       # JWT configuration
       JWT_EXPIRATION: 86400000
       # Matches API configuration
-      MATCHES_API_URL: "http://mocknaldo:8085"
+      MATCHES_API_URL: "https://api.football-data.org/"
       # Mailing configuration
       MAIL_HOST: "smtp.sendgrid.net"
       MAIL_PORT: "587"

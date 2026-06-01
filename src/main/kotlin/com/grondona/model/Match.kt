@@ -25,6 +25,10 @@ data class Score(
     }
 }
 
+enum class MatchStage {
+    GROUP_STAGE, ROUND_OF_32, ROUND_OF_16, QUARTERFINALS, SEMIFINALS, THIRD_PLACE, FINAL
+}
+
 enum class MatchStatus {
     NOT_STARTED, IN_PROGRESS, FINISHED, SUSPENDED
 }

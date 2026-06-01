@@ -10,6 +10,7 @@ import com.grondona.model.MatchSubstatus
 import com.grondona.model.PROD
 import com.grondona.model.TEST
 import com.grondona.now
+import com.grondona.service.engine.WorldCupEngine
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Profile
@@ -227,6 +228,7 @@ class FootballDataMatchClient(
             val status: String,
             val homeTeam: Team,
             val awayTeam: Team,
+            val stage: String,
             val score: Score,
             val minute: Int? = null,
             val injuryTime: Int? = null,
@@ -234,9 +236,10 @@ class FootballDataMatchClient(
         ) {
             internal enum class Status { SCHEDULED, TIMED, IN_PLAY, PAUSED, FINISHED, POSTPONED, SUSPENDED, CANCELLED }
             internal enum class ScoreDuration { REGULAR, EXTRA_TIME, PENALTY_SHOOTOUT }
+            internal enum class Stage { GROUP_STAGE, LAST_32, LAST_16, QUARTER_FINALS, SEMI_FINALS, THIRD_PLACE, FINAL }
 
             @JsonNaming(PropertyNamingStrategies.LowerCamelCaseStrategy::class)
-            internal class Team(val tla: String)
+            internal class Team(val tla: String? = null)
 
             @JsonNaming(PropertyNamingStrategies.LowerCamelCaseStrategy::class)
             internal class Score(
@@ -269,7 +272,11 @@ class FootballDataMatchClient(
                 }
             }
 
-            fun toExternalMatch(): ExternalMatch {
+            fun toExternalMatch(): ExternalMatch? {
+                if (homeTeam.tla == null || awayTeam.tla == null) {
+                    return null
+                }
+
                 var newHomeGoals = 0
                 var newAwayGoals = 0
                 var newStatus = MatchStatus.NOT_STARTED
@@ -343,6 +350,7 @@ class FootballDataMatchClient(
                 }
 
                 return ExternalMatch(
+                    code = WorldCupEngine.calculateKnockoutCode(utcDate),
                     home = homeTeam.tla,
                     away = awayTeam.tla,
                     homeGoals = newHomeGoals,
@@ -360,7 +368,7 @@ class FootballDataMatchClient(
             }
         }
 
-        fun parseMatches() = matches.map { it.toExternalMatch() }
+        fun parseMatches() = matches.mapNotNull { it.toExternalMatch() }
     }
 
     override fun buildRequest() = matchWebClient.get()

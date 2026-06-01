@@ -7,6 +7,7 @@ import com.grondona.model.TournamentStatus
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.LocalDate
+import java.time.ZonedDateTime
 import java.util.UUID
 
 @Component
@@ -15,8 +16,44 @@ object WorldCupEngine : TournamentEngine {
     private val logger = LoggerFactory.getLogger(WorldCupEngine::class.java)
 
     val BEST_YOUNG_PLAYER_DATE_LIMIT: LocalDate = LocalDate.parse("2005-01-01")
-    const val API_TOURNAMENT_ID: String = "2173492"
     val SYSTEM_TOURNAMENT_ID: UUID = UUID.fromString("28652183-a2d6-4f33-a624-0d24645ce3cd")
+
+    fun calculateKnockoutCode(startedAt: ZonedDateTime): String? =
+        when (startedAt.toInstant()) {
+            ZonedDateTime.parse("2026-06-28T12:00:00-07:00").toInstant() -> 73
+            ZonedDateTime.parse("2026-06-29T16:30:00-04:00").toInstant() -> 74
+            ZonedDateTime.parse("2026-06-29T19:00:00-06:00").toInstant() -> 75
+            ZonedDateTime.parse("2026-06-29T12:00:00-05:00").toInstant() -> 76
+            ZonedDateTime.parse("2026-06-30T17:00:00-04:00").toInstant() -> 77
+            ZonedDateTime.parse("2026-06-30T12:00:00-05:00").toInstant() -> 78
+            ZonedDateTime.parse("2026-06-30T19:00:00-06:00").toInstant() -> 79
+            ZonedDateTime.parse("2026-07-01T12:00:00-04:00").toInstant() -> 80
+            ZonedDateTime.parse("2026-07-01T17:00:00-07:00").toInstant() -> 81
+            ZonedDateTime.parse("2026-07-01T13:00:00-07:00").toInstant() -> 82
+            ZonedDateTime.parse("2026-07-02T19:00:00-04:00").toInstant() -> 83
+            ZonedDateTime.parse("2026-07-02T12:00:00-07:00").toInstant() -> 84
+            ZonedDateTime.parse("2026-07-02T20:00:00-07:00").toInstant() -> 85
+            ZonedDateTime.parse("2026-07-03T18:00:00-04:00").toInstant() -> 86
+            ZonedDateTime.parse("2026-07-03T20:30:00-05:00").toInstant() -> 87
+            ZonedDateTime.parse("2026-07-03T13:00:00-05:00").toInstant() -> 88
+            ZonedDateTime.parse("2026-07-04T17:00:00-04:00").toInstant() -> 89
+            ZonedDateTime.parse("2026-07-04T12:00:00-05:00").toInstant() -> 90
+            ZonedDateTime.parse("2026-07-05T16:00:00-04:00").toInstant() -> 91
+            ZonedDateTime.parse("2026-07-05T18:00:00-06:00").toInstant() -> 92
+            ZonedDateTime.parse("2026-07-06T14:00:00-05:00").toInstant() -> 93
+            ZonedDateTime.parse("2026-07-06T17:00:00-07:00").toInstant() -> 94
+            ZonedDateTime.parse("2026-07-07T12:00:00-04:00").toInstant() -> 95
+            ZonedDateTime.parse("2026-07-07T13:00:00-07:00").toInstant() -> 96
+            ZonedDateTime.parse("2026-07-09T16:00:00-04:00").toInstant() -> 97
+            ZonedDateTime.parse("2026-07-10T12:00:00-07:00").toInstant() -> 98
+            ZonedDateTime.parse("2026-07-11T17:00:00-04:00").toInstant() -> 99
+            ZonedDateTime.parse("2026-07-11T20:00:00-05:00").toInstant() -> 100
+            ZonedDateTime.parse("2026-07-14T14:00:00-05:00").toInstant() -> 101
+            ZonedDateTime.parse("2026-07-15T15:00:00-04:00").toInstant() -> 102
+            ZonedDateTime.parse("2026-07-18T17:00:00-04:00").toInstant() -> 103
+            ZonedDateTime.parse("2026-07-19T15:00:00-04:00").toInstant() -> 104
+            else -> null
+        }?.toString()
 
     internal val GS_MATCHES_CODE: List<String> = (1..72).map { it.toString() }
     internal val RO32_MATCHES_CODE: List<String> = (73..88).map { it.toString() }
@@ -99,5 +136,7 @@ object WorldCupEngine : TournamentEngine {
 
     internal fun gatherTeamsByCode(matches: List<Match>) =
         matches.flatMap { listOf(it.homeTeam, it.awayTeam) }.distinct().associateBy { it.code }
+
+
 
 }
