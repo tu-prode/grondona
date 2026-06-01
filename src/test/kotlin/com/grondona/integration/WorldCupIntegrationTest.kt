@@ -661,6 +661,7 @@ class WorldCupIntegrationTest {
         private lateinit var bestGoalkeeper: UUID
         private lateinit var bestYoungPlayer: UUID
 
+        private val externalMatches = mutableListOf<ExternalMatch>()
 
         @Test
         @Order(1)
@@ -729,7 +730,7 @@ class WorldCupIntegrationTest {
             val matchesToUpdate = grondona.matches
             qualifiedTeams = mutableListOf()
 
-            val externalMatches = matchesToUpdate.map {
+            val newExternalMatches = matchesToUpdate.map {
                 ExternalMatch(
                     home = it.homeCode, away = it.awayCode, stage = it.stage, group = it.group,
                     homeGoals = 0, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
@@ -747,9 +748,10 @@ class WorldCupIntegrationTest {
                 )
             }
 
+            externalMatches.addAll(newExternalMatches)
             val externalMatchesChunks = externalMatches.chunked(12)
-            every { matchClient.getMatches(any()) } returnsMany externalMatchesChunks
 
+            every { matchClient.getMatches(any()) } returnsMany externalMatchesChunks
             externalMatchesChunks.forEach { _ -> matchScheduler.updateMatches() }
         }
 
@@ -791,7 +793,7 @@ class WorldCupIntegrationTest {
             val newQualifiedTeams = mutableListOf<String>()
             qualifiedTeams = mutableListOf()
 
-            val externalMatches = matchesToUpdate.map {
+            val newExternalMatches = matchesToUpdate.map {
                 ExternalMatch(
                     home = it.homeCode, away = it.awayCode, stage = it.stage, group = it.group,
                     homeGoals = 0, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
@@ -810,7 +812,10 @@ class WorldCupIntegrationTest {
             }
 
             qualifiedTeams = newQualifiedTeams
+            externalMatches.addAll(newExternalMatches)
+
             every { matchClient.getMatches(any()) } returns externalMatches
+            matchScheduler.updateMatches()
         }
 
         @Test
@@ -851,7 +856,7 @@ class WorldCupIntegrationTest {
             val newQualifiedTeams = mutableListOf<String>()
             qualifiedTeams = mutableListOf()
 
-            val externalMatches = matchesToUpdate.map {
+            val newExternalMatches = matchesToUpdate.map {
                 ExternalMatch(
                     home = it.homeCode, away = it.awayCode, stage = it.stage, group = it.group,
                     homeGoals = 0, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
@@ -870,7 +875,10 @@ class WorldCupIntegrationTest {
             }
 
             qualifiedTeams = newQualifiedTeams
+            externalMatches.addAll(newExternalMatches)
+
             every { matchClient.getMatches(any()) } returns externalMatches
+            matchScheduler.updateMatches()
         }
 
         @Test
@@ -921,7 +929,7 @@ class WorldCupIntegrationTest {
             val newQualifiedTeams = mutableListOf<String>()
             qualifiedTeams = mutableListOf()
 
-            val externalMatches = matchesToUpdate.map {
+            val newExternalMatches = matchesToUpdate.map {
                 ExternalMatch(
                     home = it.homeCode, away = it.awayCode, stage = it.stage, group = it.group,
                     homeGoals = 1, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
@@ -940,7 +948,10 @@ class WorldCupIntegrationTest {
             }
 
             qualifiedTeams = newQualifiedTeams
+            externalMatches.addAll(newExternalMatches)
+
             every { matchClient.getMatches(any()) } returns externalMatches
+            matchScheduler.updateMatches()
         }
 
         @Test
@@ -991,7 +1002,7 @@ class WorldCupIntegrationTest {
             val newQualifiedTeams = mutableListOf<String>()
             qualifiedTeams = mutableListOf()
 
-            val externalMatches = matchesToUpdate.map {
+            val newExternalMatches = matchesToUpdate.map {
                 ExternalMatch(
                     home = it.homeCode, away = it.awayCode, stage = it.stage, group = it.group,
                     homeGoals = 5, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
@@ -1010,7 +1021,9 @@ class WorldCupIntegrationTest {
             }
 
             qualifiedTeams = newQualifiedTeams
+            externalMatches.addAll(newExternalMatches)
             every { matchClient.getMatches(any()) } returns externalMatches
+            matchScheduler.updateMatches()
         }
 
         @Test
@@ -1057,7 +1070,7 @@ class WorldCupIntegrationTest {
         @Test
         @Order(19)
         fun `should receive updates for every existing match in the last round`() {
-            every { matchClient.getMatches(any()) } returns grondona.matches.filter { it.code in LAST_ROUND_MATCHES_CODE }.map {
+            val newExternalMatches = grondona.matches.filter { it.code in LAST_ROUND_MATCHES_CODE }.map {
                 ExternalMatch(
                     home = it.homeCode, away = it.awayCode, stage = it.stage, group = it.group,
                     homeGoals = 3, awayGoals = 1, status = MatchStatus.FINISHED, substatus = "FIN",
@@ -1065,6 +1078,8 @@ class WorldCupIntegrationTest {
                 )
             }
 
+            externalMatches.addAll(newExternalMatches)
+            every { matchClient.getMatches(any()) } returns externalMatches
             matchScheduler.updateMatches()
         }
 
