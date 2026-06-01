@@ -1,5 +1,6 @@
 package com.grondona.model.dto.response
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.grondona.model.Match
 import com.grondona.model.MatchGroup
 import com.grondona.model.MatchStage
@@ -57,12 +58,15 @@ data class MatchResponse(
 data class TournamentMatchesResponse(
     val tournamentId: UUID,
     val tournamentName: String,
-    val pastMatches: List<MatchResponse>,
-    val totalPastMatches: Int,
-    val liveMatches: List<MatchResponse>,
-    val totalLiveMatches: Int,
-    val nextMatches: List<MatchResponse>,
-    val totalNextMatches: Int,
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    val pastMatches: List<MatchResponse> = emptyList(),
+    val totalPastMatches: Int = 0,
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    val liveMatches: List<MatchResponse> = emptyList(),
+    val totalLiveMatches: Int = 0,
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    val nextMatches: List<MatchResponse> = emptyList(),
+    val totalNextMatches: Int = 0,
 ) {
     companion object {
         fun from(tournament: Tournament, matches: List<Match>, past: Int? = null, next: Int? = null, live: Int? = null): TournamentMatchesResponse {

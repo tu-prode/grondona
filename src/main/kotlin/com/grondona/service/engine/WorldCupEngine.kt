@@ -72,7 +72,7 @@ object WorldCupEngine : TournamentEngine {
 
     override fun generateMatchesCodes(newMatches: List<Match>): List<Match> =
         newMatches.mapNotNull {
-            calculateKnockoutCode(it.startedAt)?.let { code -> it.copy(code = calculateKnockoutCode(it.startedAt) + code) } ?: run {
+            calculateKnockoutCode(it.startedAt)?.let { code -> it.copy(code = code) } ?: run {
                 logger.error("Could not find code for match starting on {}", it.startedAt); null
             }
         }

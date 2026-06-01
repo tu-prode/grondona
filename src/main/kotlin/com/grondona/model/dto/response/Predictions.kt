@@ -1,5 +1,6 @@
 package com.grondona.model.dto.response
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.grondona.model.AwardPrediction
 import com.grondona.model.AwardPredictionView
 import com.grondona.model.AwardType
@@ -50,7 +51,8 @@ data class MatchPredictionResponse(
 
 data class GroupMatchPredictionsResponse(
     val group: GroupResponse,
-    val predictions: List<MatchPredictionResponse>
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    val predictions: List<MatchPredictionResponse> = emptyList(),
 ) {
     companion object {
         fun fromPredictions(group: Group, predictions: List<MatchPrediction>): GroupMatchPredictionsResponse =

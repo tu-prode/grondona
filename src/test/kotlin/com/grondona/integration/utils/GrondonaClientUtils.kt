@@ -25,6 +25,7 @@ import com.grondona.model.dto.response.GroupResponse
 import com.grondona.model.dto.response.MatchPredictionResponse
 import com.grondona.model.dto.response.PlayerResponse
 import com.grondona.model.dto.response.TeamResponse
+import com.grondona.model.dto.response.TournamentMatchesResponse
 import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.model.dto.response.UserResponse
 import com.grondona.otherRandom
@@ -169,14 +170,21 @@ class GrondonaClient(
         this.goalkeeperIds.addAll(goalkeeperIds)
         this.youngsterIds.addAll(youngsterIds)
 
-
+        val usedPairings = mutableSetOf<Pair<UUID, UUID>>()
         createMatches(
             adminToken, CreateMatchesRequest(
-            matches = (1..matchesToCreate).map {
-                val homeTeam = teams.random()
-                val awayTeam = teams.otherRandom(homeTeam)
+            matches = (1..matchesToCreate).map { index ->
+                var homeTeam = teams.random()
+                var awayTeam = teams.otherRandom(homeTeam)
+                var pairing = orderedPair(homeTeam.id, awayTeam.id)
+                while (pairing in usedPairings) {
+                    homeTeam = teams.random()
+                    awayTeam = teams.otherRandom(homeTeam)
+                    pairing = orderedPair(homeTeam.id, awayTeam.id)
+                }
+                usedPairings.add(pairing)
                 CreateMatchRequest(
-                    code = it.toString(), homeTeam = homeTeam.id, awayTeam = awayTeam.id,
+                    code = index.toString(), homeTeam = homeTeam.id, awayTeam = awayTeam.id,
                     stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().plusDays(1)
                 )
             }
@@ -225,6 +233,24 @@ class GrondonaClient(
         ).andExpect(status().isCreated).andReturn()
         val teamResponse = objectMapper.readValue(rawResponse.response.contentAsString, TeamResponse::class.java)
         return MinimalTeam(id = teamResponse.id, code = teamResponse.code)
+    }
+
+    fun syncMatches(token: String? = null) {
+        val rawResponse = mockMvc.perform(
+            get("/api/tournaments/{tournamentId}/matches", tournamentId)
+                .header("Authorization", "Bearer ${token ?: adminToken}")
+        ).andExpect(status().isOk).andReturn()
+        val response = objectMapper.readValue(rawResponse.response.contentAsString, TournamentMatchesResponse::class.java)
+        matches.clear()
+        matches.addAll(
+            (response.pastMatches + response.liveMatches + response.nextMatches).map {
+                MinimalMatch(
+                    id = it.id, code = it.code, stage = it.stage, group = it.group,
+                    homeId = it.homeTeam.id, homeCode = it.homeTeam.code,
+                    awayId = it.awayTeam.id, awayCode = it.awayTeam.code,
+                )
+            }
+        )
     }
 
     fun createMatches(token: String? = null, request: CreateMatchesRequest): List<MinimalMatch> {
@@ -338,3 +364,6 @@ class GrondonaClient(
     }
 
 }
+
+private fun orderedPair(first: UUID, second: UUID): Pair<UUID, UUID> =
+    if (first < second) first to second else second to first

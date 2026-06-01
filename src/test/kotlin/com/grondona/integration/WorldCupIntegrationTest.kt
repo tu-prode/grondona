@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import java.time.ZonedDateTime
 import java.util.UUID
@@ -34,6 +35,7 @@ import java.util.UUID
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles(TEST)
+@TestPropertySource(properties = ["NEW_MATCHES=true"])
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class WorldCupIntegrationTest {
@@ -357,23 +359,13 @@ class WorldCupIntegrationTest {
         @Test
         @Order(15)
         fun `should submit predictions for every match in the quarterfinals, for both users`() {
-            grondona.submitMatchPredictionsToGroup(
-                user1Token,
-                groupId,
-                grondona.matches.filter { it.code in codesForQuarterfinals }.map {
-                    SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 0, awayGoals = 0)
-                },
-                withAssertions = true
-            )
+            grondona.submitMatchPredictionsToGroup(user1Token, groupId, grondona.matches.filter { it.code in codesForQuarterfinals }.map {
+                SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 0, awayGoals = 0)
+            }, withAssertions = true)
 
-            grondona.submitMatchPredictionsToGroup(
-                user2Token,
-                groupId,
-                grondona.matches.filter { it.code in codesForQuarterfinals }.map {
-                    SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 1, awayGoals = 1)
-                },
-                withAssertions = true
-            )
+            grondona.submitMatchPredictionsToGroup(user2Token, groupId, grondona.matches.filter { it.code in codesForQuarterfinals }.map {
+                SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 1, awayGoals = 1)
+            }, withAssertions = true)
         }
 
         @Test
@@ -431,23 +423,13 @@ class WorldCupIntegrationTest {
         @Test
         @Order(19)
         fun `should submit predictions for every match in the semifinals, for both users`() {
-            grondona.submitMatchPredictionsToGroup(
-                user1Token,
-                groupId,
-                grondona.matches.filter { it.code in codesForSemifinals }.map {
-                    SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 5, awayGoals = 0)
-                },
-                withAssertions = true
-            )
+            grondona.submitMatchPredictionsToGroup(user1Token, groupId, grondona.matches.filter { it.code in codesForSemifinals }.map {
+                SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 5, awayGoals = 0)
+            }, withAssertions = true)
 
-            grondona.submitMatchPredictionsToGroup(
-                user2Token,
-                groupId,
-                grondona.matches.filter { it.code in codesForSemifinals }.map {
-                    SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 5, awayGoals = 1)
-                },
-                withAssertions = true
-            )
+            grondona.submitMatchPredictionsToGroup(user2Token, groupId, grondona.matches.filter { it.code in codesForSemifinals }.map {
+                SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 5, awayGoals = 1)
+            }, withAssertions = true)
         }
 
         @Test
@@ -505,23 +487,13 @@ class WorldCupIntegrationTest {
         @Test
         @Order(23)
         fun `should submit predictions for every match in the last round, for both users`() {
-            grondona.submitMatchPredictionsToGroup(
-                user1Token,
-                groupId,
-                grondona.matches.filter { it.code in codesForLastRound }.map {
-                    SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 1, awayGoals = 0)
-                },
-                withAssertions = true
-            )
+            grondona.submitMatchPredictionsToGroup(user1Token, groupId, grondona.matches.filter { it.code in codesForLastRound }.map {
+                SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 1, awayGoals = 0)
+            }, withAssertions = true)
 
-            grondona.submitMatchPredictionsToGroup(
-                user2Token,
-                groupId,
-                grondona.matches.filter { it.code in codesForLastRound }.map {
-                    SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 3, awayGoals = 1)
-                },
-                withAssertions = true
-            )
+            grondona.submitMatchPredictionsToGroup(user2Token, groupId, grondona.matches.filter { it.code in codesForLastRound }.map {
+                SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 3, awayGoals = 1)
+            }, withAssertions = true)
         }
 
         @Test
@@ -748,6 +720,7 @@ class WorldCupIntegrationTest {
 
             every { matchClient.getMatches(any()) } returnsMany externalMatchesChunks
             externalMatchesChunks.forEach { _ -> matchScheduler.updateMatches() }
+            grondona.syncMatches()
         }
 
         @Test
@@ -811,6 +784,7 @@ class WorldCupIntegrationTest {
 
             every { matchClient.getMatches(any()) } returns externalMatches
             matchScheduler.updateMatches()
+            grondona.syncMatches()
         }
 
         @Test
@@ -874,6 +848,7 @@ class WorldCupIntegrationTest {
 
             every { matchClient.getMatches(any()) } returns externalMatches
             matchScheduler.updateMatches()
+            grondona.syncMatches()
         }
 
         @Test
@@ -898,23 +873,13 @@ class WorldCupIntegrationTest {
         @Test
         @Order(12)
         fun `should submit predictions for every match in the quarterfinals, for both users`() {
-            grondona.submitMatchPredictionsToGroup(
-                user1Token,
-                groupId,
-                grondona.matches.filter { it.code in codesForQuarterfinals }.map {
-                    SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 0, awayGoals = 0)
-                },
-                withAssertions = true
-            )
+            grondona.submitMatchPredictionsToGroup(user1Token, groupId, grondona.matches.filter { it.code in codesForQuarterfinals }.map {
+                SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 0, awayGoals = 0)
+            }, withAssertions = true)
 
-            grondona.submitMatchPredictionsToGroup(
-                user2Token,
-                groupId,
-                grondona.matches.filter { it.code in codesForQuarterfinals }.map {
-                    SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 1, awayGoals = 1)
-                },
-                withAssertions = true
-            )
+            grondona.submitMatchPredictionsToGroup(user2Token, groupId, grondona.matches.filter { it.code in codesForQuarterfinals }.map {
+                SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 1, awayGoals = 1)
+            }, withAssertions = true)
         }
 
         @Test
@@ -947,6 +912,7 @@ class WorldCupIntegrationTest {
 
             every { matchClient.getMatches(any()) } returns externalMatches
             matchScheduler.updateMatches()
+            grondona.syncMatches()
         }
 
         @Test
@@ -971,29 +937,19 @@ class WorldCupIntegrationTest {
         @Test
         @Order(15)
         fun `should submit predictions for every match in the semifinals, for both users`() {
-            grondona.submitMatchPredictionsToGroup(
-                user1Token,
-                groupId,
-                grondona.matches.filter { it.code in codesForSemifinals }.map {
-                    SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 5, awayGoals = 0)
-                },
-                withAssertions = true
-            )
+            grondona.submitMatchPredictionsToGroup(user1Token, groupId, grondona.matches.filter { it.code in codesForSemifinals }.map {
+                SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 5, awayGoals = 0)
+            }, withAssertions = true)
 
-            grondona.submitMatchPredictionsToGroup(
-                user2Token,
-                groupId,
-                grondona.matches.filter { it.code in codesForSemifinals }.map {
-                    SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 5, awayGoals = 1)
-                },
-                withAssertions = true
-            )
+            grondona.submitMatchPredictionsToGroup(user2Token, groupId, grondona.matches.filter { it.code in codesForSemifinals }.map {
+                SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 5, awayGoals = 1)
+            }, withAssertions = true)
         }
 
         @Test
         @Order(16)
         fun `should receive updates for every existing match in the semifinals, including new matches for the last round`() {
-            val matchesToUpdate = grondona.matches.filter { it.code in codesForQuarterfinals }
+            val matchesToUpdate = grondona.matches.filter { it.code in codesForSemifinals }
             val newQualifiedTeams = mutableListOf<String>()
             qualifiedTeams = mutableListOf()
 
@@ -1003,15 +959,18 @@ class WorldCupIntegrationTest {
                     homeGoals = 5, awayGoals = 0, status = MatchStatus.FINISHED, substatus = "FIN",
                     startedAt = ZonedDateTime.now().minusHours(2), finishedAt = ZonedDateTime.now()
                 )
-            } + codesForSemifinals.map { code ->
+            } + codesForLastRound.mapIndexed { idx, code ->
                 val homeTeam = grondona.teams.map { team -> team.code }.otherRandom(*qualifiedTeams.toTypedArray())
                 newQualifiedTeams.add(homeTeam)
                 val awayTeam = grondona.teams.map { team -> team.code }.otherRandom(*qualifiedTeams.toTypedArray())
                 newQualifiedTeams.add(awayTeam)
 
                 ExternalMatch(
-                    home = homeTeam, away = awayTeam, stage = MatchStage.SEMIFINALS, homeGoals = 0, awayGoals = 0,
-                    status = MatchStatus.NOT_STARTED, startedAt = codesToDates[code]!!, homeOdds = 0f, drawOdds = 0f, awayOdds = 0f
+                    home = homeTeam, away = awayTeam,
+                    stage = if (idx == 0) MatchStage.THIRD_PLACE else MatchStage.FINAL,
+                    homeGoals = 0, awayGoals = 0, status = MatchStatus.NOT_STARTED,
+                    startedAt = codesToDates[code]!!, homeOdds = 0f, drawOdds = 0f, awayOdds = 0f,
+                    hasMultiplier = true,
                 )
             }
 
@@ -1019,6 +978,7 @@ class WorldCupIntegrationTest {
             externalMatches.addAll(newExternalMatches)
             every { matchClient.getMatches(any()) } returns externalMatches
             matchScheduler.updateMatches()
+            grondona.syncMatches()
         }
 
         @Test
@@ -1043,23 +1003,13 @@ class WorldCupIntegrationTest {
         @Test
         @Order(18)
         fun `should submit predictions for every match in the last round, for both users`() {
-            grondona.submitMatchPredictionsToGroup(
-                user1Token,
-                groupId,
-                grondona.matches.filter { it.code in codesForLastRound }.map {
-                    SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 1, awayGoals = 0)
-                },
-                withAssertions = true
-            )
+            grondona.submitMatchPredictionsToGroup(user1Token, groupId, grondona.matches.filter { it.code in codesForLastRound }.map {
+                SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 1, awayGoals = 0)
+            }, withAssertions = true)
 
-            grondona.submitMatchPredictionsToGroup(
-                user2Token,
-                groupId,
-                grondona.matches.filter { it.code in codesForLastRound }.map {
-                    SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 3, awayGoals = 1)
-                },
-                withAssertions = true
-            )
+            grondona.submitMatchPredictionsToGroup(user2Token, groupId, grondona.matches.filter { it.code in codesForLastRound }.map {
+                SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 3, awayGoals = 1)
+            }, withAssertions = true)
         }
 
         @Test
