@@ -30,8 +30,14 @@ data class ExternalMatch(
             throw ExternalServiceException(message = "Missing required parameters from the external service: startedAt=$startedAt")
         }
 
-        val homeTeam = tournamentTeams[home]!!
-        val awayTeam = tournamentTeams[away]!!
+        val homeTeam = tournamentTeams[home] ?: run {
+            throw ExternalServiceException(message = "Home team not found in the DB: home=$home")
+        }
+
+        val awayTeam = tournamentTeams[away] ?: run {
+            throw ExternalServiceException(message = "Away team not found in the DB: away=$away")
+        }
+
         return Match(
             code = "XX",
             tournament = tournament,
