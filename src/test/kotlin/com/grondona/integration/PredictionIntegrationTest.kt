@@ -18,14 +18,13 @@ import com.grondona.model.dto.request.SubmitMatchPredictionRequest
 import com.grondona.model.dto.request.UpdateUserRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
 import com.grondona.model.dto.response.AwardPredictionsResponse
-import com.grondona.model.dto.response.CreatedMatchesResponse
+import com.grondona.model.dto.response.SimpleMatchesResponse
 import com.grondona.model.dto.response.GroupMatchPredictionsResponse
 import com.grondona.model.dto.response.GroupResponse
 import com.grondona.model.dto.response.MatchPredictionResponse
 import com.grondona.model.dto.response.MatchResponse
 import com.grondona.model.dto.response.PlayerResponse
 import com.grondona.model.dto.response.TeamResponse
-import com.grondona.model.dto.response.TournamentMatchesResponse
 import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.repository.AwardPredictionRepository
 import com.grondona.repository.GroupRepository
@@ -45,10 +44,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
-import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.UUID
 
@@ -598,7 +594,7 @@ class PredictionIntegrationTest {
             .andExpect(status().isCreated)
             .andReturn()
 
-        return objectMapper.readValue(result.response.contentAsString, CreatedMatchesResponse::class.java).matches[0]
+        return objectMapper.readValue(result.response.contentAsString, SimpleMatchesResponse::class.java).matches[0]
     }
 
     private fun createGroup(token: String, name: String): UUID {

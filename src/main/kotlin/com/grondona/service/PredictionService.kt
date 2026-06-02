@@ -120,13 +120,17 @@ class PredictionService(
         logger.info("Submitting {} predictions for user={} at group={}", request.predictions.size, userId, groupId)
 
         val (user, group) = checkMembership(userId, groupId)
+        val matchesById = matchRepository.findAllById(request.predictions.map { it.matchId }).associateBy { it.id!! }
         val basePredictions = request.predictions.map { prediction ->
             MatchPrediction(
                 user = user,
                 group = group,
                 homeGoals = prediction.homeGoals,
                 awayGoals = prediction.awayGoals,
-                match = matchRepository.findById(prediction.matchId).orElseThrow { NotFoundException("Match not found") },
+                match = matchesById[prediction.matchId] ?: run {
+                    logger.warn("User={} trying to submit predictions for match={}, but it's not in the DB", userId, prediction.matchId); false
+                    throw NotFoundException("Match not found")
+                }
             )
         }.filter {
             if (isMatchUnlocked(it.match)) true else {

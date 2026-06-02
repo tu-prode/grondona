@@ -16,10 +16,12 @@ import com.grondona.model.dto.request.CreateTeamRequest
 import com.grondona.model.dto.request.SubmitAwardPredictionRequest
 import com.grondona.model.dto.request.SubmitBulkMatchPredictionsRequest
 import com.grondona.model.dto.request.SubmitMatchPredictionRequest
+import com.grondona.model.dto.request.UpdateMatchRequest
+import com.grondona.model.dto.request.UpdateMatchesRequest
 import com.grondona.model.dto.request.UpdateTournamentRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
 import com.grondona.model.dto.response.AwardPredictionsResponse
-import com.grondona.model.dto.response.CreatedMatchesResponse
+import com.grondona.model.dto.response.SimpleMatchesResponse
 import com.grondona.model.dto.response.GroupMatchPredictionsResponse
 import com.grondona.model.dto.response.GroupResponse
 import com.grondona.model.dto.response.MatchPredictionResponse
@@ -170,26 +172,17 @@ class GrondonaClient(
         this.goalkeeperIds.addAll(goalkeeperIds)
         this.youngsterIds.addAll(youngsterIds)
 
-        val usedPairings = mutableSetOf<Pair<UUID, UUID>>()
-        createMatches(
-            adminToken, CreateMatchesRequest(
-            matches = (1..matchesToCreate).map { index ->
-                var homeTeam = teams.random()
-                var awayTeam = teams.otherRandom(homeTeam)
-                var pairing = orderedPair(homeTeam.id, awayTeam.id)
-                while (pairing in usedPairings) {
-                    homeTeam = teams.random()
-                    awayTeam = teams.otherRandom(homeTeam)
-                    pairing = orderedPair(homeTeam.id, awayTeam.id)
-                }
-                usedPairings.add(pairing)
+        createMatches(matchesToCreate = teams.chunked(4).flatMapIndexed { groupIndex, groupTeams ->
+            listOf(
+                groupTeams[0] to groupTeams[1], groupTeams[2] to groupTeams[3], groupTeams[0] to groupTeams[3],
+                groupTeams[2] to groupTeams[1], groupTeams[2] to groupTeams[0], groupTeams[1] to groupTeams[3],
+            ).mapIndexed { matchIndex, (team1, team2) ->
                 CreateMatchRequest(
-                    code = index.toString(), homeTeam = homeTeam.id, awayTeam = awayTeam.id,
-                    stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().plusDays(1)
+                    code = (groupIndex * 6 + matchIndex).toString(), homeTeam = team1.id, awayTeam = team2.id,
+                    stage = MatchStage.GROUP_STAGE, group = MatchGroup.entries[groupIndex], startedAt = ZonedDateTime.now().plusDays(1)
                 )
             }
-        ))
-
+        })
     }
 
     // API methods
@@ -253,14 +246,14 @@ class GrondonaClient(
         )
     }
 
-    fun createMatches(token: String? = null, request: CreateMatchesRequest): List<MinimalMatch> {
+    fun createMatches(token: String? = null, matchesToCreate: List<CreateMatchRequest>): List<MinimalMatch> {
         val rawResponse = mockMvc.perform(
             post("/api/tournaments/{tournamentId}/matches", tournamentId)
                 .header("Authorization", "Bearer ${token ?: adminToken}")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request))
+                .content(objectMapper.writeValueAsString(CreateMatchesRequest(matches = matchesToCreate)))
         ).andExpect(status().isCreated).andReturn()
-        val newMatches = objectMapper.readValue(rawResponse.response.contentAsString, CreatedMatchesResponse::class.java)
+        val newMatches = objectMapper.readValue(rawResponse.response.contentAsString, SimpleMatchesResponse::class.java)
             .matches.map {
                 MinimalMatch(
                     id = it.id, code = it.code, stage = it.stage, group = it.group,
@@ -269,6 +262,25 @@ class GrondonaClient(
                 )
             }
         matches.addAll(newMatches)
+        return newMatches
+    }
+
+    fun updateMatches(token: String? = null, matchesToUpdate: List<UpdateMatchRequest>): List<MinimalMatch> {
+        val rawResponse = mockMvc.perform(
+            put("/api/tournaments/{tournamentId}/matches", tournamentId)
+                .header("Authorization", "Bearer ${token ?: adminToken}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(UpdateMatchesRequest(matchesToUpdate)))
+        ).andExpect(status().isOk).andReturn()
+        val newMatches = objectMapper.readValue(rawResponse.response.contentAsString, SimpleMatchesResponse::class.java)
+            .matches.map {
+                MinimalMatch(
+                    id = it.id, code = it.code, stage = it.stage, group = it.group,
+                    homeId = it.homeTeam.id, homeCode = it.homeTeam.code,
+                    awayId = it.awayTeam.id, awayCode = it.awayTeam.code,
+                )
+            }
+        syncMatches()
         return newMatches
     }
 
@@ -364,6 +376,3 @@ class GrondonaClient(
     }
 
 }
-
-private fun orderedPair(first: UUID, second: UUID): Pair<UUID, UUID> =
-    if (first < second) first to second else second to first

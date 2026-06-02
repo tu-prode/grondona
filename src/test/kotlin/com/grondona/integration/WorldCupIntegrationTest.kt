@@ -10,9 +10,9 @@ import com.grondona.model.MatchStatus
 import com.grondona.model.PredictionStatus
 import com.grondona.model.TEST
 import com.grondona.model.dto.request.CreateMatchRequest
-import com.grondona.model.dto.request.CreateMatchesRequest
 import com.grondona.model.dto.request.SubmitAwardPredictionRequest
 import com.grondona.model.dto.request.SubmitMatchPredictionRequest
+import com.grondona.model.dto.request.UpdateMatchRequest
 import com.grondona.model.dto.request.UpdateTournamentRequest
 import com.grondona.otherRandom
 import com.grondona.repository.TournamentRepository
@@ -213,7 +213,7 @@ class WorldCupIntegrationTest {
                 )
             }
 
-            grondona.createMatches(request = CreateMatchesRequest(matches = newMatchesRequests))
+            grondona.createMatches(matchesToCreate = newMatchesRequests)
         }
 
         @Test
@@ -289,7 +289,7 @@ class WorldCupIntegrationTest {
             }
 
             qualifiedTeams = newQualifiedTeams
-            grondona.createMatches(request = CreateMatchesRequest(matches = newMatchesRequests))
+            grondona.createMatches(matchesToCreate = newMatchesRequests)
         }
 
         @Test
@@ -353,7 +353,7 @@ class WorldCupIntegrationTest {
             }
 
             qualifiedTeams = newQualifiedTeams
-            grondona.createMatches(request = CreateMatchesRequest(matches = newMatchesRequests))
+            grondona.createMatches(matchesToCreate = newMatchesRequests)
         }
 
         @Test
@@ -417,7 +417,7 @@ class WorldCupIntegrationTest {
             }
 
             qualifiedTeams = newQualifiedTeams
-            grondona.createMatches(request = CreateMatchesRequest(matches = newMatchesRequests))
+            grondona.createMatches(matchesToCreate = newMatchesRequests)
         }
 
         @Test
@@ -481,7 +481,7 @@ class WorldCupIntegrationTest {
             }
 
             qualifiedTeams = newQualifiedTeams
-            grondona.createMatches(request = CreateMatchesRequest(matches = newMatchesRequests))
+            grondona.createMatches(matchesToCreate = newMatchesRequests)
         }
 
         @Test
@@ -970,7 +970,6 @@ class WorldCupIntegrationTest {
                     stage = if (idx == 0) MatchStage.THIRD_PLACE else MatchStage.FINAL,
                     homeGoals = 0, awayGoals = 0, status = MatchStatus.NOT_STARTED,
                     startedAt = codesToDates[code]!!, homeOdds = 0f, drawOdds = 0f, awayOdds = 0f,
-                    hasMultiplier = true,
                 )
             }
 
@@ -1002,6 +1001,16 @@ class WorldCupIntegrationTest {
 
         @Test
         @Order(18)
+        fun `should update last round matches, adding a multiplier to them`() {
+            val matchesToUpdate = grondona.matches.filter { it.stage == MatchStage.THIRD_PLACE || it.stage == MatchStage.FINAL }
+                .map { UpdateMatchRequest(matchId = it.id, hasMultiplier = true) }
+
+            grondona.updateMatches(matchesToUpdate = matchesToUpdate)
+            grondona.syncMatches()
+        }
+
+        @Test
+        @Order(19)
         fun `should submit predictions for every match in the last round, for both users`() {
             grondona.submitMatchPredictionsToGroup(user1Token, groupId, grondona.matches.filter { it.code in codesForLastRound }.map {
                 SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 1, awayGoals = 0)
@@ -1013,7 +1022,7 @@ class WorldCupIntegrationTest {
         }
 
         @Test
-        @Order(19)
+        @Order(20)
         fun `should receive updates for every existing match in the last round`() {
             val newExternalMatches = grondona.matches.filter { it.code in codesForLastRound }.map {
                 ExternalMatch(
@@ -1029,7 +1038,7 @@ class WorldCupIntegrationTest {
         }
 
         @Test
-        @Order(20)
+        @Order(21)
         fun `should check standings after the last round, for both users`() {
 
             val standings1 = grondona.fetchGroup(user1Token, groupId).standings
@@ -1054,7 +1063,7 @@ class WorldCupIntegrationTest {
         }
 
         @Test
-        @Order(21)
+        @Order(22)
         fun `should update tournament to set awards' winners`() {
             grondona.updateTournament(
                 request = UpdateTournamentRequest(
@@ -1070,7 +1079,7 @@ class WorldCupIntegrationTest {
         }
 
         @Test
-        @Order(22)
+        @Order(23)
         fun `should check standings after the awards, for both users`() {
             val standings1 = grondona.fetchGroup(user1Token, groupId).standings
             val standings2 = grondona.fetchGroup(user2Token, groupId).standings

@@ -24,7 +24,6 @@ data class ExternalMatch(
     val awayOdds: Float? = null,
     val startedAt: ZonedDateTime? = null,
     val finishedAt: ZonedDateTime? = null,
-    val hasMultiplier: Boolean = false,
 ) {
     fun toNewMatch(tournament: Tournament, tournamentTeams: Map<String, Team>): Match {
         if (startedAt == null) {
@@ -45,7 +44,6 @@ data class ExternalMatch(
             awayQuota = awayOdds?.oddsToQuota() ?: 0f,
             status = MatchStatus.NOT_STARTED,
             startedAt = startedAt,
-            hasMultiplier = hasMultiplier,
         )
     }
 

@@ -16,7 +16,7 @@ import com.grondona.model.dto.request.SubmitMatchPredictionRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.model.dto.request.UpdateMemberRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
-import com.grondona.model.dto.response.CreatedMatchesResponse
+import com.grondona.model.dto.response.SimpleMatchesResponse
 import com.grondona.model.dto.response.GroupResponse
 import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.repository.GroupRepository
@@ -35,8 +35,6 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
-import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.util.UUID
 
@@ -721,7 +719,7 @@ class GroupIntegrationTest {
                 .andExpect(status().isCreated)
                 .andReturn()
 
-            val createdMatches = objectMapper.readValue(result.response.contentAsString, CreatedMatchesResponse::class.java).matches
+            val createdMatches = objectMapper.readValue(result.response.contentAsString, SimpleMatchesResponse::class.java).matches
             return createdMatches.associate { it.code to it.id }
         }
 

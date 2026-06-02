@@ -19,7 +19,7 @@ import com.grondona.model.dto.request.CreateUserRequest
 import com.grondona.model.dto.request.LoginUserRequest
 import com.grondona.model.dto.request.SubmitMatchPredictionRequest
 import com.grondona.model.dto.request.UpdateUserRequest
-import com.grondona.model.dto.response.CreatedMatchesResponse
+import com.grondona.model.dto.response.SimpleMatchesResponse
 import com.grondona.repository.TournamentRepository
 import com.grondona.repository.UserRepository
 import com.grondona.scheduler.MatchStatusScheduler
@@ -142,7 +142,7 @@ class UserIntegrationTest {
                 .content(objectMapper.writeValueAsString(createMatchesRequest))
         ).andExpect(status().isCreated).andReturn()
 
-        objectMapper.readValue(result.response.contentAsString, CreatedMatchesResponse::class.java).matches.forEach {
+        objectMapper.readValue(result.response.contentAsString, SimpleMatchesResponse::class.java).matches.forEach {
             when (it.code) {
                 "MT1" -> testMatch1Id = it.id
                 "MT2" -> testMatch2Id = it.id

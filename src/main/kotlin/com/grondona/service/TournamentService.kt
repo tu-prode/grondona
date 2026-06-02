@@ -6,6 +6,7 @@ import com.grondona.exception.NotFoundException
 import com.grondona.model.AwardPrediction
 import com.grondona.model.ExtendedAwards
 import com.grondona.model.Match
+import com.grondona.model.MatchStatus
 import com.grondona.model.Player
 import com.grondona.model.PredictionStatus
 import com.grondona.model.Team
@@ -15,8 +16,9 @@ import com.grondona.model.dto.request.CreateMatchesRequest
 import com.grondona.model.dto.request.CreatePlayerRequest
 import com.grondona.model.dto.request.CreateTeamRequest
 import com.grondona.model.dto.request.CreateTournamentRequest
+import com.grondona.model.dto.request.UpdateMatchesRequest
 import com.grondona.model.dto.request.UpdateTournamentRequest
-import com.grondona.model.dto.response.CreatedMatchesResponse
+import com.grondona.model.dto.response.SimpleMatchesResponse
 import com.grondona.model.dto.response.PlayerResponse
 import com.grondona.model.dto.response.TeamResponse
 import com.grondona.model.dto.response.TournamentMatchesResponse
@@ -36,6 +38,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.util.UUID
+import kotlin.Int
 import kotlin.String
 import kotlin.collections.component1
 import kotlin.collections.component2
@@ -214,7 +217,7 @@ class TournamentService(
         }.takeIf { tournament.status == TournamentStatus.FINISHED }
 
     @Transactional
-    fun createTournamentMatches(tournamentId: UUID, request: CreateMatchesRequest): CreatedMatchesResponse {
+    fun createTournamentMatches(tournamentId: UUID, request: CreateMatchesRequest): SimpleMatchesResponse {
         logger.info("Creating match for tournament id={}", tournamentId)
 
         val tournament = tournamentRepository.findById(tournamentId).orElseThrow {
@@ -256,7 +259,73 @@ class TournamentService(
 
         matchRepository.saveAll(matchesToSave)
         logger.info("Matches created successfully for tournament={}: {}", tournamentId, matchesToSave.size)
-        return CreatedMatchesResponse.from(tournament, matchesToSave)
+        return SimpleMatchesResponse.from(tournament, matchesToSave)
+    }
+
+    @Transactional
+    fun updateTournamentMatches(tournamentId: UUID, request: UpdateMatchesRequest): SimpleMatchesResponse {
+        logger.info("Creating match for tournament id={}", tournamentId)
+
+        val tournament = tournamentRepository.findById(tournamentId).orElseThrow {
+            logger.warn("Tournament not found id={}", tournamentId)
+            NotFoundException("Tournament not found")
+        }
+
+        val matchesById = matchRepository.findAllById(request.matches.map { it.matchId }).associateBy { it.id!! }
+        val matchesToSave = request.matches.map { req ->
+            matchesById[req.matchId]?.let { match ->
+                val newStatus = req.status ?: match.status
+
+                val goalsNotUpdated = req.homeGoals == null || req.awayGoals == null
+                val goalsUpdated = req.homeGoals != null || req.awayGoals != null || req.homePenalties != null || req.awayPenalties != null
+                val quotasUpdated = req.homeQuota != null || req.drawQuota != null || req.awayQuota != null
+                val multiplierUpdated = req.hasMultiplier != null
+
+                if (newStatus == MatchStatus.IN_PROGRESS) {
+                    logger.error("Trying to manually set match={} as IN_PROGRESS", req.matchId)
+                    throw BadRequestException("Cannot manually set a match to IN_PROGRESS status")
+                }
+
+                if (newStatus == MatchStatus.FINISHED && goalsNotUpdated) {
+                    logger.error("Trying to set match={} as FINISHED without goals", req.matchId)
+                    throw BadRequestException("Cannot set a match as FINISHED without goals")
+                }
+
+                if (newStatus != MatchStatus.FINISHED && goalsUpdated) {
+                    logger.error("Trying to update match={} goals when is not FINISHED", req.matchId)
+                    throw BadRequestException("Cannot update a match's goals when is not FINISHED")
+                }
+
+                if (!PredictionService.isMatchUnlocked(match.copy(status = newStatus)) && quotasUpdated) {
+                    logger.error("Trying to update match={} quotas for a locked match", req.matchId)
+                    throw BadRequestException("Cannot update match's quotas when is already locked")
+                }
+
+                if (!PredictionService.isMatchUnlocked(match.copy(status = newStatus)) && multiplierUpdated) {
+                    logger.error("Trying to update match={} multiplier flag for a locked match", req.matchId)
+                    throw BadRequestException("Cannot update match's multiplier flag when is already locked")
+                }
+
+                match.copy(
+                    status = newStatus,
+                    homeGoals = req.homeGoals ?: match.homeGoals,
+                    awayGoals = req.awayGoals ?: match.awayGoals,
+                    homePenalties = req.homePenalties ?: match.homePenalties,
+                    awayPenalties = req.awayPenalties ?: match.awayPenalties,
+                    hasMultiplier = req.hasMultiplier ?: match.hasMultiplier,
+                    homeQuota = req.homeQuota ?: match.homeQuota,
+                    drawQuota = req.drawQuota ?: match.drawQuota,
+                    awayQuota = req.awayQuota ?: match.awayQuota,
+                )
+            } ?: run {
+                logger.error("Trying to update match={} but it's not in the DB", req.matchId)
+                throw NotFoundException("Match not found")
+            }
+        }
+
+        matchRepository.saveAll(matchesToSave)
+        logger.info("Matches created successfully for tournament={}: {}", tournamentId, matchesToSave.size)
+        return SimpleMatchesResponse.from(tournament, matchesToSave)
     }
 
     @Transactional

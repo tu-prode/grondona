@@ -325,8 +325,7 @@ class PredictionServiceTest {
             val savedPredictions = listOf(testPrediction, testPrediction.copy(match = openMatch2))
 
             mockMembership()
-            every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchOpen)
-            every { matchRepository.findById(matchId2) } returns Optional.of(openMatch2)
+            every { matchRepository.findAllById(listOf(testMatchId, matchId2)) } returns listOf(testMatchOpen, openMatch2)
             every { matchPredictionRepository.upsertAll(any()) } returns savedPredictions
 
             val result = predictionService.submitMatchPredictions(testUserId, testGroupId, request)
@@ -347,8 +346,7 @@ class PredictionServiceTest {
 
             val user = testUser.copy(hasUniquePredictions = true)
             mockMembership(user = user)
-            every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchOpen)
-            every { matchRepository.findById(matchId2) } returns Optional.of(openMatch2)
+            every { matchRepository.findAllById(listOf(testMatchId, matchId2)) } returns listOf(testMatchOpen, openMatch2)
 
             val userGroups = listOf(
                 GroupUser(user = user, group = testGroup),
@@ -390,8 +388,7 @@ class PredictionServiceTest {
             )
 
             mockMembership()
-            every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchOpen)
-            every { matchRepository.findById(matchId2) } returns Optional.of(lockedMatch2)
+            every { matchRepository.findAllById(listOf(testMatchId, matchId2)) } returns listOf(testMatchOpen, lockedMatch2)
             every { matchPredictionRepository.upsertAll(any()) } returns listOf(testPrediction)
 
             val result = predictionService.submitMatchPredictions(testUserId, testGroupId, request)
@@ -407,7 +404,7 @@ class PredictionServiceTest {
             )
 
             mockMembership()
-            every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchLocked)
+            every { matchRepository.findAllById(listOf(testMatchId)) } returns listOf(testMatchLocked)
             every { matchPredictionRepository.upsertAll(emptyList()) } returns emptyList()
 
             val result = predictionService.submitMatchPredictions(testUserId, testGroupId, request)
