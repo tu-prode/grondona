@@ -37,7 +37,7 @@ interface MatchClient {
 
     fun getMatches(tournamentId: UUID): List<ExternalMatch> {
         return try {
-            val body = buildRequest().also { logger.debug("Executing request to API matches: {}", it.toString()) }
+            val body = buildRequest()
                 .retrieve()
                 .onStatus({ it.is4xxClientError }) { response ->
                     response.bodyToMono(String::class.java)
