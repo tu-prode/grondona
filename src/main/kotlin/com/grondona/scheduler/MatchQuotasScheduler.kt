@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConditionalOnProperty(
-    name = ["external.api.matches.with-updated-quotas"],
+    name = ["external.api.matches.with-updated-quotas", "external.api.matches.in-process-scheduler"],
     havingValue = "true",
 )
 class MatchQuotasScheduler(

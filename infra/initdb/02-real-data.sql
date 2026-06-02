@@ -47,7 +47,7 @@ INSERT INTO teams (id, tournament_id, name, code, icon) VALUES
     ('f5a1c7e3-2f9d-4a6c-8e1b-3d7a5c2f9e38', '28652183-a2d6-4f33-a624-0d24645ce3cd','Sudáfrica', 'RSA', 'https://flagcdn.com/w40/za.png'),
     ('a3c1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b39', '28652183-a2d6-4f33-a624-0d24645ce3cd','Suiza', 'SUI', 'https://flagcdn.com/w40/ch.png'),
     ('b9e3a1c7-5f2d-4c8a-9e6b-1a2f3d7c5b40', '28652183-a2d6-4f33-a624-0d24645ce3cd','Túnez', 'TUN', 'https://flagcdn.com/w40/tn.png'),
-    ('c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41', '28652183-a2d6-4f33-a624-0d24645ce3cd','Uruguay', 'URU', 'https://flagcdn.com/w40/uy.png'),
+    ('c3a1e7b5-9d2f-4c8a-9e6b-2f3a1c7d5b41', '28652183-a2d6-4f33-a624-0d24645ce3cd','Uruguay', 'URY', 'https://flagcdn.com/w40/uy.png'),
     ('d9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42', '28652183-a2d6-4f33-a624-0d24645ce3cd','Uzbekistán', 'UZB', 'https://flagcdn.com/w40/uz.png'),
     ('8f251495-81ba-4724-b575-f7ebecf213c4', '28652183-a2d6-4f33-a624-0d24645ce3cd','R.D. del Congo', 'COD', 'https://flagcdn.com/w40/cd.png'),
     ('da0e5c75-ba1c-4090-bbba-ad57d0e3b153', '28652183-a2d6-4f33-a624-0d24645ce3cd','Irak', 'IRQ', 'https://flagcdn.com/w40/iq.png'),

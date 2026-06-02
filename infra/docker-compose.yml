@@ -33,6 +33,8 @@ services:
       ENV: "prod"
       NEW_MATCHES: "true"
       UPDATED_QUOTAS: "true"
+      # Scheduling: in-process locally; on request-based Cloud Run set false and use Cloud Scheduler
+      IN_PROCESS_SCHEDULER: "false"
       # DB configuration
       DB_HOST: "db"
       DB_PORT: 5432

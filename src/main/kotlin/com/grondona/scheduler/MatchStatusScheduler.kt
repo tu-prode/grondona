@@ -9,6 +9,7 @@ import com.grondona.service.engine.WorldCupEngine
 import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.scheduling.TaskScheduler
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -18,6 +19,10 @@ import java.util.Date
 import java.util.concurrent.ScheduledFuture
 
 @Service
+@ConditionalOnProperty(
+    name = ["external.api.matches.in-process-scheduler"],
+    havingValue = "true", matchIfMissing = true,
+)
 class MatchStatusScheduler(
     private val matchService: MatchService,
     private val taskScheduler: TaskScheduler,

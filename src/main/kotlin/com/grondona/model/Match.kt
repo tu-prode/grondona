@@ -73,7 +73,7 @@ data class Match(
     val stage: MatchStage,
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = true)
+    @Column(name = "\"group\"",  nullable = true)
     val group: MatchGroup? = null,
 
     @Column(name = "home_quota", nullable = false)
