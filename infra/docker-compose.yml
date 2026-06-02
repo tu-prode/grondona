@@ -30,7 +30,7 @@ services:
       - .env
     environment:
       # System configuration
-      ENV: "prod"
+      ENV: "local"
       NEW_MATCHES: "true"
       UPDATED_QUOTAS: "true"
       # Scheduling: in-process locally; on request-based Cloud Run set false and use Cloud Scheduler
@@ -43,7 +43,7 @@ services:
       # JWT configuration
       JWT_EXPIRATION: 86400000
       # Matches API configuration
-      MATCHES_API_URL: "https://api.football-data.org/"
+      MATCHES_API_URL: "http://mocknaldo:8085"
       # Mailing configuration
       MAIL_HOST: "smtp.sendgrid.net"
       MAIL_PORT: "587"
@@ -60,6 +60,8 @@ services:
       context: ..
       dockerfile: infra/mocknaldo/Dockerfile
     container_name: grondona-mocknaldo
+    environment:
+      RANDOMIZED: "true"
     ports:
       - "8085:8085"
     networks:
