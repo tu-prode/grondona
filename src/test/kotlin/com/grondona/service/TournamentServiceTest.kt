@@ -10,6 +10,8 @@ import com.grondona.model.ExtendedAwards
 import com.grondona.model.Group
 import com.grondona.model.GroupUser
 import com.grondona.model.Match
+import com.grondona.model.MatchGroup
+import com.grondona.model.MatchStage
 import com.grondona.model.MatchStatus
 import com.grondona.model.Player
 import com.grondona.model.PlayerPosition
@@ -350,21 +352,11 @@ class TournamentServiceTest {
     inner class GetTournamentMatchesTests {
 
         private fun makeMatch(status: MatchStatus, startedAt: ZonedDateTime = ZonedDateTime.now().plusDays(1)): Match {
-            val team = Team(
-                id = UUID.randomUUID(),
-                tournament = testTournament,
-                name = "Team",
-                code = "T",
-                icon = "icon.png"
-            )
+            val team = Team(id = UUID.randomUUID(), tournament = testTournament, name = "Team", code = "T", icon = "icon.png")
             return Match(
-                id = UUID.randomUUID(),
-                tournament = testTournament,
-                code = "M-${UUID.randomUUID()}",
-                homeTeam = team,
-                awayTeam = team,
-                status = status,
-                startedAt = startedAt
+                id = UUID.randomUUID(), tournament = testTournament, code = "M-${UUID.randomUUID()}",
+                stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A, startedAt = startedAt,
+                homeTeam = team, awayTeam = team, status = status
             )
         }
 

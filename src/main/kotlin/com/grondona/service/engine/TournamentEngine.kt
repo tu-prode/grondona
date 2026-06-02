@@ -1,6 +1,5 @@
 package com.grondona.service.engine
 
-import com.grondona.model.ExternalMatch
 import com.grondona.model.Match
 import com.grondona.model.TournamentStatus
 import java.util.UUID
@@ -10,5 +9,5 @@ interface TournamentEngine {
 
     fun calculateTournamentStatus(matches: List<Match>): TournamentStatus?
 
-    fun calculateNewMatches(systemMatches: List<Match>, externalMatches: List<ExternalMatch>): List<Match>
+    fun generateMatchesCodes(newMatches: List<Match>): List<Match>
 }

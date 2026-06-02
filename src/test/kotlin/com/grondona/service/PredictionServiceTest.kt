@@ -10,9 +10,11 @@ import com.grondona.model.Awards
 import com.grondona.model.Group
 import com.grondona.model.GroupUser
 import com.grondona.model.Match
+import com.grondona.model.MatchGroup
 import com.grondona.model.MatchStatus
 import com.grondona.model.MatchPrediction
 import com.grondona.model.MatchPredictionView
+import com.grondona.model.MatchStage
 import com.grondona.model.Player
 import com.grondona.model.PlayerPosition
 import com.grondona.model.PredictionStatus
@@ -136,6 +138,8 @@ class PredictionServiceTest {
         code = "OPEN-01",
         homeTeam = testTeam,
         awayTeam = testTeam,
+        stage = MatchStage.GROUP_STAGE,
+        group = MatchGroup.GROUP_A,
         startedAt = ZonedDateTime.now().plusHours(2)
     )
 
@@ -146,6 +150,8 @@ class PredictionServiceTest {
         code = "LOCKED-01",
         homeTeam = testTeam,
         awayTeam = testTeam,
+        stage = MatchStage.GROUP_STAGE,
+        group = MatchGroup.GROUP_A,
         status = MatchStatus.FINISHED,
         startedAt = ZonedDateTime.now().minusHours(2)
     )
@@ -319,8 +325,7 @@ class PredictionServiceTest {
             val savedPredictions = listOf(testPrediction, testPrediction.copy(match = openMatch2))
 
             mockMembership()
-            every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchOpen)
-            every { matchRepository.findById(matchId2) } returns Optional.of(openMatch2)
+            every { matchRepository.findAllById(listOf(testMatchId, matchId2)) } returns listOf(testMatchOpen, openMatch2)
             every { matchPredictionRepository.upsertAll(any()) } returns savedPredictions
 
             val result = predictionService.submitMatchPredictions(testUserId, testGroupId, request)
@@ -341,8 +346,7 @@ class PredictionServiceTest {
 
             val user = testUser.copy(hasUniquePredictions = true)
             mockMembership(user = user)
-            every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchOpen)
-            every { matchRepository.findById(matchId2) } returns Optional.of(openMatch2)
+            every { matchRepository.findAllById(listOf(testMatchId, matchId2)) } returns listOf(testMatchOpen, openMatch2)
 
             val userGroups = listOf(
                 GroupUser(user = user, group = testGroup),
@@ -384,8 +388,7 @@ class PredictionServiceTest {
             )
 
             mockMembership()
-            every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchOpen)
-            every { matchRepository.findById(matchId2) } returns Optional.of(lockedMatch2)
+            every { matchRepository.findAllById(listOf(testMatchId, matchId2)) } returns listOf(testMatchOpen, lockedMatch2)
             every { matchPredictionRepository.upsertAll(any()) } returns listOf(testPrediction)
 
             val result = predictionService.submitMatchPredictions(testUserId, testGroupId, request)
@@ -401,7 +404,7 @@ class PredictionServiceTest {
             )
 
             mockMembership()
-            every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchLocked)
+            every { matchRepository.findAllById(listOf(testMatchId)) } returns listOf(testMatchLocked)
             every { matchPredictionRepository.upsertAll(emptyList()) } returns emptyList()
 
             val result = predictionService.submitMatchPredictions(testUserId, testGroupId, request)
@@ -1007,15 +1010,15 @@ class PredictionServiceTest {
 
             val testMatch1 = Match(
                 id = UUID.randomUUID(), code = "X1", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().minusDays(7)
+                homeGoals = 0, awayGoals = 0, stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().minusDays(7)
             )
             val testMatch2 = Match(
                 id = UUID.randomUUID(), code = "X2", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 1, awayGoals = 0, startedAt = ZonedDateTime.now().minusDays(6)
+                homeGoals = 1, awayGoals = 0, stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().minusDays(6)
             )
             val testMatch3 = Match(
                 id = UUID.randomUUID(), code = "X3", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 0, awayGoals = 1, startedAt = ZonedDateTime.now().minusDays(5)
+                homeGoals = 0, awayGoals = 1, stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().minusDays(5)
             )
 
             val matchPredictions = listOf(
@@ -1599,15 +1602,15 @@ class PredictionServiceTest {
 
             val testMatch1 = Match(
                 id = UUID.randomUUID(), code = "X1", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().minusDays(7)
+                homeGoals = 0, awayGoals = 0, stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().minusDays(7)
             )
             val testMatch2 = Match(
                 id = UUID.randomUUID(), code = "X2", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 1, awayGoals = 0, startedAt = ZonedDateTime.now().minusDays(6)
+                homeGoals = 1, awayGoals = 0, stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().minusDays(6)
             )
             val testMatch3 = Match(
                 id = UUID.randomUUID(), code = "X3", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 0, awayGoals = 1, startedAt = ZonedDateTime.now().minusDays(6)
+                homeGoals = 0, awayGoals = 1, stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().minusDays(6)
             )
 
             val matchPredictions = listOf(

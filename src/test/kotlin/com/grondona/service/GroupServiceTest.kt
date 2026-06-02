@@ -7,6 +7,7 @@ import com.grondona.model.GroupUser
 import com.grondona.model.Match
 import com.grondona.model.MatchPrediction
 import com.grondona.model.MatchPredictionView
+import com.grondona.model.MatchStage
 import com.grondona.model.MatchStatus
 import com.grondona.model.PredictionStatus
 import com.grondona.model.dto.request.CreateGroupRequest
@@ -377,7 +378,8 @@ class GroupServiceTest {
 
             val testMatch = Match(
                 id = UUID.randomUUID(), code = "XX", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 1, awayGoals = 1, status = MatchStatus.IN_PROGRESS, startedAt = ZonedDateTime.now().minusMinutes(60)
+                homeGoals = 1, awayGoals = 1, status = MatchStatus.IN_PROGRESS, stage = MatchStage.GROUP_STAGE,
+                startedAt = ZonedDateTime.now().minusMinutes(60)
             )
             val prediction1 = MatchPredictionView(
                 id = UUID.randomUUID(),

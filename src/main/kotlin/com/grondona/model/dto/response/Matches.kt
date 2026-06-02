@@ -1,9 +1,11 @@
 package com.grondona.model.dto.response
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.grondona.model.Match
+import com.grondona.model.MatchGroup
+import com.grondona.model.MatchStage
 import com.grondona.model.MatchStatus
 import com.grondona.model.Tournament
-import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.util.UUID
 import kotlin.math.min
@@ -13,6 +15,8 @@ data class MatchResponse(
     val code: String,
     val homeTeam: TeamResponse,
     val awayTeam: TeamResponse,
+    val stage: MatchStage,
+    val group: MatchGroup? = null,
     val homeQuota: Float,
     val awayQuota: Float,
     val drawQuota: Float,
@@ -32,6 +36,8 @@ data class MatchResponse(
             code = match.code,
             homeTeam = TeamResponse.from(match.homeTeam),
             awayTeam = TeamResponse.from(match.awayTeam),
+            stage = match.stage,
+            group = match.group,
             homeQuota = match.homeQuota,
             awayQuota = match.awayQuota,
             drawQuota = match.drawQuota,
@@ -51,12 +57,15 @@ data class MatchResponse(
 data class TournamentMatchesResponse(
     val tournamentId: UUID,
     val tournamentName: String,
-    val pastMatches: List<MatchResponse>,
-    val totalPastMatches: Int,
-    val liveMatches: List<MatchResponse>,
-    val totalLiveMatches: Int,
-    val nextMatches: List<MatchResponse>,
-    val totalNextMatches: Int,
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    val pastMatches: List<MatchResponse> = emptyList(),
+    val totalPastMatches: Int = 0,
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    val liveMatches: List<MatchResponse> = emptyList(),
+    val totalLiveMatches: Int = 0,
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    val nextMatches: List<MatchResponse> = emptyList(),
+    val totalNextMatches: Int = 0,
 ) {
     companion object {
         fun from(tournament: Tournament, matches: List<Match>, past: Int? = null, next: Int? = null, live: Int? = null): TournamentMatchesResponse {
@@ -81,13 +90,13 @@ data class TournamentMatchesResponse(
     }
 }
 
-data class CreatedMatchesResponse(
+data class SimpleMatchesResponse(
     val tournamentId: UUID,
     val tournamentName: String,
     val matches: List<MatchResponse>
 ) {
     companion object {
-        fun from(tournament: Tournament, matches: List<Match>) = CreatedMatchesResponse(
+        fun from(tournament: Tournament, matches: List<Match>) = SimpleMatchesResponse(
             tournamentId = tournament.id,
             tournamentName = tournament.name,
             matches = matches.map(MatchResponse::from),

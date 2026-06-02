@@ -162,9 +162,9 @@ class TournamentIntegrationTest {
                 .andExpect(jsonPath("$.tournament_id").value(createdTournamentId))
                 .andExpect(jsonPath("$.tournament_name").exists())
                 // Empty collections are omitted from the response due to non_empty Jackson config
-                .andExpect(jsonPath("$.past_matches").doesNotExist())
-                .andExpect(jsonPath("$.live_matches").doesNotExist())
-                .andExpect(jsonPath("$.next_matches").doesNotExist())
+                .andExpect(jsonPath("$.past_matches").isEmpty())
+                .andExpect(jsonPath("$.live_matches").isEmpty())
+                .andExpect(jsonPath("$.next_matches").isEmpty())
         }
 
         @Test
