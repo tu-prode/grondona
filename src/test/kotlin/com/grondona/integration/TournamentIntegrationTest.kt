@@ -3,6 +3,7 @@ package com.grondona.integration
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.grondona.createTestingTournamentRequest
 import com.grondona.createTestingUserRequest
+import com.grondona.model.TEST
 import com.grondona.model.TournamentStatus
 import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.UpdateTournamentRequest
@@ -22,11 +23,12 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
+@ActiveProfiles(TEST)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class TournamentIntegrationTest {
@@ -37,15 +39,15 @@ class TournamentIntegrationTest {
     @Autowired private lateinit var tournamentRepository: TournamentRepository
     @Autowired private lateinit var groupRepository: GroupRepository
 
+    @Autowired private lateinit var testDatabaseCleaner: TestDatabaseCleaner
+
     private var superuserToken: String? = null
     private var regularUserToken: String? = null
     private var createdTournamentId: String? = null
 
     @BeforeAll
     fun setUp() {
-        groupRepository.deleteAll()
-        tournamentRepository.deleteAll()
-        userRepository.deleteAll()
+        testDatabaseCleaner.cleanAll()
 
         // Create superuser
         val adminResult = mockMvc.perform(
@@ -70,13 +72,6 @@ class TournamentIntegrationTest {
     @BeforeEach
     fun clearSecurityContext() {
         SecurityContextHolder.clearContext()
-    }
-
-    @AfterAll
-    fun tearDown() {
-        groupRepository.deleteAll()
-        tournamentRepository.deleteAll()
-        userRepository.deleteAll()
     }
 
     @Nested
@@ -167,9 +162,9 @@ class TournamentIntegrationTest {
                 .andExpect(jsonPath("$.tournament_id").value(createdTournamentId))
                 .andExpect(jsonPath("$.tournament_name").exists())
                 // Empty collections are omitted from the response due to non_empty Jackson config
-                .andExpect(jsonPath("$.past_matches").doesNotExist())
-                .andExpect(jsonPath("$.live_matches").doesNotExist())
-                .andExpect(jsonPath("$.next_matches").doesNotExist())
+                .andExpect(jsonPath("$.past_matches").isEmpty())
+                .andExpect(jsonPath("$.live_matches").isEmpty())
+                .andExpect(jsonPath("$.next_matches").isEmpty())
         }
 
         @Test

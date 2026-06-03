@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.grondona.createTestingTournamentRequest
 import com.grondona.createTestingUserRequest
 import com.grondona.model.GroupRole
+import com.grondona.model.MatchStage
+import com.grondona.model.TEST
 import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.CreateMatchRequest
@@ -14,7 +16,7 @@ import com.grondona.model.dto.request.SubmitMatchPredictionRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.model.dto.request.UpdateMemberRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
-import com.grondona.model.dto.response.CreatedMatchesResponse
+import com.grondona.model.dto.response.SimpleMatchesResponse
 import com.grondona.model.dto.response.GroupResponse
 import com.grondona.model.dto.response.TournamentResponse
 import com.grondona.repository.GroupRepository
@@ -33,13 +35,12 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
-import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.util.UUID
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
+@ActiveProfiles(TEST)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class GroupIntegrationTest {
@@ -71,6 +72,9 @@ class GroupIntegrationTest {
     @Autowired
     private lateinit var matchPredictionRepository: MatchPredictionRepository
 
+    @Autowired
+    private lateinit var testDatabaseCleaner: TestDatabaseCleaner
+
     private var adminToken: String? = null
 
     private var user1Id: String? = null
@@ -80,13 +84,7 @@ class GroupIntegrationTest {
 
     @BeforeAll
     fun setUp() {
-        matchPredictionRepository.deleteAll()
-        membershipRepository.deleteAll()
-        groupRepository.deleteAll()
-        matchRepository.deleteAll()
-        teamRepository.deleteAll()
-        userRepository.deleteAll()
-        tournamentRepository.deleteAll()
+        testDatabaseCleaner.cleanAll()
 
         // Create an admin user to create the first tournament
         val adminResult = mockMvc.perform(
@@ -118,17 +116,6 @@ class GroupIntegrationTest {
         val authResponse = objectMapper.readValue(result.response.contentAsString, AuthenticatedUserResponse::class.java)
         user1Id = authResponse.userId.toString()
         user1Token = authResponse.token
-    }
-
-    @AfterAll
-    fun tearDown() {
-        matchPredictionRepository.deleteAll()
-        membershipRepository.deleteAll()
-        groupRepository.deleteAll()
-        matchRepository.deleteAll()
-        teamRepository.deleteAll()
-        userRepository.deleteAll()
-        tournamentRepository.deleteAll()
     }
 
     @Nested
@@ -732,7 +719,7 @@ class GroupIntegrationTest {
                 .andExpect(status().isCreated)
                 .andReturn()
 
-            val createdMatches = objectMapper.readValue(result.response.contentAsString, CreatedMatchesResponse::class.java).matches
+            val createdMatches = objectMapper.readValue(result.response.contentAsString, SimpleMatchesResponse::class.java).matches
             return createdMatches.associate { it.code to it.id }
         }
 
@@ -851,12 +838,14 @@ class GroupIntegrationTest {
                         code = "FLOW-1",
                         homeTeam = UUID.fromString(team1Id),
                         awayTeam = UUID.fromString(team2Id),
+                        stage = MatchStage.GROUP_STAGE,
                         startedAt = ZonedDateTime.now().plusDays(10),
                     ),
                     CreateMatchRequest(
                         code = "FLOW-2",
                         homeTeam = UUID.fromString(team2Id),
                         awayTeam = UUID.fromString(team1Id),
+                        stage = MatchStage.GROUP_STAGE,
                         startedAt = ZonedDateTime.now().plusDays(11),
                     )
                 )

@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT NOT NULL UNIQUE,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
+    reset_token TEXT DEFAULT NULL,
     permissions TEXT NOT NULL DEFAULT 'USER',
     unique_predictions BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -221,6 +222,8 @@ CREATE TABLE IF NOT EXISTS matches (
     tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
     home_team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
     away_team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    stage TEXT NOT NULL,
+    "group" TEXT DEFAULT NULL,
     home_quota FLOAT NOT NULL DEFAULT 1,
     draw_quota FLOAT NOT NULL DEFAULT 1,
     away_quota FLOAT NOT NULL DEFAULT 1,
@@ -254,6 +257,8 @@ COMMENT ON COLUMN matches.away_team_id IS 'Away team identifier';
 COMMENT ON COLUMN matches.home_quota IS 'The quota for a home team win';
 COMMENT ON COLUMN matches.draw_quota IS 'The quota for a draw';
 COMMENT ON COLUMN matches.away_quota IS 'The quota for an away team win';
+COMMENT ON COLUMN matches.stage IS 'Stage of the tournament';
+COMMENT ON COLUMN matches.group IS 'Optional value for group stage, indicating the group.';
 COMMENT ON COLUMN matches.status IS 'Status of the match (can be either NOT_STARTED, IN_PROGRESS or FINISHED)';
 COMMENT ON COLUMN matches.substatus IS 'Substatus of the in-progress match (can be either HT, FT or the minute of the game)';
 COMMENT ON COLUMN matches.started_at IS 'Timestamp when the match started';

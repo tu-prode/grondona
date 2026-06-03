@@ -9,6 +9,7 @@ import com.grondona.model.PredictionStatus
 import com.grondona.repository.MatchRepository
 import com.grondona.repository.MembershipRepository
 import com.grondona.repository.MatchPredictionRepository
+import com.grondona.repository.TeamRepository
 import com.grondona.repository.TournamentRepository
 import com.grondona.service.engine.TournamentEngine
 import com.grondona.service.engine.PredictionsEngine
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class MatchService(
     private val matchClient: MatchClient,
+    private val teamRepository: TeamRepository,
     private val matchRepository: MatchRepository,
     private val membershipRepository: MembershipRepository,
     private val tournamentRepository: TournamentRepository,
@@ -33,6 +35,32 @@ class MatchService(
 
     companion object {
         private val logger = LoggerFactory.getLogger(MatchService::class.java)
+
+        fun extractMatchesToUpdateStatus(matchesFromDB: List<Match>, matchesFromAPI: List<Match>): List<Match> {
+            val apiMatchesById = matchesFromAPI.filter { it.id != null }.associateBy { it.id!! }
+            return matchesFromDB.mapNotNull { dbMatch ->
+                apiMatchesById[dbMatch.id]?.let { apiMatch ->
+                    if (apiMatch.status != MatchStatus.NOT_STARTED && dbMatch.status != MatchStatus.FINISHED) {
+                        dbMatch.copy(
+                            status = apiMatch.status, substatus = apiMatch.substatus, finishedAt = apiMatch.finishedAt,
+                            homeGoals = apiMatch.homeGoals, awayGoals = apiMatch.awayGoals,
+                            homePenalties = apiMatch.homePenalties, awayPenalties = apiMatch.awayPenalties,
+                        )
+                    } else null
+                }
+            }
+        }
+
+        fun extractMatchesToUpdateQuotas(matchesFromDB: List<Match>, matchesFromAPI: List<Match>): List<Match> {
+            val apiMatchesById = matchesFromAPI.filter { it.id != null }.associateBy { it.id!! }
+            return matchesFromDB.mapNotNull { dbMatch ->
+                apiMatchesById[dbMatch.id]?.let { apiMatch ->
+                    if (apiMatch.status == MatchStatus.NOT_STARTED && PredictionService.isMatchUnlocked(dbMatch)) {
+                        dbMatch.copy(homeQuota = apiMatch.homeQuota, drawQuota = apiMatch.drawQuota, awayQuota = apiMatch.awayQuota)
+                    } else null
+                }
+            }
+        }
     }
 
     private val engines: Map<UUID, TournamentEngine> = enginesList.associateBy { it.tournamentId }
@@ -45,28 +73,29 @@ class MatchService(
         }
 
         logger.trace("Fetching matches to update for tournament={}", tournamentId)
-        val apiMatches = matchClient.getMatches(tournamentId)
-        logger.trace("API matches retrieved={}", apiMatches.size)
-        val systemMatches = matchRepository.findByTournamentId(tournamentId)
-        logger.trace("System matches retrieved={}", systemMatches.size)
+        val externalMatches = matchClient.getMatches(tournamentId)
+        logger.trace("API matches retrieved={}", externalMatches.size)
+        val matchesFromDB = matchRepository.findByTournamentId(tournamentId)
+        logger.trace("System matches retrieved={}", matchesFromDB.size)
 
-        val matchesToUpdate = apiMatches.mapNotNull { it.toSystemMatch(systemMatches) }
-        val consolidatedMatches = consolidateMatches(matchesToUpdate, systemMatches)
         val tournament = tournamentRepository.findById(tournamentId).orElseThrow {
             logger.error("Tournament={} not found in DB", tournamentId)
             BadRequestException("Tournament not found")
         }
+        val tournamentTeams = teamRepository.findByTournamentId(tournamentId).associateBy { it.code }
 
-        val newTournamentStatus = tournamentEngine.calculateTournamentStatus(consolidatedMatches)
+        val matchesFromAPI = externalMatches.map { it.toExistingMatch(matchesFromDB) ?: it.toNewMatch(tournament, tournamentTeams) }
+        val matchesToUpdate = extractMatchesToUpdateStatus(matchesFromDB, matchesFromAPI)
+        val matchesToCreate = matchesFromAPI.filter { it.id == null }
+
+        val newTournamentStatus = tournamentEngine.calculateTournamentStatus(matchesToUpdate)
         newTournamentStatus?.let {
             logger.debug("Setting tournament={} status as {} in DB", tournament.id, newTournamentStatus)
             tournamentRepository.save(tournament.copy(status = newTournamentStatus))
         }
 
-
-        val matchesToSave = matchesToUpdate + if (prepareNewMatches)
-            tournamentEngine.calculateNewMatches(consolidatedMatches, apiMatches)
-        else emptyList()
+        val matchesToSave = matchesToUpdate + if (prepareNewMatches && matchesToCreate.isNotEmpty())
+            tournamentEngine.generateMatchesCodes(matchesToCreate) else emptyList()
         if (matchesToSave.isNotEmpty()) {
             logger.debug("Matches to store in DB={}", matchesToSave.size)
             matchRepository.saveAll(matchesToSave)
@@ -78,20 +107,6 @@ class MatchService(
         }
 
         return matchesToSave
-    }
-
-    internal fun consolidateMatches(matchesToUpdate: List<Match>, systemMatches: List<Match>): List<Match> {
-        val updatedMatchesMap = mutableMapOf<UUID, Match>()
-        for (match in matchesToUpdate) {
-            updatedMatchesMap[match.id!!] = match
-        }
-
-        val consolidatedMatches = mutableListOf<Match>()
-        for (match in systemMatches) {
-            consolidatedMatches.add(updatedMatchesMap[match.id] ?: match)
-        }
-
-        return consolidatedMatches
     }
 
     fun updateMatchPredictionsPoints(matchesToUpdate: List<Match>) {
@@ -118,26 +133,37 @@ class MatchService(
             it.status == PredictionStatus.PENDING && it.match.status == MatchStatus.FINISHED
         })
 
-
     @Transactional
     fun updateMatchesQuotas(tournamentId: UUID) {
         logger.trace("Starting matches polling")
 
-        engines[tournamentId] ?: run {
+        val tournamentEngine = engines[tournamentId] ?: run {
             logger.warn("Trying to get matches statuses for tournament={}, currently not supported", tournamentId)
             throw BadRequestException("Tournament not supported")
         }
 
         logger.trace("Fetching matches to update quota for tournament={}", tournamentId)
-        val apiMatches = matchClient.getMatches(tournamentId)
-        logger.trace("API matches retrieved={}", apiMatches.size)
-        val systemMatches = matchRepository.findByTournamentIdAndStatus(tournamentId, MatchStatus.NOT_STARTED)
-        logger.trace("System matches retrieved={}", systemMatches.size)
+        val externalMatches = matchClient.getMatches(tournamentId)
+        logger.trace("API matches retrieved={}", externalMatches.size)
+        val matchesFromDB = matchRepository.findByTournamentIdAndStatus(tournamentId, MatchStatus.NOT_STARTED)
+        logger.trace("System matches retrieved={}", matchesFromDB.size)
 
-        val matchesToUpdate = apiMatches.mapNotNull { it.toSystemQuotas(systemMatches) }
-        if (matchesToUpdate.isNotEmpty()) {
-            logger.debug("Matches to update in DB={}", matchesToUpdate.size)
-            matchRepository.saveAll(matchesToUpdate)
+        val tournament = tournamentRepository.findById(tournamentId).orElseThrow {
+            logger.error("Tournament={} not found in DB", tournamentId)
+            BadRequestException("Tournament not found")
+        }
+        val tournamentTeams = teamRepository.findByTournamentId(tournamentId).associateBy { it.code }
+
+        val matchesFromAPI = externalMatches.filter { it.status == MatchStatus.NOT_STARTED }
+            .map { it.toExistingMatch(matchesFromDB) ?: it.toNewMatch(tournament, tournamentTeams) }
+        val matchesToUpdate = extractMatchesToUpdateQuotas(matchesFromDB, matchesFromAPI)
+        val matchesToCreate = matchesFromAPI.filter { it.id == null }
+
+        val matchesToSave = matchesToUpdate + if (prepareNewMatches && matchesToCreate.isNotEmpty())
+            tournamentEngine.generateMatchesCodes(matchesToCreate) else emptyList()
+        if (matchesToSave.isNotEmpty()) {
+            logger.debug("Matches to update in DB={}", matchesToSave.size)
+            matchRepository.saveAll(matchesToSave)
         }
     }
 }

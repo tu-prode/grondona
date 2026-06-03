@@ -10,9 +10,11 @@ import com.grondona.model.Awards
 import com.grondona.model.Group
 import com.grondona.model.GroupUser
 import com.grondona.model.Match
+import com.grondona.model.MatchGroup
 import com.grondona.model.MatchStatus
 import com.grondona.model.MatchPrediction
 import com.grondona.model.MatchPredictionView
+import com.grondona.model.MatchStage
 import com.grondona.model.Player
 import com.grondona.model.PlayerPosition
 import com.grondona.model.PredictionStatus
@@ -37,6 +39,7 @@ import com.grondona.service.engine.WorldCupEngine
 import io.mockk.*
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -135,6 +138,8 @@ class PredictionServiceTest {
         code = "OPEN-01",
         homeTeam = testTeam,
         awayTeam = testTeam,
+        stage = MatchStage.GROUP_STAGE,
+        group = MatchGroup.GROUP_A,
         startedAt = ZonedDateTime.now().plusHours(2)
     )
 
@@ -145,6 +150,8 @@ class PredictionServiceTest {
         code = "LOCKED-01",
         homeTeam = testTeam,
         awayTeam = testTeam,
+        stage = MatchStage.GROUP_STAGE,
+        group = MatchGroup.GROUP_A,
         status = MatchStatus.FINISHED,
         startedAt = ZonedDateTime.now().minusHours(2)
     )
@@ -162,6 +169,11 @@ class PredictionServiceTest {
         every { userRepository.findById(testUserId) } returns Optional.of(user)
         every { groupRepository.findById(testGroupId) } returns Optional.of(group)
         every { membershipRepository.isMember(testUserId, testGroupId) } returns true
+    }
+
+    @AfterEach
+    fun tearDown() {
+        unmockkAll()
     }
 
     @BeforeEach
@@ -313,8 +325,7 @@ class PredictionServiceTest {
             val savedPredictions = listOf(testPrediction, testPrediction.copy(match = openMatch2))
 
             mockMembership()
-            every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchOpen)
-            every { matchRepository.findById(matchId2) } returns Optional.of(openMatch2)
+            every { matchRepository.findAllById(listOf(testMatchId, matchId2)) } returns listOf(testMatchOpen, openMatch2)
             every { matchPredictionRepository.upsertAll(any()) } returns savedPredictions
 
             val result = predictionService.submitMatchPredictions(testUserId, testGroupId, request)
@@ -335,8 +346,7 @@ class PredictionServiceTest {
 
             val user = testUser.copy(hasUniquePredictions = true)
             mockMembership(user = user)
-            every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchOpen)
-            every { matchRepository.findById(matchId2) } returns Optional.of(openMatch2)
+            every { matchRepository.findAllById(listOf(testMatchId, matchId2)) } returns listOf(testMatchOpen, openMatch2)
 
             val userGroups = listOf(
                 GroupUser(user = user, group = testGroup),
@@ -378,8 +388,7 @@ class PredictionServiceTest {
             )
 
             mockMembership()
-            every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchOpen)
-            every { matchRepository.findById(matchId2) } returns Optional.of(lockedMatch2)
+            every { matchRepository.findAllById(listOf(testMatchId, matchId2)) } returns listOf(testMatchOpen, lockedMatch2)
             every { matchPredictionRepository.upsertAll(any()) } returns listOf(testPrediction)
 
             val result = predictionService.submitMatchPredictions(testUserId, testGroupId, request)
@@ -395,7 +404,7 @@ class PredictionServiceTest {
             )
 
             mockMembership()
-            every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchLocked)
+            every { matchRepository.findAllById(listOf(testMatchId)) } returns listOf(testMatchLocked)
             every { matchPredictionRepository.upsertAll(emptyList()) } returns emptyList()
 
             val result = predictionService.submitMatchPredictions(testUserId, testGroupId, request)
@@ -940,9 +949,18 @@ class PredictionServiceTest {
         private val testUser1 = testUser.copy(id = UUID.randomUUID(), username = "Test User 1")
         private val testUser2 = testUser.copy(id = UUID.randomUUID(), username = "Test User 2")
         private val testUser3 = testUser.copy(id = UUID.randomUUID(), username = "Test User 3")
-        private val testGroup1 = testGroup.copy(id = UUID.randomUUID(), name = "Test Group 1")
-        private val testGroup2 = testGroup.copy(id = UUID.randomUUID(), name = "Test Group 2")
-        private val testGroup3 = testGroup.copy(id = UUID.randomUUID(), name = "Test Group 3")
+        private val testGroup1 = testGroup.copy(
+            id = UUID.randomUUID(), name = "Test Group 1",
+            tournament = testTournament.copy(status = TournamentStatus.FINISHED)
+        )
+        private val testGroup2 = testGroup.copy(
+            id = UUID.randomUUID(), name = "Test Group 2",
+            tournament = testTournament.copy(status = TournamentStatus.FINISHED)
+        )
+        private val testGroup3 = testGroup.copy(
+            id = UUID.randomUUID(), name = "Test Group 3",
+            tournament = testTournament.copy(status = TournamentStatus.FINISHED)
+        )
 
         private val winners = Awards(
             champion = UUID.randomUUID(), topScorer = UUID.randomUUID(), bestPlayer = UUID.randomUUID(),
@@ -992,15 +1010,15 @@ class PredictionServiceTest {
 
             val testMatch1 = Match(
                 id = UUID.randomUUID(), code = "X1", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().minusDays(7)
+                homeGoals = 0, awayGoals = 0, stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().minusDays(7)
             )
             val testMatch2 = Match(
                 id = UUID.randomUUID(), code = "X2", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 1, awayGoals = 0, startedAt = ZonedDateTime.now().minusDays(6)
+                homeGoals = 1, awayGoals = 0, stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().minusDays(6)
             )
             val testMatch3 = Match(
                 id = UUID.randomUUID(), code = "X3", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 0, awayGoals = 1, startedAt = ZonedDateTime.now().minusDays(5)
+                homeGoals = 0, awayGoals = 1, stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().minusDays(5)
             )
 
             val matchPredictions = listOf(
@@ -1300,12 +1318,12 @@ class PredictionServiceTest {
             verify(exactly = 1) { membershipRepository.saveAll(capture(slot1)) }
             val membersSaved = slot1.captured
             assertEquals(6, membersSaved.size)
-            assertTrue { membersSaved.any { it.user == testUser1 && it.group == testGroup1 && it.points == 58F && it.rank == 1 } }
-            assertTrue { membersSaved.any { it.user == testUser2 && it.group == testGroup1 && it.points == 21F && it.rank == 2 } }
-            assertTrue { membersSaved.any { it.user == testUser3 && it.group == testGroup1 && it.points == 0F && it.rank == 3 } }
-            assertTrue { membersSaved.any { it.user == testUser1 && it.group == testGroup2 && it.points == 37F && it.rank == 1 } }
-            assertTrue { membersSaved.any { it.user == testUser2 && it.group == testGroup2 && it.points == 0F && it.rank == 2 } }
-            assertTrue { membersSaved.any { it.user == testUser3 && it.group == testGroup2 && it.points == 0F && it.rank == 3 } }
+            assertTrue { membersSaved.any { it.user == testUser1 && it.group == testGroup1 && it.points == 50f && it.rank == 1 } }
+            assertTrue { membersSaved.any { it.user == testUser2 && it.group == testGroup1 && it.points == 21f && it.rank == 2 } }
+            assertTrue { membersSaved.any { it.user == testUser3 && it.group == testGroup1 && it.points == 0f && it.rank == 3 } }
+            assertTrue { membersSaved.any { it.user == testUser1 && it.group == testGroup2 && it.points == 33f && it.rank == 1 } }
+            assertTrue { membersSaved.any { it.user == testUser2 && it.group == testGroup2 && it.points == 0f && it.rank == 2 } }
+            assertTrue { membersSaved.any { it.user == testUser3 && it.group == testGroup2 && it.points == 0f && it.rank == 3 } }
 
             val slot2 = slot<List<AwardPrediction>>()
             verify(exactly = 1) { awardPredictionRepository.saveAll(capture(slot2)) }
@@ -1584,15 +1602,15 @@ class PredictionServiceTest {
 
             val testMatch1 = Match(
                 id = UUID.randomUUID(), code = "X1", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().minusDays(7)
+                homeGoals = 0, awayGoals = 0, stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().minusDays(7)
             )
             val testMatch2 = Match(
                 id = UUID.randomUUID(), code = "X2", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 1, awayGoals = 0, startedAt = ZonedDateTime.now().minusDays(6)
+                homeGoals = 1, awayGoals = 0, stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().minusDays(6)
             )
             val testMatch3 = Match(
                 id = UUID.randomUUID(), code = "X3", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
-                homeGoals = 0, awayGoals = 1, startedAt = ZonedDateTime.now().minusDays(6)
+                homeGoals = 0, awayGoals = 1, stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().minusDays(6)
             )
 
             val matchPredictions = listOf(
@@ -1633,7 +1651,7 @@ class PredictionServiceTest {
             assertEquals(1, membersSaved.size)
             assertEquals(testUser1, membersSaved[0].user)
             assertEquals(testGroup1, membersSaved[0].group)
-            assertEquals(37F, membersSaved[0].points)
+            assertEquals(34F, membersSaved[0].points)
             assertEquals(1, membersSaved[0].rank)
             assertEquals(0, membersSaved[0].amountPartial)
             assertEquals(1, membersSaved[0].amountCorrect)

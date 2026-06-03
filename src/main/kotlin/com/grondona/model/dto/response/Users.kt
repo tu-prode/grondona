@@ -12,6 +12,7 @@ data class AuthenticatedUserResponse(
     val email: String,
     val fullname: String,
     val permissions: UserPermissions,
+    val shouldResetPassword: Boolean? = null,
 )
 
 data class UserResponse(

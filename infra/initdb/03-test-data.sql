@@ -47,7 +47,8 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO match_predictions (user_id, group_id, match_id, home_goals, away_goals, status)
 SELECT gu.user_id, gu.group_id, m.id, floor(random()*5)::int, floor(random()*5)::int, 'PENDING'
 FROM group_users gu
-JOIN matches m ON m.code::int BETWEEN 1 AND 72;
+JOIN matches m ON m.code::int BETWEEN 1 AND 72
+WHERE gu.user_id <> 'c97ec073-c40c-4094-9f9e-b07074188936';
 
 INSERT INTO award_predictions (user_id, group_id, award_type, awarded_team_id, awarded_player_id)
 SELECT gu.user_id, gu.group_id, award_type, team_id, NULL

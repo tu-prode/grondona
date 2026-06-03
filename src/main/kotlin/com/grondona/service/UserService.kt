@@ -3,11 +3,11 @@ package com.grondona.service
 import com.grondona.exception.BadRequestException
 import com.grondona.exception.ConflictException
 import com.grondona.exception.ForbiddenException
-import com.grondona.exception.GeneralException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.User
 import com.grondona.model.UserPermissions
 import com.grondona.model.dto.request.CreateUserRequest
+import com.grondona.model.dto.request.ForgottenPasswordRequest
 import com.grondona.model.dto.request.LoginUserRequest
 import com.grondona.model.dto.request.UpdateUserRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
@@ -15,8 +15,8 @@ import com.grondona.model.dto.response.UserResponse
 import com.grondona.repository.MembershipRepository
 import com.grondona.repository.UserRepository
 import com.grondona.security.JwtService
+import com.grondona.service.mailing.EmailService
 import com.grondona.utils.hashMD5
-import com.grondona.utils.hashSHA256
 import java.time.LocalDateTime
 import java.util.UUID
 import org.slf4j.LoggerFactory
@@ -29,10 +29,17 @@ class UserService(
     private val userRepository: UserRepository,
     private val predictionService: PredictionService,
     private val membershipRepository: MembershipRepository,
+    private val emailService: EmailService,
 ) {
 
     companion object {
         private val logger = LoggerFactory.getLogger(UserService::class.java)
+
+        private fun generateResetToken(): String {
+            val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+            val base = "AGUANTE-EL-ROJO::"
+            return base + (1..10).map { chars.random() }.joinToString("")
+        }
     }
 
     @Transactional
@@ -71,10 +78,11 @@ class UserService(
         )
     }
 
+    @Transactional
     fun login(request: LoginUserRequest): AuthenticatedUserResponse {
         logger.info("Login attempt: user='{}'", request.user)
 
-        val user = userRepository.findByUsername(request.user).orElseGet {
+        var user = userRepository.findByUsername(request.user).orElseGet {
             userRepository.findByEmail(request.user).orElseThrow {
                 logger.warn("Login failed: user '{}' not found", request.user)
                 BadRequestException("User not found")
@@ -82,22 +90,53 @@ class UserService(
         }
 
         val hashedPassword = hashMD5(request.password)
-        if (user.passwordHash != hashedPassword) {
-            logger.warn("Login failed: invalid password for username '{}'", request.user)
-            throw BadRequestException("User or password incorrect")
+        val shouldResetPassword = when {
+            user.resetToken == hashedPassword -> {
+                logger.warn("Login successful with reset token: userId={}, user={}", user.id, user.username)
+                true
+            }
+            user.passwordHash != hashedPassword -> {
+                logger.warn("Login failed: invalid password for username {}", request.user)
+                throw BadRequestException("User or password incorrect")
+            }
+            else -> {
+                logger.info("Login successful: userId={}, user={}", user.id, user.username)
+                false
+            }
         }
 
-        val token = jwtService.generateToken(user.id!!, user.username)
+        if (user.resetToken != null) {
+            user = userRepository.save(user.copy(resetToken = null))
+        }
 
-        logger.info("Login successful: userId={}, user='{}'", user.id, user.username)
+        val userId = user.id!!
+        val token = jwtService.generateToken(userId, user.username)
         return AuthenticatedUserResponse(
             token = token,
-            userId = user.id,
+            userId = userId,
             username = user.username,
             email = user.email,
             fullname = user.fullname,
             permissions = user.permissions,
+            shouldResetPassword = shouldResetPassword,
         )
+    }
+
+    @Transactional
+    fun forgottenPasswordToken(request: ForgottenPasswordRequest) {
+        logger.info("Requesting reset token for user={}", request.user)
+
+        var user = userRepository.findByUsername(request.user).orElseGet {
+            userRepository.findByEmail(request.user).orElseThrow {
+                logger.warn("Login failed: user '{}' not found", request.user)
+                BadRequestException("User not found")
+            }
+        }
+
+        val resetToken = generateResetToken()
+        user = userRepository.save(user.copy(resetToken = hashMD5(resetToken)))
+        emailService.sendPasswordResetEmail(to = user.email, token = resetToken)
+        logger.info("Reset token generated and emailed for user={}", request.user)
     }
 
     @Transactional

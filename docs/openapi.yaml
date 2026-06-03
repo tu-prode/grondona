@@ -172,6 +172,38 @@ paths:
                 message: Invalid username or password
                 timestamp: "2024-01-01T12:00:00"
 
+  /api/users/forgot-password:
+    post:
+      tags:
+        - Users
+      summary: User reset password
+      description: |
+        Triggers the workflow to create a temporary access token for the user
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequest"
+            example:
+              user: johndoe
+              password: secret123
+      responses:
+        "204":
+          description: Reset token successful
+        "400":
+          description: Invalid username or password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: 400
+                error: Bad Request
+                message: Invalid username or password
+                timestamp: "2024-01-01T12:00:00"
+
   /api/users/me:
     get:
       tags:
@@ -717,6 +749,52 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CreateMatchesRequest"
+      responses:
+        "201":
+          description: Match created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedMatchesResponse"
+        "401":
+          description: Credentials missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: User has no access for performing this action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Tournament or teams not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Some detailed error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      tags:
+        - Tournaments
+      summary: Update matches in a tournament
+      description: |
+        Update existing tournament matches
+      operationId: updateTournamentMatches
+      security:
+        - bearerAuth: [ SUPERUSER ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMatchesRequest"
       responses:
         "201":
           description: Match created successfully
@@ -1725,6 +1803,16 @@ components:
           minLength: 6
           example: secret123
 
+    ForgotPasswordRequest:
+      type: object
+      required:
+        - user
+      properties:
+        user:
+          type: string
+          description: User for authentication (either username or email)
+          example: johndoe
+
     LoginRequest:
       type: object
       required:
@@ -1805,6 +1893,10 @@ components:
           type: string
           description: Full name
           example: John Doe
+        should_reset_password:
+          type: boolean
+          description: Nullable flag indicating if the user has forgotten is password
+          example: true
 
     UserPermissions:
       description: The permissions of a user
@@ -2248,6 +2340,69 @@ components:
         - IN_PROGRESS
         - FINISHED
 
+    UpdateMatchesRequest:
+      description: Multiple matches to be update
+      type: object
+      required:
+        - matches
+      properties:
+        matches:
+          $ref: '#/components/schemas/UpdateMatchRequest'
+
+    UpdateMatchRequest:
+      description: A match to be created
+      type: object
+      required:
+        - match_id
+        - status
+      properties:
+        match_id:
+          type: string
+          format: uuid
+          description: Unique identifier for the match
+          example : 878cb6ff-2e03-4e84-935c-efcf2251a607
+        status:
+          $ref: '#/components/schemas/MatchStatus'
+        home_goals:
+          type: integer
+          format: int8
+          description: The amount of goals scored by the home team
+          example: 1
+        away_goals:
+          type: integer
+          format: int8
+          description: The amount of goals scored by the away team
+          example: 2
+        home_penalties:
+          type: integer
+          format: int8
+          description: The amount of penalties scored by the home team
+          example: 6
+        away_penalties:
+          type: integer
+          format: int8
+          description: The amount of penalties scored by the away team
+          example: 7
+        home_quota:
+          type: number
+          format: float16
+          description: The quota for a home team win
+          example: 2.2
+        away_quota:
+          type: number
+          format: float16
+          description: The quota for an away team win
+          example: 1.8
+        draw_quota:
+          type: number
+          format: float16
+          description: The quota for a tie
+          example: 1.3
+        has_multiplier:
+          type: boolean
+          description: Flag indicating if the match is a special match with a multiplier bonus
+          example: false
+
     CreateMatchesRequest:
       description: Multiple matches to be created
       type: object
@@ -2264,6 +2419,7 @@ components:
         - code
         - home_team
         - away_team
+        - stage
         - started_at
       properties:
         code:
@@ -2285,6 +2441,10 @@ components:
           format: date-time
           description: The timestamp for the match start
           example: '2026-06-12 13:30:00 +03:00'
+        stage:
+          $ref: '#/components/schemas/MatchStage'
+        group:
+          $ref: '#/components/schemas/MatchGroup'
         has_multiplier:
           type: boolean
           description: Flag indicating if the match is a special match with a multiplier bonus
@@ -2312,6 +2472,35 @@ components:
           items:
             $ref: '#/components/schemas/MatchResponse'
 
+    MatchStage:
+      description: The stage of the match
+      type: string
+      enum:
+        - GROUP_STAGE
+        - ROUND_OF_32
+        - ROUND_OF_16
+        - QUARTERFINALS
+        - SEMIFINALS
+        - THIRD_PLACE
+        - FINAL
+
+    MatchGroup:
+      description: The group of the match
+      type: string
+      enum:
+        - GROUP_A
+        - GROUP_B
+        - GROUP_C
+        - GROUP_D
+        - GROUP_E
+        - GROUP_F
+        - GROUP_G
+        - GROUP_H
+        - GROUP_I
+        - GROUP_J
+        - GROUP_K
+        - GROUP_L
+
     MatchResponse:
       description: A match of a tournament
       type: object
@@ -2320,6 +2509,7 @@ components:
         - code
         - home_team
         - away_team
+        - stage
         - home_quota
         - away_quota
         - draw_quota
@@ -2336,6 +2526,10 @@ components:
           type: string
           description: Unique identifier for the match within the tournament
           example: "QF2"
+        stage:
+          $ref: '#/components/schemas/MatchStage'
+        group:
+          $ref: '#/components/schemas/MatchGroup'
         home_team:
           $ref: '#/components/schemas/TeamResponse'
         away_team:

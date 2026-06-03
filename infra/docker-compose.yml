@@ -5,9 +5,9 @@ services:
     image: postgres:15-alpine
     container_name: grondona-postgres
     environment:
-      POSTGRES_DB: grondona
-      POSTGRES_USER: grondona
-      POSTGRES_PASSWORD: grondona
+      POSTGRES_DB: "grondona"
+      POSTGRES_USER: "grondona"
+      POSTGRES_PASSWORD: "grondona"
     ports:
       - "5432:5432"
     volumes:
@@ -26,14 +26,27 @@ services:
       context: ..
       dockerfile: infra/Dockerfile
     container_name: grondona-app
+    env_file:
+      - .env
     environment:
-      DB_HOST: db
+      # System configuration
+      ENV: "local"
+      NEW_MATCHES: "true"
+      UPDATED_QUOTAS: "true"
+      # Scheduling: in-process locally; on request-based Cloud Run set false and use Cloud Scheduler
+      IN_PROCESS_SCHEDULER: "false"
+      # DB configuration
+      DB_HOST: "db"
       DB_PORT: 5432
-      DB_NAME: grondona
-      DB_USER: grondona
-      DB_PASSWORD: grondona
-      JWT_SECRET: mySecretKeyForJwtTokenGenerationThatIsAtLeast256BitsLong!
+      DB_NAME: "grondona"
+      DB_USER: "grondona"
+      # JWT configuration
       JWT_EXPIRATION: 86400000
+      # Matches API configuration
+      MATCHES_API_URL: "http://mocknaldo:8085"
+      # Mailing configuration
+      MAIL_HOST: "smtp.sendgrid.net"
+      MAIL_PORT: "587"
     ports:
       - "8080:8080"
     depends_on:
@@ -47,6 +60,8 @@ services:
       context: ..
       dockerfile: infra/mocknaldo/Dockerfile
     container_name: grondona-mocknaldo
+    environment:
+      RANDOMIZED: "true"
     ports:
       - "8085:8085"
     networks:

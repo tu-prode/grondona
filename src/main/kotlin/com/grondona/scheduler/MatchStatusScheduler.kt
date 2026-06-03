@@ -1,6 +1,6 @@
 package com.grondona.scheduler
 
-import com.grondona.model.Environments
+import com.grondona.model.Environment
 import com.grondona.model.Match
 import com.grondona.model.MatchStatus
 import com.grondona.model.SchedulerData
@@ -9,8 +9,8 @@ import com.grondona.service.engine.WorldCupEngine
 import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.scheduling.TaskScheduler
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -19,35 +19,29 @@ import java.util.Date
 import java.util.concurrent.ScheduledFuture
 
 @Service
-class MatchScheduler(
+@ConditionalOnProperty(
+    name = ["external.api.matches.in-process-scheduler"],
+    havingValue = "true", matchIfMissing = true,
+)
+class MatchStatusScheduler(
     private val matchService: MatchService,
     private val taskScheduler: TaskScheduler,
-    @Value("\${external.matches.poll-interval-ms}")
+    @Value("\${external.api.matches.poll-interval-ms}")
     private val statusPollIntervalMs: Long,
     @Value("\${app.env}")
     private val rawEnv: String
 ) {
 
     private var future: ScheduledFuture<*>? = null
-    private val env = Environments.valueOf(rawEnv.uppercase())
+    private val env = Environment.fromProfile(rawEnv)
 
     companion object {
         private val logger = LoggerFactory.getLogger(MatchService::class.java)
     }
 
-    @Scheduled(cron = "0 0 7 * * *", zone = "America/Argentina/Buenos_Aires")
-    fun updateQuotas() {
-        logger.debug("Starting matches quotas polling job")
-        try {
-            matchService.updateMatchesQuotas(WorldCupEngine.SYSTEM_TOURNAMENT_ID)
-        } catch (ex: Exception) {
-            logger.error("Error while executing MatchScheduler (quotas)", ex)
-        }
-    }
-
     @PostConstruct
     fun start() {
-        val wait = 120000L
+        val wait = 120_000L
         logger.debug("Started MatchScheduler and waiting {}ms for system to be ready", wait)
         scheduleAfterDelay(wait)
     }
@@ -66,7 +60,7 @@ class MatchScheduler(
         }
 
         when {
-            env == Environments.LOCAL -> {
+            env == Environment.LOCAL -> {
                 scheduleAfterDelay(statusPollIntervalMs)
             }
 

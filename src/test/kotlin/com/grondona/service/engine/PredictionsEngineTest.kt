@@ -7,6 +7,7 @@ import com.grondona.model.Group
 import com.grondona.model.GroupUser
 import com.grondona.model.Match
 import com.grondona.model.MatchPrediction
+import com.grondona.model.MatchStage
 import com.grondona.model.MatchStatus
 import com.grondona.model.Player
 import com.grondona.model.PlayerPosition
@@ -51,19 +52,13 @@ class PredictionsEngineTest {
     )
 
     private fun testMatch(
-        homeGoals: Int,
-        awayGoals: Int,
-        homeQuota: Float = 0f,
-        awayQuota: Float = 0f,
-        drawQuota: Float = 0f,
-        hasMultiplier: Boolean = false
+        homeGoals: Int, awayGoals: Int, hasMultiplier: Boolean = false,
+        homeQuota: Float = 0f, awayQuota: Float = 0f, drawQuota: Float = 0f
     ) = Match(
-        id = UUID.randomUUID(), code = "MATCH", tournament = anyTournament,
-        homeTeam = anyTeam, awayTeam = anyTeam, status = MatchStatus.FINISHED,
-        homeGoals = homeGoals, awayGoals = awayGoals, hasMultiplier = hasMultiplier,
-        homeQuota = homeQuota, awayQuota = awayQuota, drawQuota = drawQuota,
-        startedAt = ZonedDateTime.now().minusHours(2),
-        finishedAt = ZonedDateTime.now().minusHours(1),
+        id = UUID.randomUUID(), code = "MATCH", tournament = anyTournament, stage = MatchStage.GROUP_STAGE,
+        homeTeam = anyTeam, awayTeam = anyTeam, status = MatchStatus.FINISHED, homeGoals = homeGoals, awayGoals = awayGoals,
+        hasMultiplier = hasMultiplier, homeQuota = homeQuota, awayQuota = awayQuota, drawQuota = drawQuota,
+        startedAt = ZonedDateTime.now().minusHours(2), finishedAt = ZonedDateTime.now().minusHours(1),
     )
 
     private fun testMatchPrediction(match: Match, homeGoals: Int, awayGoals: Int): MatchPrediction {
@@ -289,7 +284,7 @@ class PredictionsEngineTest {
             // winner is top-scorer=A, predictions is top-scorer=A
             val prediction = testAwardPrediction(AwardType.TOP_SCORER, status = PredictionStatus.CORRECT)
             val result = PredictionsEngine.awardPoints(listOf(prediction))
-            Assertions.assertEquals(12f, result)
+            Assertions.assertEquals(10f, result)
         }
 
         @Test
@@ -298,7 +293,7 @@ class PredictionsEngineTest {
             val prediction1 = testAwardPrediction(AwardType.TOP_SCORER, status = PredictionStatus.CORRECT)
             val prediction2 = testAwardPrediction(AwardType.TOP_SCORER, status = PredictionStatus.CORRECT)
             val result = PredictionsEngine.awardPoints(listOf(prediction1, prediction2))
-            Assertions.assertEquals(8f, result)
+            Assertions.assertEquals(7f, result)
         }
 
         @Test
@@ -343,7 +338,7 @@ class PredictionsEngineTest {
             // winner is best-player=A, predictions is best-player=A
             val prediction = testAwardPrediction(AwardType.BEST_PLAYER, status = PredictionStatus.CORRECT)
             val result = PredictionsEngine.awardPoints(listOf(prediction))
-            Assertions.assertEquals(12f, result)
+            Assertions.assertEquals(10f, result)
         }
 
         @Test
@@ -352,7 +347,7 @@ class PredictionsEngineTest {
             val prediction1 = testAwardPrediction(AwardType.BEST_PLAYER, status = PredictionStatus.CORRECT)
             val prediction2 = testAwardPrediction(AwardType.BEST_PLAYER, status = PredictionStatus.INCORRECT)
             val result = PredictionsEngine.awardPoints(listOf(prediction1, prediction2))
-            Assertions.assertEquals(8f, result)
+            Assertions.assertEquals(7f, result)
         }
 
         @Test
@@ -397,7 +392,7 @@ class PredictionsEngineTest {
             // winner is best-goalkeeper=A, predictions is best-goalkeeper=A
             val prediction = testAwardPrediction(AwardType.BEST_GOALKEEPER, status = PredictionStatus.CORRECT)
             val result = PredictionsEngine.awardPoints(listOf(prediction))
-            Assertions.assertEquals(12f, result)
+            Assertions.assertEquals(10f, result)
         }
 
         @Test
@@ -406,7 +401,7 @@ class PredictionsEngineTest {
             val prediction1 = testAwardPrediction(AwardType.BEST_GOALKEEPER, status = PredictionStatus.CORRECT)
             val prediction2 = testAwardPrediction(AwardType.BEST_GOALKEEPER, status = PredictionStatus.INCORRECT)
             val result = PredictionsEngine.awardPoints(listOf(prediction1, prediction2))
-            Assertions.assertEquals(8f, result)
+            Assertions.assertEquals(7f, result)
         }
 
         @Test
@@ -451,7 +446,7 @@ class PredictionsEngineTest {
             // winner is best-young-player=A, predictions is best-young-player=A
             val prediction = testAwardPrediction(AwardType.BEST_YOUNG_PLAYER, status = PredictionStatus.CORRECT)
             val result = PredictionsEngine.awardPoints(listOf(prediction))
-            Assertions.assertEquals(12f, result)
+            Assertions.assertEquals(10f, result)
         }
 
         @Test
@@ -460,7 +455,7 @@ class PredictionsEngineTest {
             val prediction1 = testAwardPrediction(AwardType.BEST_YOUNG_PLAYER, status = PredictionStatus.CORRECT)
             val prediction2 = testAwardPrediction(AwardType.BEST_YOUNG_PLAYER, status = PredictionStatus.INCORRECT)
             val result = PredictionsEngine.awardPoints(listOf(prediction1, prediction2))
-            Assertions.assertEquals(8f, result)
+            Assertions.assertEquals(7f, result)
         }
 
         @Test
@@ -752,8 +747,8 @@ class PredictionsEngineTest {
         }
 
         @Test
-        fun `updateAwardPoints() properly change points when tournament`() {
-            val group = testGroup.copy(tournament = testTournament.copy(status = TournamentStatus.NOT_STARTED))
+        fun `updateAwardPoints() properly change points when tournament is finished`() {
+            val group = testGroup.copy(tournament = testTournament.copy(status = TournamentStatus.FINISHED))
             val member1 = member.copy(id = UUID.randomUUID(), user = testUser.copy(id = UUID.randomUUID()), group = group, points = 32.1f)
             val member2 = member.copy(id = UUID.randomUUID(), user = testUser.copy(id = UUID.randomUUID()), group = group, points = 12.6f)
             val members = listOf(member1, member2)

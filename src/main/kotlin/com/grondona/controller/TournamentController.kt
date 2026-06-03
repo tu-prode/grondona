@@ -6,8 +6,9 @@ import com.grondona.model.dto.request.CreateMatchesRequest
 import com.grondona.model.dto.request.CreatePlayerRequest
 import com.grondona.model.dto.request.CreateTeamRequest
 import com.grondona.model.dto.request.CreateTournamentRequest
+import com.grondona.model.dto.request.UpdateMatchesRequest
 import com.grondona.model.dto.request.UpdateTournamentRequest
-import com.grondona.model.dto.response.CreatedMatchesResponse
+import com.grondona.model.dto.response.SimpleMatchesResponse
 import com.grondona.model.dto.response.PlayerResponse
 import com.grondona.model.dto.response.TeamResponse
 import com.grondona.model.dto.response.TournamentMatchesResponse
@@ -137,12 +138,26 @@ class TournamentController(
         @AuthenticationPrincipal principal: JwtUserPrincipal?,
         @PathVariable tournamentId: UUID,
         @Valid @RequestBody request: CreateMatchesRequest,
-    ): ResponseEntity<CreatedMatchesResponse> {
+    ): ResponseEntity<SimpleMatchesResponse> {
         return withSuperuserValidation(principal) {
             logger.info("POST /api/tournaments/{}/matches - Creating matches {}", tournamentId, request.matches.size)
             val response = tournamentService.createTournamentMatches(tournamentId, request)
             logger.info("POST /api/tournaments/{}/matches - Total matches created: {}", tournamentId, response.matches.size)
             ResponseEntity.status(HttpStatus.CREATED).body(response)
+        }
+    }
+
+    @PutMapping("/{tournamentId}/matches")
+    fun updateTournamentMatches(
+        @AuthenticationPrincipal principal: JwtUserPrincipal?,
+        @PathVariable tournamentId: UUID,
+        @Valid @RequestBody request: UpdateMatchesRequest,
+    ): ResponseEntity<SimpleMatchesResponse> {
+        return withSuperuserValidation(principal) {
+            logger.info("PUT /api/tournaments/{}/matches - Updating matches {}", tournamentId, request.matches.size)
+            val response = tournamentService.updateTournamentMatches(tournamentId, request)
+            logger.info("PUT /api/tournaments/{}/matches - Total matches updated: {}", tournamentId, response.matches.size)
+            ResponseEntity.status(HttpStatus.OK).body(response)
         }
     }
 
