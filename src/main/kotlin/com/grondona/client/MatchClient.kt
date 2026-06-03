@@ -12,7 +12,6 @@ import com.grondona.model.MatchSubstatus
 import com.grondona.model.PROD
 import com.grondona.model.TEST
 import com.grondona.now
-import com.grondona.service.engine.WorldCupEngine
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Profile

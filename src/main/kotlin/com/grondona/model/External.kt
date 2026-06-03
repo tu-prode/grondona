@@ -2,7 +2,7 @@ package com.grondona.model
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.grondona.exception.ExternalServiceException
-import com.grondona.service.PredictionService
+import com.grondona.utils.adjustDrawQuota
 import com.grondona.utils.oddsToQuota
 import java.time.ZonedDateTime
 
