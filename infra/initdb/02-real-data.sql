@@ -1401,3 +1401,14 @@ INSERT INTO matches (id, tournament_id, code, stage, "group", home_team_id, away
     ('22334455-6677-4966-7aed-88899aabbccd', '28652183-a2d6-4f33-a624-0d24645ce3cd', '70', 'GROUP_STAGE', 'GROUP_J', 'b5e1c7a3-2f9d-4a6c-8e1b-3d7a5c2f9e28', '9c2e1f4b-8a7d-4b6c-9e3f-1a2b5c7d8e04', '2026-06-27 21:00:00 -05:00'::timestamptz, false, 0.1+2*round(cast(log(15.5)/log(6.0) as numeric), 2), 0.1+2*round(cast(log(7.10)/log(6.0) as numeric), 2), 0.1+2*round(cast(log(1.23)/log(6.0) as numeric), 2)),
     ('33445566-7788-4a77-8bfe-999aabbccdde', '28652183-a2d6-4f33-a624-0d24645ce3cd', '71', 'GROUP_STAGE', 'GROUP_K', 'd7a2c5e1-9b3f-4a6c-8e1d-2c7a3f5b9e12', 'd7a1c5e3-2f9a-4a6c-8e1d-3c7a5f2b9e36', '2026-06-27 19:30:00 -04:00'::timestamptz, false, 0.1+2*round(cast(log(3.50)/log(6.0) as numeric), 2), 0.1+2*round(cast(log(3.34)/log(6.0) as numeric), 2), 0.1+2*round(cast(log(2.25)/log(6.0) as numeric), 2)),
     ('44556677-8899-4b88-9c0f-aaabbccddeef', '28652183-a2d6-4f33-a624-0d24645ce3cd', '72', 'GROUP_STAGE', 'GROUP_K', '8f251495-81ba-4724-b575-f7ebecf213c4', 'd9b3c1e7-5f2d-4c8a-9e6b-1a2f3d7c5b42', '2026-06-27 19:30:00 -04:00'::timestamptz, true, 0.1+2*round(cast(log(2.40)/log(6.0) as numeric), 2), 0.1+2*round(cast(log(3.40)/log(6.0) as numeric), 2), 0.1+2*round(cast(log(1.23)/log(6.0) as numeric), 2));
+
+INSERT INTO users (id, fullname, username, email, password_hash, permissions) VALUES
+    ('c97ec073-c40c-4094-9f9e-b07074188936', 'Cristian Raña', 'cris', 'cristian.rana8@gmail.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'SUPERUSER');
+
+INSERT INTO groups (id, tournament_id, name, is_private, max_members) VALUES
+    ('7c9e6679-7425-40de-944b-e07fc1f90ae7', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'Oppa', TRUE, 50),
+    ('8158a607-97b3-47db-8382-92d878358b9c', '28652183-a2d6-4f33-a624-0d24645ce3cd', 'Familia', TRUE, 20);
+
+INSERT INTO group_users (user_id, group_id, role) VALUES
+    ('c97ec073-c40c-4094-9f9e-b07074188936', '7c9e6679-7425-40de-944b-e07fc1f90ae7', 'OWNER'),
+    ('c97ec073-c40c-4094-9f9e-b07074188936', '8158a607-97b3-47db-8382-92d878358b9c', 'OWNER');
