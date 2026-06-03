@@ -19,8 +19,6 @@ help:
 	@echo "  make clean      		- Stop services and remove volumes"
 	@echo "  make db-only    		- Start only the database"
 	@echo "  make mocknaldo-only	- Start only the Mocknaldo server"
-	@echo "  make mocknaldo-date	- Change the Mocknaldo processing date"
-	@echo "  make mocknaldo-pause	- Pause the Mocknaldo matches processor"
 	@echo "  make shell      		- Open a shell in the app container"
 	@echo "  make psql       		- Connect to PostgreSQL CLI"
 	@echo "  make test       		- Run tests"
@@ -98,20 +96,6 @@ mocknaldo-only:
 	docker-compose -f $(COMPOSE_FILE) up -d mocknaldo
 	@echo "Mocknaldo is running on localhost:8005"
 	docker-compose -f $(COMPOSE_FILE) logs --follow mocknaldo
-
-# Changes the date of Mocknaldo
-.PHONY: mocknaldo-date
-mocknaldo-date:
-	@echo "Changing Mocknaldo date to: $(date)"
-	@curl --location --request PUT 'http://localhost:8085/update-time' \
-	--header 'Content-Type: application/json' \
-	--data '{"time": "$(date)T00:00:00"}'
-
-# Pauses/resumes Mocknaldo
-.PHONY: mocknaldo-pause
-mocknaldo-pause:
-	@echo "Pausing/resuming Mocknaldo"
-	@curl --location --request PUT 'http://localhost:8085/pause'
 
 # Open shell in app container
 shell:
