@@ -69,7 +69,7 @@ interface MatchClient {
 }
 
 @Component
-@Profile(LOCAL, TEST)
+@Profile(LOCAL, TEST, PROD)
 class MocknaldoMatchClient(
     override val matchWebClient: WebClient,
 ) : MatchClient {
@@ -240,7 +240,7 @@ class MocknaldoMatchClient(
 }
 
 @Component
-@Profile(PROD)
+@Profile("XXX")
 class FootballDataMatchClient(
     override val matchWebClient: WebClient,
     @Value("\${external.api.matches.key}")
