@@ -30,10 +30,11 @@ execution = STANDARD
 
 import os
 raw_execution = os.getenv("EXECUTION")
-if raw_execution.upper() == FIXED:
-    execution = FIXED
-elif raw_execution.upper() == RANDOMIZED:
-    execution = RANDOMIZED
+if raw_execution is not None:
+    if raw_execution.upper() == FIXED:
+        execution = FIXED
+    elif raw_execution.upper() == RANDOMIZED:
+        execution = RANDOMIZED
 
 fixed = execution == FIXED
 randomized = execution == RANDOMIZED
