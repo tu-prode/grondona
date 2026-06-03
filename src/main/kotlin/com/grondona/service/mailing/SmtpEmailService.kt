@@ -8,8 +8,8 @@ import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.stereotype.Component
 
 private const val joke = "Resulta que en un hospital hay 3 parejas a punto de tener familia: unos argentinos, unos uruguayos y unos senegaleses. " +
-    "Mientras los maridos esperan afuera, sale el médico y les informa que hubo una confusión y que se les mezclaron los 3 bebés, así que decidieron " +
-    "que los padres pasen uno a uno a identificar a sus respectivos bebés. Pasa primero el uruguayo, y a los 5 minutos sale con un bebé negro como el carbón. " +
+    "Mientras los hombres esperan afuera, sale el médico y les informa que hubo una confusión y que se les mezclaron los 3 bebés, así que decidieron " +
+    "que los padres pasen uno a uno a identificar a sus respectivos hijos. Pasa primero el uruguayo, y a los 5 minutos sale con un niño negro como el carbón. " +
     "El senegalés lo frena y le dice \"¿por qué agarraste ese bebé? claramente es mío\", y el uruguayo le responde \"de los otros dos uno es argentino y no voy a correr el riesgo de llevármelo."
 
 @Component

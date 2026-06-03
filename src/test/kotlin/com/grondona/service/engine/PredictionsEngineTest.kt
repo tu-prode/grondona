@@ -183,12 +183,12 @@ class PredictionsEngineTest {
         }
 
         @Test
-        fun `matchPoints() rounds result to 2 decimal places`() {
+        fun `matchPoints() rounds result to 1 decimal place`() {
             // homeQuota=1.33333, match: home=1, away=0; prediction: home=2, away=0
             // HOME wins in both → PARTIAL → 1 + 1.333 = 2.333 → rounds to 2.33
             val match = testMatch(homeGoals = 1, awayGoals = 0, homeQuota = 1.3333333f)
             val result = PredictionsEngine.matchPoints(testMatchPrediction(match, 2, 0))
-            Assertions.assertEquals(2.33f, result)
+            Assertions.assertEquals(2.3f, result)
         }
 
         @Test
