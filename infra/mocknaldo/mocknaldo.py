@@ -23,14 +23,20 @@ handler.setFormatter(logging.Formatter(
 logger.handlers.clear()
 logger.addHandler(handler)
 
-import os
-def get_bool_env(name: str, default: bool = False) -> bool:
-    value = os.getenv(name)
-    if value is None:
-        return default
-    return value.lower() in ("true", "1", "yes", "on")
+FIXED = "FIXED"
+RANDOMIZED = "RANDOMIZED"
+STANDARD = "STANDARD"
+execution = STANDARD
 
-randomized = get_bool_env("RANDOMIZED")
+import os
+raw_execution = os.getenv("EXECUTION")
+if raw_execution.upper() == FIXED:
+    execution = FIXED
+elif raw_execution.upper() == RANDOMIZED:
+    execution = RANDOMIZED
+
+fixed = execution == FIXED
+randomized = execution == RANDOMIZED
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
@@ -952,7 +958,8 @@ def simulate_matches():
             MATCHES_LOCK.release()
             logger.debug(f"Simulating @ {current.date()}")
         else:
-            current = current + (datetime.now() - current) * delta
+            if not fixed:
+                current = current + (datetime.now() - current) * delta
             if not checkpoint or current.date() != checkpoint:
                 logger.debug(f"Simulating @ {current.date()}")
             checkpoint = current.date()
@@ -1293,5 +1300,5 @@ class ResultsMockerHandler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     server = HTTPServer((HOST, PORT), ResultsMockerHandler)
     logger.info(f"Server running on http://{HOST}:{PORT}")
-    logger.info(f"Mode: randomized={randomized}")
+    logger.info(f"Mode: {execution}")
     server.serve_forever()

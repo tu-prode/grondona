@@ -61,7 +61,7 @@ services:
       dockerfile: infra/mocknaldo/Dockerfile
     container_name: grondona-mocknaldo
     environment:
-      RANDOMIZED: "true"
+      EXECUTION: "fixed"
     ports:
       - "8085:8085"
     networks:
