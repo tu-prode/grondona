@@ -74,9 +74,9 @@ class MatchService(
 
         logger.trace("Fetching matches to update for tournament={}", tournamentId)
         val externalMatches = matchClient.getMatches(tournamentId)
-        logger.trace("API matches retrieved={}", externalMatches.size)
+        logger.trace("API matches retrieved for status updates={}", externalMatches.size)
         val matchesFromDB = matchRepository.findByTournamentId(tournamentId)
-        logger.trace("System matches retrieved={}", matchesFromDB.size)
+        logger.trace("System matches retrieved for status updates={}", matchesFromDB.size)
 
         val tournament = tournamentRepository.findById(tournamentId).orElseThrow {
             logger.error("Tournament={} not found in DB", tournamentId)
@@ -97,7 +97,7 @@ class MatchService(
         val matchesToSave = matchesToUpdate + if (prepareNewMatches && matchesToCreate.isNotEmpty())
             tournamentEngine.generateMatchesCodes(matchesToCreate) else emptyList()
         if (matchesToSave.isNotEmpty()) {
-            logger.debug("Matches to store in DB={}", matchesToSave.size)
+            logger.debug("Matches to apply status update in DB={}", matchesToSave.size)
             matchRepository.saveAll(matchesToSave)
         }
 
@@ -142,11 +142,11 @@ class MatchService(
             throw BadRequestException("Tournament not supported")
         }
 
-        logger.trace("Fetching matches to update quota for tournament={}", tournamentId)
+        logger.debug("Fetching matches to update quota for tournament={}", tournamentId)
         val externalMatches = matchClient.getMatches(tournamentId)
-        logger.trace("API matches retrieved={}", externalMatches.size)
+        logger.debug("API matches retrieved for quotas updates={}", externalMatches.size)
         val matchesFromDB = matchRepository.findByTournamentIdAndStatus(tournamentId, MatchStatus.NOT_STARTED)
-        logger.trace("System matches retrieved={}", matchesFromDB.size)
+        logger.debug("System matches retrieved for quotas updates={}", matchesFromDB.size)
 
         val tournament = tournamentRepository.findById(tournamentId).orElseThrow {
             logger.error("Tournament={} not found in DB", tournamentId)
@@ -162,7 +162,7 @@ class MatchService(
         val matchesToSave = matchesToUpdate + if (prepareNewMatches && matchesToCreate.isNotEmpty())
             tournamentEngine.generateMatchesCodes(matchesToCreate) else emptyList()
         if (matchesToSave.isNotEmpty()) {
-            logger.debug("Matches to update in DB={}", matchesToSave.size)
+            logger.debug("Matches to apply quotas update in DB={}", matchesToSave.size)
             matchRepository.saveAll(matchesToSave)
         }
     }

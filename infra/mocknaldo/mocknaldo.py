@@ -610,7 +610,8 @@ def check_round(match):
             new_matches += [ro32_1, ro32_2, ro32_3, ro32_4, ro32_5, ro32_6, ro32_7, ro32_8, ro32_9,
                             ro32_10, ro32_11, ro32_12, ro32_13, ro32_14, ro32_15, ro32_16]
             for match in new_matches:
-                logger.info(f"New match in Ro32: {match['home']}-{match['away']}")
+                if not randomized:
+                    logger.info(f"New match in Ro32: {match['home']}-{match['away']}")
         elif int(code) <= 87:
             # Generate RO16
             ro16_1 = next_knockout_match("89", "74", "77", "2026-07-04 18:00:00")
@@ -623,7 +624,8 @@ def check_round(match):
             ro16_8 = next_knockout_match("96", "85", "87", "2026-07-07 17:00:00")
             new_matches = [ro16_1, ro16_2, ro16_3, ro16_4, ro16_5, ro16_6, ro16_7, ro16_8]
             for match in new_matches:
-                logger.info(f"New match in Ro16: {match['home']}-{match['away']}")
+             if not randomized:
+                 logger.info(f"New match in Ro16: {match['home']}-{match['away']}")
         elif int(code) <= 96:
             # Generate QF
             qf_1 = next_knockout_match("97", "89", "90", "2026-07-09 17:00:00")
@@ -632,21 +634,24 @@ def check_round(match):
             qf_4 = next_knockout_match("100", "95", "96", "2026-07-11 22:00:00")
             new_matches = [qf_1, qf_2, qf_3, qf_4]
             for match in new_matches:
-                logger.info(f"New match in QF: {match['home']}-{match['away']}")
+                if not randomized:
+                    logger.info(f"New match in QF: {match['home']}-{match['away']}")
         elif int(code) <= 100:
             # Generate SF
             sf_1 = next_knockout_match("101", "97", "98", "2026-07-14 16:00:00")
             sf_2 = next_knockout_match("102", "99", "100", "2026-07-15 16:00:00")
             new_matches = [sf_1, sf_2]
             for match in new_matches:
-                logger.info(f"New match in SF: {match['home']}-{match['away']}")
+             if not randomized:
+                 logger.info(f"New match in SF: {match['home']}-{match['away']}")
         elif int(code) <= 102:
             # Generate F+3P
             third = next_knockout_match("103", "101", "102", "2026-07-18 18:00:00", loser)
             final = next_knockout_match("104", "101", "102", "2026-07-19 16:00:00")
             new_matches = [third, final]
-            logger.info(f"New match in 3P: {third['home']}-{third['away']}")
-            logger.info(f"New match in F: {final['home']}-{final['away']}")
+            if not randomized:
+                logger.info(f"New match in 3P: {third['home']}-{third['away']}")
+                logger.info(f"New match in F: {final['home']}-{final['away']}")
         MATCHES_LOCK.acquire()
         MATCHES += new_matches
         MATCHES_LOCK.release()
@@ -953,6 +958,7 @@ def simulate_matches():
             checkpoint = current.date()
         TIME_LOCK.release()
 
+        matches_updated = 0
         for match in MATCHES:
             if match["status"] == "COMPLETED":
                 continue
@@ -961,8 +967,9 @@ def simulate_matches():
             if current > match["started_at"]:
                 new_status = "IN_PLAY"
                 minutes = diff_minutes(current, match["started_at"])
-                logger.debug(f'Updating match: {match["home"]}-{match["away"]}')
-                logger.debug(f'Minutes from start timestamp: {minutes}\'')
+                if not randomized:
+                    logger.debug(f'Updating match: {match["home"]}-{match["away"]}')
+                    logger.debug(f'Minutes from start timestamp: {minutes}\'')
 
                 over90 = False
                 new_half, new_minutes, new_ended_at = None, None, None
@@ -978,7 +985,8 @@ def simulate_matches():
                 else:
                     if not new_added_time1:
                         new_added_time1 = simulate_added(half=1)
-                        logger.debug(f'Added time for first half: {new_added_time1}\'')
+                        if not randomized:
+                            logger.debug(f'Added time for first half: {new_added_time1}\'')
                     if minutes < 50 + new_added_time1:
                         # First half (added time)
                         new_half = 1
@@ -997,7 +1005,8 @@ def simulate_matches():
                         over90 = True
                         new_half = 2
                         new_added_time2 = simulate_added(half=2)
-                        logger.debug(f'Added time for second half: {new_added_time1}\'')
+                        if not randomized:
+                            logger.debug(f'Added time for second half: {new_added_time1}\'')
                         new_minutes = 90 + new_added_time2
 
                 home_goals, away_goals = simulate_score(
@@ -1022,7 +1031,8 @@ def simulate_matches():
                         else:
                             if not new_added_time3:
                                 new_added_time3 = simulate_added(half=3)
-                                logger.debug(f'Added time for first extra time: {new_added_time3}\'')
+                                if not randomized:
+                                    logger.debug(f'Added time for first extra time: {new_added_time3}\'')
                             if minutes < 130 + new_added_time1 + new_added_time2 + new_added_time3:
                                 new_half = 3
                                 new_minutes = minutes - (30 + new_added_time1 + new_added_time2)
@@ -1034,7 +1044,8 @@ def simulate_matches():
                             else:
                                 if not new_added_time4:
                                     new_added_time4 = simulate_added(half=4)
-                                    logger.debug(f'Added time for second extra time: {new_added_time4}\'')
+                                    if not randomized:
+                                        logger.debug(f'Added time for second extra time: {new_added_time4}\'')
                                 if minutes < 150 + new_added_time1 + new_added_time2 + new_added_time3 + new_added_time4:
                                     new_half = 4
                                     new_minutes = minutes - (35 + new_added_time1 + new_added_time2 + new_added_time3)
@@ -1060,13 +1071,14 @@ def simulate_matches():
                             if minutes < 150 + new_added_time1 + new_added_time2 + new_added_time3 + new_added_time4:
                                 new_status = "PENALTIES"
 
-                logger.debug(
-                    f'Updated match: ({new_status}) {match["home"]} {new_home_goals}-{new_away_goals} {match["away"]}, {new_minutes}\' ({new_half}H)')
-                if match_ended:
-                    logger.info(
-                        f'Match ended: {match["home"]} {new_home_goals}-{new_away_goals} {match["away"]} [{or_zero(home_yellows)}A+{or_zero(home_reds)}R|{or_zero(away_yellows)}A+{or_zero(away_reds)}R]')
-                    new_ended_at = match["started_at"] + timedelta(minutes=(115 + new_added_time1 + new_added_time2))
 
+                if not randomized:
+                    logger.debug(f'Updated match: ({new_status}) {match["home"]} {new_home_goals}-{new_away_goals} {match["away"]}, {new_minutes}\' ({new_half}H)')
+                    if match_ended:
+                        logger.info(f'Match ended: {match["home"]} {new_home_goals}-{new_away_goals} {match["away"]} [{or_zero(home_yellows)}A+{or_zero(home_reds)}R|{or_zero(away_yellows)}A+{or_zero(away_reds)}R]')
+                        new_ended_at = match["started_at"] + timedelta(minutes=(115 + new_added_time1 + new_added_time2))
+
+                matches_updated +=1
                 MATCHES_LOCK.acquire()
                 match["status"] = new_status
                 match["home_goals"] = int(new_home_goals)
@@ -1099,6 +1111,9 @@ def simulate_matches():
                     match["away_odds"] = round(
                         match["away_odds"] + random.choice([-1, 0, 1]) * match["home_odds"] * 0.02, 2)
                     match["odds_calculated_at"] = current
+
+        if randomized:
+            logger.info(f'Matches updated: {matches_updated}')
 
 
 #######################################################################################################################
