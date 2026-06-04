@@ -128,7 +128,7 @@ class PredictionService(
                 homeGoals = prediction.homeGoals,
                 awayGoals = prediction.awayGoals,
                 match = matchesById[prediction.matchId] ?: run {
-                    logger.warn("User={} trying to submit predictions for match={}, but it's not in the DB", userId, prediction.matchId); false
+                    logger.warn("User={} trying to submit predictions for match={}, but it's not in the DB", userId, prediction.matchId);
                     throw NotFoundException("Match not found")
                 }
             )

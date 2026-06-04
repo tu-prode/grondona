@@ -32,7 +32,7 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(ExternalServiceException::class)
     fun handleExternalService(ex: ExternalServiceException): ResponseEntity<ErrorResponse> {
-        logger.warn("External service failure: {}", ex.message)
+        logger.warn("External service failure: {} | Cause: {}", ex.message, ex.cause?.message)
         val errorResponse = ErrorResponse(
             status = HttpStatus.FAILED_DEPENDENCY.value(),
             error = HttpStatus.FAILED_DEPENDENCY.reasonPhrase,
@@ -116,7 +116,7 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException::class)
     fun handleValidationException(ex: HttpMessageNotReadableException): ResponseEntity<ErrorResponse> {
-        val errors = ex.message?.ifEmpty { "INPUT error" }
+        val errors = ex.message?.ifEmpty { "Input error" }
         logger.warn("Validation failed: {}", errors)
         val errorResponse = ErrorResponse(
             status = HttpStatus.BAD_REQUEST.value(),

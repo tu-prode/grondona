@@ -11,9 +11,9 @@ class MathTest {
 
         @Test
         fun `oddsToQuotas returns the proper values`() {
-            val odds = 2.34F
+            val odds = 2.88F
             val quota = odds.oddsToQuota()
-            assertEquals(1.2F, quota)
+            assertEquals(1.3F, quota)
         }
     }
 
