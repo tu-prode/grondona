@@ -51,4 +51,8 @@ interface AwardPredictionRepository : JpaRepository<AwardPrediction, UUID>, JpaS
         @Param("userId") userId: UUID,
         @Param("groupIds") groupIds: List<UUID>
     ): Int
+
+    @Modifying
+    @Query("DELETE FROM AwardPrediction ap WHERE ap.group.id = :groupId")
+    fun deleteByGroupId(@Param("groupId") groupId: UUID): Int
 }

@@ -240,14 +240,14 @@ class GrondonaClient(
         mockMvc.perform(
             post("/internal/jobs/matches/status")
                 .header(INTERNAL_JOBS_TOKEN_HEADER, INTERNAL_JOBS_TOKEN)
-        ).andExpect(status().isNoContent)
+        ).andExpect(status().isOk)
     }
 
     fun runQuotasUpdateJob() {
         mockMvc.perform(
             post("/internal/jobs/matches/quotas")
                 .header(INTERNAL_JOBS_TOKEN_HEADER, INTERNAL_JOBS_TOKEN)
-        ).andExpect(status().isNoContent)
+        ).andExpect(status().isOk)
     }
 
     fun syncMatches(token: String? = null) {

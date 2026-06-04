@@ -12,6 +12,7 @@ import com.grondona.model.MatchStatus
 import com.grondona.model.PredictionStatus
 import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
+import com.grondona.repository.AwardPredictionRepository
 import com.grondona.repository.GroupRepository
 import com.grondona.repository.MatchPredictionRepository
 import com.grondona.repository.MembershipRepository
@@ -50,6 +51,9 @@ class GroupServiceTest {
 
     @MockK
     private lateinit var matchPredictionRepository: MatchPredictionRepository
+
+    @MockK
+    private lateinit var awardPredictionRepository: AwardPredictionRepository
 
     @InjectMockKs
     private lateinit var groupService: GroupService
@@ -237,12 +241,32 @@ class GroupServiceTest {
         @Test
         fun `deleteGroup should delete group when it exists`() {
             every { groupRepository.findById(testGroup.id!!) } returns Optional.of(testGroup)
+            every { matchPredictionRepository.deleteByGroupId(testGroup.id!!) } returns 0
+            every { awardPredictionRepository.deleteByGroupId(testGroup.id!!) } returns 0
             every { membershipRepository.clearGroup(testGroup.id!!) } just Runs
             every { groupRepository.delete(testGroup) } just Runs
 
             groupService.deleteGroup(testGroup.id!!)
 
             verify { groupRepository.delete(testGroup) }
+        }
+
+        @Test
+        fun `deleteGroup should remove match and award predictions of the group`() {
+            every { groupRepository.findById(testGroup.id!!) } returns Optional.of(testGroup)
+            every { matchPredictionRepository.deleteByGroupId(testGroup.id!!) } returns 3
+            every { awardPredictionRepository.deleteByGroupId(testGroup.id!!) } returns 2
+            every { membershipRepository.clearGroup(testGroup.id!!) } just Runs
+            every { groupRepository.delete(testGroup) } just Runs
+
+            groupService.deleteGroup(testGroup.id!!)
+
+            verifyOrder {
+                matchPredictionRepository.deleteByGroupId(testGroup.id!!)
+                awardPredictionRepository.deleteByGroupId(testGroup.id!!)
+                membershipRepository.clearGroup(testGroup.id!!)
+                groupRepository.delete(testGroup)
+            }
         }
 
         @Test
@@ -253,6 +277,8 @@ class GroupServiceTest {
                 groupService.deleteGroup(testGroup.id!!)
             }
             assertEquals("Group not found", exception.message)
+            verify(exactly = 0) { matchPredictionRepository.deleteByGroupId(any()) }
+            verify(exactly = 0) { awardPredictionRepository.deleteByGroupId(any()) }
         }
     }
 
