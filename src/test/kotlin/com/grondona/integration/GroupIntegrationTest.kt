@@ -1,8 +1,11 @@
 package com.grondona.integration
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.grondona.client.MatchClient
+import com.grondona.client.OddsClient
 import com.grondona.createTestingTournamentRequest
 import com.grondona.createTestingUserRequest
+import com.grondona.integration.utils.GrondonaClient
 import com.grondona.model.GroupRole
 import com.grondona.model.MatchStage
 import com.grondona.model.TEST
@@ -11,6 +14,7 @@ import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.CreateMatchRequest
 import com.grondona.model.dto.request.CreateMatchesRequest
 import com.grondona.model.dto.request.CreateTeamRequest
+import com.grondona.model.dto.request.SubmitAwardPredictionRequest
 import com.grondona.model.dto.request.SubmitBulkMatchPredictionsRequest
 import com.grondona.model.dto.request.SubmitMatchPredictionRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
@@ -19,6 +23,7 @@ import com.grondona.model.dto.response.AuthenticatedUserResponse
 import com.grondona.model.dto.response.SimpleMatchesResponse
 import com.grondona.model.dto.response.GroupResponse
 import com.grondona.model.dto.response.TournamentResponse
+import com.grondona.repository.AwardPredictionRepository
 import com.grondona.repository.GroupRepository
 import com.grondona.repository.MatchPredictionRepository
 import com.grondona.repository.MatchRepository
@@ -26,7 +31,11 @@ import com.grondona.repository.MembershipRepository
 import com.grondona.repository.TeamRepository
 import com.grondona.repository.TournamentRepository
 import com.grondona.repository.UserRepository
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.clearMocks
 import org.junit.jupiter.api.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
@@ -37,6 +46,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import java.time.ZonedDateTime
 import java.util.UUID
+import kotlin.collections.map
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -70,10 +80,20 @@ class GroupIntegrationTest {
     private lateinit var matchRepository: MatchRepository
 
     @Autowired
+    private lateinit var awardPredictionRepository: AwardPredictionRepository
+
+    @Autowired
     private lateinit var matchPredictionRepository: MatchPredictionRepository
 
     @Autowired
     private lateinit var testDatabaseCleaner: TestDatabaseCleaner
+
+    // Mocked so the in-process scheduler never reaches the real football APIs during the test.
+    @MockkBean(relaxed = true)
+    private lateinit var matchClient: MatchClient
+
+    @MockkBean(relaxed = true)
+    private lateinit var oddsClient: OddsClient
 
     private var adminToken: String? = null
 
@@ -1213,6 +1233,113 @@ class GroupIntegrationTest {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$[?(@.group.id == '$privateGroupId')].role").value("OWNER"))
+        }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
+    inner class GroupDeletionTest {
+
+        private lateinit var grondona: GrondonaClient
+
+        private var user1Id: UUID? = null
+        private lateinit var user1Token: String
+        private var user2Id: UUID? = null
+        private lateinit var user2Token: String
+        private var groupId: UUID? = null
+
+        @BeforeAll
+        fun setUp() {
+            // NOTE: do not clean the database here. This nested class shares the JVM/DB with the
+            // sibling nested classes, which rely on the tournament and users created by the outer
+            // @BeforeAll. GrondonaClient.init() sets up its own isolated (system) tournament,
+            // teams, players and matches, so a clean DB is not required.
+            clearMocks(matchClient, oddsClient)
+
+            grondona = GrondonaClient(mockMvc, objectMapper)
+                .withRepositories(userRepository, tournamentRepository)
+                .withConfiguration(totalTeams = 4)
+            grondona.init()
+
+            user1Id = grondona.adminId
+            user1Token = grondona.adminToken
+
+            val (id2, token2) = grondona.createUser()
+            user2Id = id2
+            user2Token = token2
+
+            groupId = grondona.createGroup(user1Token)
+            grondona.joinGroup(user2Token, groupId)
+        }
+
+        @Test
+        @Order(1)
+        fun `both members submit match and award predictions`() {
+            listOf(user1Token, user2Token).forEach { token ->
+                grondona.submitMatchPredictionsToGroup(
+                    token, groupId,
+                    grondona.matches.map { SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 1, awayGoals = 0) },
+                    withAssertions = true,
+                )
+
+                grondona.submitAwardPredictionsToGroup(
+                    token, groupId,
+                    SubmitAwardPredictionRequest(
+                        champions = listOf(grondona.teams.random().id),
+                        topScorers = listOf(grondona.playerIds.random()),
+                        bestPlayers = listOf(grondona.playerIds.random()),
+                        bestGoalkeepers = listOf(grondona.goalkeeperIds.random()),
+                        bestYoungPlayers = listOf(grondona.youngsterIds.random()),
+                    ),
+                )
+            }
+        }
+
+        @Test
+        @Order(2)
+        fun `predictions are persisted for both members before deletion`() {
+            listOf(user1Id, user2Id).forEach { userId ->
+                assertEquals(
+                    grondona.matches.size,
+                    matchPredictionRepository.findByUserIdAndGroupId(userId!!, groupId!!).size,
+                    "Expected one match prediction per match for user $userId",
+                )
+                assertTrue(
+                    awardPredictionRepository.findByUserIdAndGroupId(userId, groupId!!).isNotEmpty(),
+                    "Expected award predictions for user $userId",
+                )
+            }
+        }
+
+        @Test
+        @Order(3)
+        fun `owner deletes the group`() {
+            mockMvc.perform(
+                delete("/api/tournaments/{tournamentId}/groups/{groupId}", grondona.tournamentId, groupId.toString())
+                    .header("Authorization", "Bearer $user1Token")
+            ).andExpect(status().isNoContent)
+
+            // The group itself should no longer be retrievable.
+            mockMvc.perform(
+                get("/api/tournaments/{tournamentId}/groups/{groupId}", grondona.tournamentId, groupId.toString())
+                    .header("Authorization", "Bearer $user1Token")
+            ).andExpect(status().isNotFound)
+        }
+
+        @Test
+        @Order(4)
+        fun `all match and award predictions of the group are removed`() {
+            listOf(user1Id, user2Id).forEach { userId ->
+                assertTrue(
+                    matchPredictionRepository.findByUserIdAndGroupId(userId!!, groupId!!).isEmpty(),
+                    "Match predictions for user $userId should be removed when the group is deleted",
+                )
+                assertTrue(
+                    awardPredictionRepository.findByUserIdAndGroupId(userId, groupId!!).isEmpty(),
+                    "Award predictions for user $userId should be removed when the group is deleted",
+                )
+            }
         }
     }
 }

@@ -6,6 +6,7 @@ import com.grondona.model.MatchPredictionView
 import jakarta.persistence.EntityManager
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
@@ -69,6 +70,10 @@ interface MatchPredictionRepository : JpaRepository<MatchPrediction, UUID>, JpaS
         WHERE mp.group.tournament.id = :tournamentId
     """)
     fun findByTournamentId(@Param("tournamentId") tournamentId: UUID): List<MatchPrediction>
+
+    @Modifying
+    @Query("DELETE FROM MatchPrediction mp WHERE mp.group.id = :groupId")
+    fun deleteByGroupId(@Param("groupId") groupId: UUID): Int
 }
 
 interface MatchPredictionRepositoryCustom {

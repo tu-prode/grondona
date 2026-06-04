@@ -13,6 +13,7 @@ import com.grondona.model.User
 import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.model.dto.response.GroupResponse
+import com.grondona.repository.AwardPredictionRepository
 import com.grondona.repository.GroupRepository
 import com.grondona.repository.MatchPredictionRepository
 import com.grondona.repository.MembershipRepository
@@ -34,6 +35,7 @@ class GroupService(
     private val membershipRepository: MembershipRepository,
     private val tournamentRepository: TournamentRepository,
     private val matchPredictionRepository: MatchPredictionRepository,
+    private val awardPredictionRepository: AwardPredictionRepository,
 ) {
 
     companion object {
@@ -108,6 +110,10 @@ class GroupService(
             logger.warn("Group not found for deletion: id={}", groupId)
             NotFoundException("Group not found")
         }
+
+        val deletedMatchPredictions = matchPredictionRepository.deleteByGroupId(groupId)
+        val deletedAwardPredictions = awardPredictionRepository.deleteByGroupId(groupId)
+        logger.info("Removed predictions for group={}: match={}, award={}", groupId, deletedMatchPredictions, deletedAwardPredictions)
 
         membershipRepository.clearGroup(groupId)
         groupRepository.delete(group)
