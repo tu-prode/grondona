@@ -27,6 +27,13 @@ interface MembershipRepository : JpaRepository<GroupUser, UUID> {
     """)
     fun clearGroup(@Param("groupId") groupId: UUID)
 
+    @Modifying
+    @Query("""
+        DELETE FROM GroupUser u
+        WHERE u.user.id = :userId
+    """)
+    fun clearUser(@Param("userId") userId: UUID)
+
     @Query("""
         SELECT u
         FROM GroupUser u

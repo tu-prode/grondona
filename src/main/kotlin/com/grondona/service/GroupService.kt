@@ -113,9 +113,13 @@ class GroupService(
 
         val deletedMatchPredictions = matchPredictionRepository.deleteByGroupId(groupId)
         val deletedAwardPredictions = awardPredictionRepository.deleteByGroupId(groupId)
-        logger.info("Removed predictions for group={}: match={}, award={}", groupId, deletedMatchPredictions, deletedAwardPredictions)
-
         membershipRepository.clearGroup(groupId)
+
+        logger.info(
+            "Removed predictions for group={}: matchPredictions={}, awardPredictions={}, memberships cleared",
+            groupId, deletedMatchPredictions, deletedAwardPredictions,
+        )
+
         groupRepository.delete(group)
         logger.info("Group deleted successfully: id={}, name='{}'", groupId, group.name)
     }

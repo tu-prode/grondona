@@ -2,6 +2,7 @@ package com.grondona.integration
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.grondona.client.MatchClient
+import com.grondona.createTestingTournamentRequest
 import com.grondona.createTestingUserRequest
 import com.grondona.integration.utils.GrondonaClient
 import com.grondona.model.ExternalMatch
@@ -11,15 +12,24 @@ import com.grondona.model.MatchStatus
 import com.grondona.model.TEST
 import com.grondona.model.Tournament
 import com.grondona.model.UserPermissions
+import com.grondona.model.PlayerPosition
 import com.grondona.model.dto.request.CreateMatchRequest
 import com.grondona.model.dto.request.CreateMatchesRequest
+import com.grondona.model.dto.request.CreatePlayerRequest
 import com.grondona.model.dto.request.CreateTeamRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
 import com.grondona.model.dto.request.CreateUserRequest
 import com.grondona.model.dto.request.LoginUserRequest
+import com.grondona.model.dto.request.SubmitAwardPredictionRequest
 import com.grondona.model.dto.request.SubmitMatchPredictionRequest
 import com.grondona.model.dto.request.UpdateUserRequest
+import com.grondona.model.dto.response.PlayerResponse
 import com.grondona.model.dto.response.SimpleMatchesResponse
+import com.grondona.model.dto.response.TeamResponse
+import com.grondona.model.dto.response.TournamentResponse
+import com.grondona.repository.AwardPredictionRepository
+import com.grondona.repository.MatchPredictionRepository
+import com.grondona.repository.MembershipRepository
 import com.grondona.repository.TournamentRepository
 import com.grondona.repository.UserRepository
 import com.grondona.scheduler.MatchStatusScheduler
@@ -35,6 +45,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import java.time.LocalDate
 import java.time.ZonedDateTime
 import java.util.UUID
 
@@ -56,6 +67,15 @@ class UserIntegrationTest {
 
     @Autowired
     private lateinit var tournamentRepository: TournamentRepository
+
+    @Autowired
+    private lateinit var membershipRepository: MembershipRepository
+
+    @Autowired
+    private lateinit var matchPredictionRepository: MatchPredictionRepository
+
+    @Autowired
+    private lateinit var awardPredictionRepository: AwardPredictionRepository
 
     @Autowired
     lateinit var matchScheduler: MatchStatusScheduler
@@ -896,6 +916,186 @@ class UserIntegrationTest {
                     }
                 }
             }
+        }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
+    inner class UserDeletionTests {
+
+        // A dedicated tournament keeps this flow isolated from the sibling tests that mutate the
+        // shared (system) tournament and matches via the scheduler, which would otherwise lock the
+        // matches and move the tournament to IN_PROGRESS (blocking prediction submission).
+        private lateinit var client: GrondonaClient
+        private var deletionTournamentId: String? = null
+
+        private var userId: UUID? = null
+        private var userToken: String? = null
+
+        // The user belongs to two groups: one owned by the admin (joined as member) and one it owns.
+        private var adminGroupId: UUID? = null
+        private var userGroupId: UUID? = null
+
+        private lateinit var matchIds: List<UUID>
+        private var championTeamId: UUID? = null
+        private var topScorerId: UUID? = null
+        private var goalkeeperId: UUID? = null
+        private var youngPlayerId: UUID? = null
+
+        private fun createTeam(code: String): UUID {
+            val request = CreateTeamRequest(name = "Deletion $code", code = code, icon = "---")
+            val result = mockMvc.perform(
+                post("/api/tournaments/{tournamentId}/teams", deletionTournamentId)
+                    .header("Authorization", "Bearer $adminToken")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            ).andExpect(status().isCreated).andReturn()
+            return objectMapper.readValue(result.response.contentAsString, TeamResponse::class.java).id
+        }
+
+        private fun createPlayer(teamId: UUID, position: PlayerPosition, ageInYears: Long): UUID {
+            val request = CreatePlayerRequest(
+                team = teamId,
+                name = "Player ${UUID.randomUUID()}",
+                position = position,
+                birthdate = LocalDate.now().minusYears(ageInYears),
+            )
+            val result = mockMvc.perform(
+                post("/api/tournaments/{tournamentId}/players", deletionTournamentId)
+                    .header("Authorization", "Bearer $adminToken")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            ).andExpect(status().isCreated).andReturn()
+            return objectMapper.readValue(result.response.contentAsString, PlayerResponse::class.java).id
+        }
+
+        private fun submitAllPredictions(groupId: UUID?) {
+            client.submitMatchPredictionsToGroup(
+                userToken, groupId,
+                matchIds.mapIndexed { index, matchId ->
+                    SubmitMatchPredictionRequest(matchId = matchId, homeGoals = index, awayGoals = 0)
+                },
+            )
+            client.submitAwardPredictionsToGroup(
+                userToken, groupId,
+                SubmitAwardPredictionRequest(
+                    champions = listOf(championTeamId!!),
+                    topScorers = listOf(topScorerId!!),
+                    bestPlayers = listOf(topScorerId!!),
+                    bestGoalkeepers = listOf(goalkeeperId!!),
+                    bestYoungPlayers = listOf(youngPlayerId!!),
+                ),
+            )
+        }
+
+        @BeforeAll
+        fun setUp() {
+            val tournamentResult = mockMvc.perform(
+                post("/api/tournaments")
+                    .header("Authorization", "Bearer $adminToken")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(createTestingTournamentRequest()))
+            ).andExpect(status().isCreated).andReturn()
+            deletionTournamentId = objectMapper.readValue(tournamentResult.response.contentAsString, TournamentResponse::class.java).id.toString()
+
+            client = GrondonaClient(mockMvc, objectMapper)
+                .withAdminToken(adminToken!!)
+                .withTournament(deletionTournamentId!!)
+
+            val team1 = createTeam("UDA")
+            val team2 = createTeam("UDB")
+            championTeamId = team1
+            topScorerId = createPlayer(team1, PlayerPosition.MIDFIELDER, 27)
+            goalkeeperId = createPlayer(team1, PlayerPosition.GOALKEEPER, 30)
+            youngPlayerId = createPlayer(team1, PlayerPosition.FORWARD, 18)
+
+            matchIds = client.createMatches(
+                matchesToCreate = listOf(
+                    CreateMatchRequest(
+                        code = "UD1", homeTeam = team1, awayTeam = team2,
+                        stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().plusDays(10),
+                    ),
+                    CreateMatchRequest(
+                        code = "UD2", homeTeam = team2, awayTeam = team1,
+                        stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().plusDays(11),
+                    ),
+                    CreateMatchRequest(
+                        code = "UD3", homeTeam = team1, awayTeam = team2,
+                        stage = MatchStage.GROUP_STAGE, startedAt = ZonedDateTime.now().plusDays(12),
+                    ),
+                )
+            ).map { it.id }
+
+            val userResult = mockMvc.perform(
+                post("/api/users")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(createTestingUserRequest()))
+            ).andReturn()
+            val userResponse = objectMapper.readValue(userResult.response.contentAsString, AuthenticatedUserResponse::class.java)
+            userId = userResponse.userId
+            userToken = userResponse.token
+
+            adminGroupId = client.createGroup()
+            client.joinGroup(userToken, adminGroupId)
+            userGroupId = client.createGroup(userToken)
+        }
+
+        @Test
+        @Order(1)
+        fun `user submits match and award predictions in both groups`() {
+            submitAllPredictions(adminGroupId)
+            submitAllPredictions(userGroupId)
+        }
+
+        @Test
+        @Order(2)
+        fun `user memberships and predictions exist before deletion`() {
+            listOf(adminGroupId, userGroupId).forEach { groupId ->
+                Assertions.assertTrue(
+                    membershipRepository.isMember(userId!!, groupId!!),
+                    "User should be a member of group $groupId before deletion",
+                )
+                Assertions.assertEquals(
+                    3, matchPredictionRepository.findByUserIdAndGroupId(userId!!, groupId!!).size,
+                    "Expected one match prediction per match in group $groupId",
+                )
+                Assertions.assertTrue(
+                    awardPredictionRepository.findByUserIdAndGroupId(userId!!, groupId!!).isNotEmpty(),
+                    "Expected award predictions in group $groupId",
+                )
+            }
+            Assertions.assertEquals(2, membershipRepository.findUserGroups(userId!!).size)
+        }
+
+        @Test
+        @Order(3)
+        fun `user deletes its own account`() {
+            mockMvc.perform(
+                delete("/api/users/{userId}", userId.toString())
+                    .header("Authorization", "Bearer $userToken")
+            ).andExpect(status().isNoContent)
+        }
+
+        @Test
+        @Order(4)
+        fun `user is removed from every group and all its predictions are deleted`() {
+            listOf(adminGroupId, userGroupId).forEach { groupId ->
+                Assertions.assertFalse(
+                    membershipRepository.isMember(userId!!, groupId!!),
+                    "User membership in group $groupId should be removed",
+                )
+                Assertions.assertTrue(
+                    matchPredictionRepository.findByUserIdAndGroupId(userId!!, groupId!!).isEmpty(),
+                    "Match predictions in group $groupId should be removed",
+                )
+                Assertions.assertTrue(
+                    awardPredictionRepository.findByUserIdAndGroupId(userId!!, groupId!!).isEmpty(),
+                    "Award predictions in group $groupId should be removed",
+                )
+            }
+            Assertions.assertTrue(membershipRepository.findUserGroups(userId!!).isEmpty())
+            Assertions.assertTrue(userRepository.findById(userId!!).isEmpty)
         }
     }
 }

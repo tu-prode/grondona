@@ -74,6 +74,10 @@ interface MatchPredictionRepository : JpaRepository<MatchPrediction, UUID>, JpaS
     @Modifying
     @Query("DELETE FROM MatchPrediction mp WHERE mp.group.id = :groupId")
     fun deleteByGroupId(@Param("groupId") groupId: UUID): Int
+
+    @Modifying
+    @Query("DELETE FROM MatchPrediction mp WHERE mp.user.id = :userId")
+    fun deleteByUserId(@Param("userId") userId: UUID): Int
 }
 
 interface MatchPredictionRepositoryCustom {

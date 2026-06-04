@@ -12,6 +12,8 @@ import com.grondona.model.dto.request.LoginUserRequest
 import com.grondona.model.dto.request.UpdateUserRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
 import com.grondona.model.dto.response.UserResponse
+import com.grondona.repository.AwardPredictionRepository
+import com.grondona.repository.MatchPredictionRepository
 import com.grondona.repository.MembershipRepository
 import com.grondona.repository.UserRepository
 import com.grondona.security.JwtService
@@ -29,6 +31,8 @@ class UserService(
     private val userRepository: UserRepository,
     private val predictionService: PredictionService,
     private val membershipRepository: MembershipRepository,
+    private val matchPredictionRepository: MatchPredictionRepository,
+    private val awardPredictionRepository: AwardPredictionRepository,
     private val emailService: EmailService,
 ) {
 
@@ -95,10 +99,12 @@ class UserService(
                 logger.warn("Login successful with reset token: userId={}, user={}", user.id, user.username)
                 true
             }
+
             user.passwordHash != hashedPassword -> {
                 logger.warn("Login failed: invalid password for username {}", request.user)
                 throw BadRequestException("User or password incorrect")
             }
+
             else -> {
                 logger.info("Login successful: userId={}, user={}", user.id, user.username)
                 false
@@ -181,8 +187,6 @@ class UserService(
         )
 
 
-
-
         val savedUser = userRepository.save(userToSave)
         logger.info("User updated successfully: userId={}", savedUser.id)
         return UserResponse.from(savedUser)
@@ -197,11 +201,18 @@ class UserService(
             throw ForbiddenException("You can only delete your own account")
         }
 
-        val user =
-            userRepository.findById(targetUserId).orElseThrow {
-                logger.warn("User not found for deletion: userId={}", targetUserId)
-                NotFoundException("User not found")
-            }
+        val user = userRepository.findById(targetUserId).orElseThrow {
+            logger.warn("User not found for deletion: userId={}", targetUserId)
+            NotFoundException("User not found")
+        }
+
+        val deletedMatchPredictions = matchPredictionRepository.deleteByUserId(targetUserId)
+        val deletedAwardPredictions = awardPredictionRepository.deleteByUserId(targetUserId)
+        membershipRepository.clearUser(targetUserId)
+        logger.info(
+            "Removed user data for user={}: matchPredictions={}, awardPredictions={}, memberships cleared",
+            targetUserId, deletedMatchPredictions, deletedAwardPredictions
+        )
 
         userRepository.delete(user)
         logger.info("User deleted successfully: userId={}", targetUserId)

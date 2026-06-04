@@ -13,6 +13,8 @@ import com.grondona.model.dto.request.ForgottenPasswordRequest
 import com.grondona.model.dto.request.LoginUserRequest
 import com.grondona.model.dto.request.UpdateUserRequest
 import com.grondona.utils.hashMD5
+import com.grondona.repository.AwardPredictionRepository
+import com.grondona.repository.MatchPredictionRepository
 import com.grondona.repository.MembershipRepository
 import com.grondona.repository.UserRepository
 import com.grondona.security.JwtService
@@ -43,6 +45,12 @@ class UserServiceTest {
 
     @MockK
     private lateinit var membershipRepository: MembershipRepository
+
+    @MockK
+    private lateinit var matchPredictionRepository: MatchPredictionRepository
+
+    @MockK
+    private lateinit var awardPredictionRepository: AwardPredictionRepository
 
     @MockK
     private lateinit var emailService: EmailService
@@ -378,13 +386,21 @@ class UserServiceTest {
         fun `deleteUser should delete when authenticated user deletes own account`() {
             // Given
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
+            every { matchPredictionRepository.deleteByUserId(testUserId) } returns 0
+            every { awardPredictionRepository.deleteByUserId(testUserId) } returns 0
+            every { membershipRepository.clearUser(testUserId) } just Runs
             every { userRepository.delete(testUser) } just Runs
 
             // When
             userService.deleteUser(testUserId, testUserId)
 
             // Then
-            verify { userRepository.delete(testUser) }
+            verifyOrder {
+                matchPredictionRepository.deleteByUserId(testUserId)
+                awardPredictionRepository.deleteByUserId(testUserId)
+                membershipRepository.clearUser(testUserId)
+                userRepository.delete(testUser)
+            }
         }
 
         @Test
