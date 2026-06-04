@@ -1,10 +1,12 @@
 package com.grondona.controller
 
 import com.grondona.exception.UnauthorizedException
+import com.grondona.model.dto.response.MatchesUpdatedResponse
 import com.grondona.service.MatchService
 import com.grondona.service.engine.WorldCupEngine
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestHeader
@@ -28,23 +30,23 @@ class InternalJobController(
     @PostMapping("/matches/status")
     fun runMatchStatusUpdate(
         @RequestHeader(value = TOKEN_HEADER, required = false) token: String?
-    ): ResponseEntity<Void> {
+    ): ResponseEntity<MatchesUpdatedResponse> {
         authorize(token)
         logger.info("POST /internal/jobs/matches/status - Running match status update job")
-        matchService.updateMatchesStatuses(WorldCupEngine.SYSTEM_TOURNAMENT_ID)
+        val matchesUpdated = matchService.updateMatchesStatuses(WorldCupEngine.SYSTEM_TOURNAMENT_ID)
         logger.info("POST /internal/jobs/matches/status - Match status update job finished")
-        return ResponseEntity.noContent().build()
+        return ResponseEntity.status(HttpStatus.OK).body(MatchesUpdatedResponse(matchesUpdated.size))
     }
 
     @PostMapping("/matches/quotas")
     fun runMatchQuotasUpdate(
         @RequestHeader(value = TOKEN_HEADER, required = false) token: String?
-    ): ResponseEntity<Void> {
+    ): ResponseEntity<MatchesUpdatedResponse> {
         authorize(token)
         logger.info("POST /internal/jobs/matches/quotas - Running match quotas update job")
-        matchService.updateMatchesQuotas(WorldCupEngine.SYSTEM_TOURNAMENT_ID)
+        val matchesUpdated = matchService.updateMatchesQuotas(WorldCupEngine.SYSTEM_TOURNAMENT_ID)
         logger.info("POST /internal/jobs/matches/quotas - Match quotas update job finished")
-        return ResponseEntity.noContent().build()
+        return ResponseEntity.status(HttpStatus.OK).body(MatchesUpdatedResponse(matchesUpdated.size))
     }
 
     private fun authorize(token: String?) {
