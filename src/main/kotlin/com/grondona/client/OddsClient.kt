@@ -175,6 +175,10 @@ class OddsApiMatchClient(
                 }
             }
 
+            if (homeOdds.isEmpty() || drawOdds.isEmpty() || awayOdds.isEmpty()) {
+                return null
+            }
+
             return ExternalOdds(
                 homeKey = homeTeam, awayKey = awayTeam, startedAt = commenceTime,
                 homeOdds = homeOdds.average().toFloat(), drawOdds = drawOdds.average().toFloat(), awayOdds = awayOdds.average().toFloat()
@@ -192,8 +196,8 @@ class OddsApiMatchClient(
                 .build()
         }
 
-    override fun oddsResponseClass(): Class<*> = Response::class.java
+    override fun oddsResponseClass(): Class<*> = Array<Response>::class.java
 
     override fun parseOddsResponse(body: Any?): List<ExternalOdds> =
-        (body as? List<Response>)?.parseOdds() ?: emptyList()
+        (body as? Array<*>)?.filterIsInstance<Response>()?.parseOdds() ?: emptyList()
 }
