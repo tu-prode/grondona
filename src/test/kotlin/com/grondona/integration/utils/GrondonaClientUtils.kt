@@ -50,6 +50,12 @@ class GrondonaClient(
     val objectMapper: ObjectMapper,
 ) {
 
+    companion object {
+        // Matches internal.jobs.token in application-test.properties and the controller header name.
+        private const val INTERNAL_JOBS_TOKEN_HEADER = "X-Cron-Token"
+        private const val INTERNAL_JOBS_TOKEN = "internal-token"
+    }
+
     data class MinimalMatch(
         val id: UUID, val code: String, val stage: MatchStage, val group: MatchGroup?,
         val homeId: UUID, val homeCode: String, val awayId: UUID, val awayCode: String
@@ -122,8 +128,10 @@ class GrondonaClient(
         assertTrue(tournamentRepository!!.existsById(WorldCupEngine.SYSTEM_TOURNAMENT_ID))
         tournamentId = WorldCupEngine.SYSTEM_TOURNAMENT_ID.toString()
 
-        teams.addAll((1..teamsToCreate).map {
-            createTeam(adminToken, CreateTeamRequest(name = randomString(), code = randomString(maxSize = 3).uppercase(), icon = "---"))
+        teams.addAll((1..teamsToCreate).map { index ->
+            // Unique codes per team: team codes double as englishKey, and matches/odds are keyed by code,
+            // so collisions (from random short codes) would mismatch matches and corrupt points.
+            createTeam(adminToken, CreateTeamRequest(name = randomString(), code = "T%03d".format(index), icon = "---"))
         })
 
         val playerIds = teams.flatMap {
@@ -226,6 +234,20 @@ class GrondonaClient(
         ).andExpect(status().isCreated).andReturn()
         val teamResponse = objectMapper.readValue(rawResponse.response.contentAsString, TeamResponse::class.java)
         return MinimalTeam(id = teamResponse.id, code = teamResponse.code)
+    }
+
+    fun runStatusUpdateJob() {
+        mockMvc.perform(
+            post("/internal/jobs/matches/status")
+                .header(INTERNAL_JOBS_TOKEN_HEADER, INTERNAL_JOBS_TOKEN)
+        ).andExpect(status().isNoContent)
+    }
+
+    fun runQuotasUpdateJob() {
+        mockMvc.perform(
+            post("/internal/jobs/matches/quotas")
+                .header(INTERNAL_JOBS_TOKEN_HEADER, INTERNAL_JOBS_TOKEN)
+        ).andExpect(status().isNoContent)
     }
 
     fun syncMatches(token: String? = null) {
