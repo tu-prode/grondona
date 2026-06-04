@@ -44,6 +44,7 @@ services:
       JWT_EXPIRATION: 86400000
       # Matches API configuration
       MATCHES_API_URL: "http://mocknaldo:8085"
+      ODDS_API_URL: "https://api.the-odds-api.com"
       # Mailing configuration
       MAIL_HOST: "smtp.sendgrid.net"
       MAIL_PORT: "587"

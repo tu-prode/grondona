@@ -24,7 +24,7 @@ import java.time.ZonedDateTime
 import java.util.UUID
 
 interface MatchClient {
-    val matchWebClient: WebClient
+    val matchesWebClient: WebClient
 
     fun buildRequest(): WebClient.RequestHeadersSpec<*>
 
@@ -57,9 +57,9 @@ interface MatchClient {
             onMatchesResponseReceived(body)
             parseMatchesResponse(body)
         } catch (ex: WebClientResponseException) {
-            throw ExternalServiceException("HTTP error calling matches service: ${ex.statusCode}", ex)
+            throw ExternalServiceException("HTTP error calling Matches API: ${ex.statusCode}", ex)
         } catch (ex: Exception) {
-            throw ExternalServiceException("Unexpected error calling matches service: ${ex.message}", ex)
+            throw ExternalServiceException("Unexpected error calling Matches API: ${ex.message}", ex)
         }
     }
 
@@ -69,9 +69,9 @@ interface MatchClient {
 }
 
 @Component
-@Profile(LOCAL, TEST, PROD)
+@Profile(LOCAL, TEST)
 class MocknaldoMatchClient(
-    override val matchWebClient: WebClient,
+    override val matchesWebClient: WebClient,
 ) : MatchClient {
 
     companion object {
@@ -97,9 +97,6 @@ class MocknaldoMatchClient(
             val minutes: Int,
             val half: Int,
             val status: String,
-            val homeOdds: Float,
-            val drawOdds: Float,
-            val awayOdds: Float,
             val startedAt: ZonedDateTime,
             val endedAt: ZonedDateTime? = null,
         ) {
@@ -112,9 +109,6 @@ class MocknaldoMatchClient(
                 var newAwayGoals = 0
                 var newStatus = MatchStatus.NOT_STARTED
                 var newSubstatus: String? = null
-                var newHomeOdds: Float? = null
-                var newDrawOdds: Float? = null
-                var newAwayOdds: Float? = null
                 var newHomePenalties: Int? = null
                 var newAwayPenalties: Int? = null
                 var newFinishedAt: ZonedDateTime? = null
@@ -122,9 +116,6 @@ class MocknaldoMatchClient(
                 when (status) {
                     Status.TO_START.name -> {
                         newStatus = MatchStatus.NOT_STARTED
-                        newHomeOdds = homeOdds
-                        newDrawOdds = drawOdds
-                        newAwayOdds = awayOdds
                     }
 
                     Status.IN_PLAY.name -> {
@@ -213,9 +204,6 @@ class MocknaldoMatchClient(
                     substatus = newSubstatus,
                     homePenalties = newHomePenalties,
                     awayPenalties = newAwayPenalties,
-                    homeOdds = newHomeOdds,
-                    drawOdds = newDrawOdds,
-                    awayOdds = newAwayOdds,
                     startedAt = startedAt,
                     finishedAt = newFinishedAt,
                 )
@@ -225,7 +213,7 @@ class MocknaldoMatchClient(
         fun parseMatches() = matches.mapNotNull { it.toExternalMatch() }
     }
 
-    override fun buildRequest() = matchWebClient.get()
+    override fun buildRequest() = matchesWebClient.get()
         .uri { uriBuilder -> uriBuilder.path(MATCHES_PATH).build() }
 
     override fun matchesResponseClass(): Class<*> = Response::class.java
@@ -240,9 +228,9 @@ class MocknaldoMatchClient(
 }
 
 @Component
-@Profile("XXX")
+@Profile(PROD)
 class FootballDataMatchClient(
-    override val matchWebClient: WebClient,
+    override val matchesWebClient: WebClient,
     @Value("\${external.api.matches.key}")
     private val apiKey: String,
 ) : MatchClient {
@@ -270,7 +258,6 @@ class FootballDataMatchClient(
             val score: Score,
             val minute: Int? = null,
             val injuryTime: Int? = null,
-            val odds: Odds,
         ) {
             internal enum class Status { SCHEDULED, TIMED, IN_PLAY, PAUSED, FINISHED, POSTPONED, SUSPENDED, CANCELLED }
             internal enum class ScoreDuration { REGULAR, EXTRA_TIME, PENALTY_SHOOTOUT }
@@ -288,9 +275,6 @@ class FootballDataMatchClient(
 
             @JsonNaming(PropertyNamingStrategies.LowerCamelCaseStrategy::class)
             internal class InnerScore(val home: Int? = null, val away: Int? = null)
-
-            @JsonNaming(PropertyNamingStrategies.LowerCamelCaseStrategy::class)
-            internal class Odds(val homeWin: Float, val draw: Float, val awayWin: Float)
 
             private class ParsedScore(val homeGoals: Int, val awayGoals: Int, val homePenalties: Int? = null, val awayPenalties: Int? = null)
 
@@ -320,9 +304,6 @@ class FootballDataMatchClient(
                 var newAwayGoals = 0
                 var newStatus = MatchStatus.NOT_STARTED
                 var newSubstatus: String? = null
-                var newHomeOdds: Float? = null
-                var newDrawOdds: Float? = null
-                var newAwayOdds: Float? = null
                 var newHomePenalties: Int? = null
                 var newAwayPenalties: Int? = null
                 var newFinishedAt: ZonedDateTime? = null
@@ -330,9 +311,6 @@ class FootballDataMatchClient(
                 when (status) {
                     Status.SCHEDULED.name, Status.TIMED.name -> {
                         newStatus = MatchStatus.NOT_STARTED
-                        newHomeOdds = odds.homeWin
-                        newDrawOdds = odds.draw
-                        newAwayOdds = odds.awayWin
                     }
 
                     Status.IN_PLAY.name -> {
@@ -430,9 +408,6 @@ class FootballDataMatchClient(
                     substatus = newSubstatus,
                     homePenalties = newHomePenalties,
                     awayPenalties = newAwayPenalties,
-                    homeOdds = newHomeOdds,
-                    drawOdds = newDrawOdds,
-                    awayOdds = newAwayOdds,
                     startedAt = utcDate,
                     finishedAt = newFinishedAt,
                 )
@@ -442,7 +417,7 @@ class FootballDataMatchClient(
         fun parseMatches() = matches.mapNotNull { it.toExternalMatch() }
     }
 
-    override fun buildRequest() = matchWebClient.get()
+    override fun buildRequest() = matchesWebClient.get()
         .uri { uriBuilder -> uriBuilder.path(MATCHES_PATH).build() }
         .header(AUTH_TOKEN_HEADER, apiKey)
 

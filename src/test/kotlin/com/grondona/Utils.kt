@@ -67,6 +67,7 @@ val testTeam = Team(
     id = UUID.randomUUID(),
     code = "TEST",
     name = "Test Team",
+    englishKey = "The TEST",
     tournament = testTournament,
 )
 

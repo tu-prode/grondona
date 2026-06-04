@@ -1,7 +1,6 @@
 package com.grondona.repository
 
 import com.grondona.model.User
-import com.grondona.model.UserPermissions
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 import java.util.Optional

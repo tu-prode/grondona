@@ -21,17 +21,16 @@ class MatchClientTest {
             code: String = "XXX", home: String = "T1", away: String = "T2", homeGoals: Int = 0, awayGoals: Int = 0,
             stage: String = MocknaldoMatchClient.Response.Match.Stage.GS.name, group: String? = MocknaldoMatchClient.Response.Match.Group.J.name,
             status: String = MocknaldoMatchClient.Response.Match.Status.TO_START.name, minutes: Int = 0, half: Int = 0,
-            homePenalties: Int? = null, awayPenalties: Int? = null, homeOdds: Float = 1f, drawOdds: Float = 1f, awayOdds: Float = 1f,
-            startedAt: ZonedDateTime = started, endedAt: ZonedDateTime? = null,
+            homePenalties: Int? = null, awayPenalties: Int? = null, startedAt: ZonedDateTime = started, endedAt: ZonedDateTime? = null,
         ) = MocknaldoMatchClient.Response.Match(
             code = code, home = home, away = away, stage = stage, group = group, homeGoals = homeGoals, awayGoals = awayGoals,
             status = status, minutes = minutes, half = half, homePenalties = homePenalties, awayPenalties = awayPenalties,
-            homeOdds = homeOdds, drawOdds = drawOdds, awayOdds = awayOdds, startedAt = startedAt, endedAt = endedAt,
+            startedAt = startedAt, endedAt = endedAt,
         )
 
         @Test
         fun `toExternalMatch properly maps a non-started match`() {
-            val apiMatch = matchFromAPI(status = "TO_START", homeOdds = 1f, drawOdds = 2f, awayOdds = 3f)
+            val apiMatch = matchFromAPI(status = "TO_START")
             val resultMatch = apiMatch.toExternalMatch()!!
 
             assertEquals("T1", resultMatch.home)
@@ -44,9 +43,6 @@ class MatchClientTest {
             assertEquals(0, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertEquals(1f, resultMatch.homeOdds)
-            assertEquals(2f, resultMatch.drawOdds)
-            assertEquals(3f, resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -66,9 +62,6 @@ class MatchClientTest {
             assertEquals(0, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -88,9 +81,6 @@ class MatchClientTest {
             assertEquals(1, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -110,9 +100,6 @@ class MatchClientTest {
             assertEquals(1, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -132,9 +119,6 @@ class MatchClientTest {
             assertEquals(1, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -154,9 +138,6 @@ class MatchClientTest {
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -176,9 +157,6 @@ class MatchClientTest {
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertEquals(finished, resultMatch.finishedAt)
         }
@@ -198,9 +176,6 @@ class MatchClientTest {
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -220,9 +195,6 @@ class MatchClientTest {
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -242,9 +214,6 @@ class MatchClientTest {
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -264,9 +233,6 @@ class MatchClientTest {
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -286,9 +252,6 @@ class MatchClientTest {
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -308,9 +271,6 @@ class MatchClientTest {
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -330,9 +290,6 @@ class MatchClientTest {
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertEquals(finished, resultMatch.finishedAt)
         }
@@ -352,9 +309,6 @@ class MatchClientTest {
             assertEquals(3, resultMatch.awayGoals)
             assertEquals(0, resultMatch.homePenalties)
             assertEquals(0, resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -375,9 +329,6 @@ class MatchClientTest {
             assertEquals(3, resultMatch.awayGoals)
             assertEquals(5, resultMatch.homePenalties)
             assertEquals(4, resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertEquals(finished, resultMatch.finishedAt)
         }
@@ -394,11 +345,11 @@ class MatchClientTest {
             stage: String = FootballDataMatchClient.Response.Match.Stage.GROUP_STAGE.name, group: String? = FootballDataMatchClient.Response.Match.Group.GROUP_J.name,
             regularTimeHomeGoals: Int? = null, regularTimeAwayGoals: Int? = null, extraTimeHomeGoals: Int? = null, extraTimeAwayGoals: Int? = null,
             status: String = FootballDataMatchClient.Response.Match.Status.TIMED.name, minutes: Int = 0, injuryTime: Int? = null,
-            homePenalties: Int? = null, awayPenalties: Int? = null, homeOdds: Float = 1f, drawOdds: Float = 1f, awayOdds: Float = 1f,
+            homePenalties: Int? = null, awayPenalties: Int? = null,
         ) = FootballDataMatchClient.Response.Match(
             utcDate = startedAt, lastUpdated = endedAt ?: ZonedDateTime.now(), status = status, minute = minutes, injuryTime = injuryTime,
             homeTeam = FootballDataMatchClient.Response.Match.Team(tla = home), awayTeam = FootballDataMatchClient.Response.Match.Team(tla = away),
-            stage = stage, group = group, odds = FootballDataMatchClient.Response.Match.Odds(homeWin = homeOdds, draw = drawOdds, awayWin = awayOdds),
+            stage = stage, group = group,
             score = FootballDataMatchClient.Response.Match.Score(
                 duration = when {
                     homePenalties != null -> FootballDataMatchClient.Response.Match.ScoreDuration.PENALTY_SHOOTOUT
@@ -424,7 +375,7 @@ class MatchClientTest {
 
         @Test
         fun `toExternalMatch properly maps a non-started match`() {
-            val apiMatch = matchFromAPI(status = "TIMED", homeOdds = 1f, drawOdds = 2f, awayOdds = 3f)
+            val apiMatch = matchFromAPI(status = "TIMED")
             val resultMatch = apiMatch.toExternalMatch()!!
 
             assertEquals("T1", resultMatch.home)
@@ -435,9 +386,6 @@ class MatchClientTest {
             assertEquals(0, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertEquals(1f, resultMatch.homeOdds)
-            assertEquals(2f, resultMatch.drawOdds)
-            assertEquals(3f, resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -455,9 +403,6 @@ class MatchClientTest {
             assertEquals(0, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -475,9 +420,6 @@ class MatchClientTest {
             assertEquals(1, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -495,9 +437,6 @@ class MatchClientTest {
             assertEquals(1, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -515,9 +454,6 @@ class MatchClientTest {
             assertEquals(1, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -535,9 +471,6 @@ class MatchClientTest {
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -556,9 +489,6 @@ class MatchClientTest {
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertEquals(finished, resultMatch.finishedAt)
         }
@@ -576,9 +506,6 @@ class MatchClientTest {
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -597,9 +524,6 @@ class MatchClientTest {
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -618,9 +542,6 @@ class MatchClientTest {
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -639,9 +560,6 @@ class MatchClientTest {
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -660,9 +578,6 @@ class MatchClientTest {
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -681,9 +596,6 @@ class MatchClientTest {
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -702,9 +614,6 @@ class MatchClientTest {
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertEquals(finished, resultMatch.finishedAt)
         }
@@ -723,9 +632,6 @@ class MatchClientTest {
             assertEquals(3, resultMatch.awayGoals)
             assertEquals(0, resultMatch.homePenalties)
             assertEquals(0, resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
@@ -744,9 +650,6 @@ class MatchClientTest {
             assertEquals(3, resultMatch.awayGoals)
             assertEquals(5, resultMatch.homePenalties)
             assertEquals(4, resultMatch.awayPenalties)
-            assertNull(resultMatch.homeOdds)
-            assertNull(resultMatch.drawOdds)
-            assertNull(resultMatch.awayOdds)
             assertEquals(started, resultMatch.startedAt)
             assertEquals(finished, resultMatch.finishedAt)
         }

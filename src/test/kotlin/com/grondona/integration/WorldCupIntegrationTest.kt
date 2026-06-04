@@ -2,9 +2,11 @@ package com.grondona.integration
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.grondona.client.MatchClient
+import com.grondona.client.OddsClient
 import com.grondona.integration.utils.GrondonaClient
 import com.grondona.model.Awards
 import com.grondona.model.ExternalMatch
+import com.grondona.model.ExternalOdds
 import com.grondona.model.MatchStage
 import com.grondona.model.MatchStatus
 import com.grondona.model.PredictionStatus
@@ -17,7 +19,6 @@ import com.grondona.model.dto.request.UpdateTournamentRequest
 import com.grondona.otherRandom
 import com.grondona.repository.TournamentRepository
 import com.grondona.repository.UserRepository
-import com.grondona.scheduler.MatchStatusScheduler
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.clearMocks
 import io.mockk.every
@@ -52,11 +53,11 @@ class WorldCupIntegrationTest {
     @Autowired
     private lateinit var tournamentRepository: TournamentRepository
 
-    @Autowired
-    lateinit var matchScheduler: MatchStatusScheduler
-
     @MockkBean
     lateinit var matchClient: MatchClient
+
+    @MockkBean(relaxed = true)
+    lateinit var oddsClient: OddsClient
 
     @Autowired
     private lateinit var testDatabaseCleaner: TestDatabaseCleaner
@@ -92,7 +93,7 @@ class WorldCupIntegrationTest {
         @BeforeAll
         fun setUp() {
             testDatabaseCleaner.cleanAll()
-            clearMocks(matchClient)
+            clearMocks(matchClient, oddsClient)
 
             grondona = GrondonaClient(mockMvc, objectMapper).withRepositories(userRepository, tournamentRepository)
             grondona.init()
@@ -176,7 +177,7 @@ class WorldCupIntegrationTest {
 
             every { matchClient.getMatches(any()) } returnsMany externalMatchesChunks
 
-            externalMatchesChunks.forEach { _ -> matchScheduler.updateMatches() }
+            externalMatchesChunks.forEach { _ -> grondona.runStatusUpdateJob() }
         }
 
         @Test
@@ -250,8 +251,8 @@ class WorldCupIntegrationTest {
             matchesToUpdate[0]
             every { matchClient.getMatches(any()) } returnsMany externalMatchesResponses
 
-            matchScheduler.updateMatches()
-            matchScheduler.updateMatches()
+            grondona.runStatusUpdateJob()
+            grondona.runStatusUpdateJob()
         }
 
         @Test
@@ -315,7 +316,7 @@ class WorldCupIntegrationTest {
                 )
             }
 
-            matchScheduler.updateMatches()
+            grondona.runStatusUpdateJob()
         }
 
         @Test
@@ -379,7 +380,7 @@ class WorldCupIntegrationTest {
                 )
             }
 
-            matchScheduler.updateMatches()
+            grondona.runStatusUpdateJob()
         }
 
         @Test
@@ -443,7 +444,7 @@ class WorldCupIntegrationTest {
                 )
             }
 
-            matchScheduler.updateMatches()
+            grondona.runStatusUpdateJob()
         }
 
         @Test
@@ -507,7 +508,7 @@ class WorldCupIntegrationTest {
                 )
             }
 
-            matchScheduler.updateMatches()
+            grondona.runStatusUpdateJob()
         }
 
         @Test
@@ -624,7 +625,7 @@ class WorldCupIntegrationTest {
         @BeforeAll
         fun setUp() {
             testDatabaseCleaner.cleanAll()
-            clearMocks(matchClient)
+            clearMocks(matchClient, oddsClient)
 
             grondona = GrondonaClient(mockMvc, objectMapper).withRepositories(userRepository, tournamentRepository)
             grondona.init()
@@ -711,7 +712,7 @@ class WorldCupIntegrationTest {
 
                 ExternalMatch(
                     home = homeTeam, away = awayTeam, stage = MatchStage.ROUND_OF_32, homeGoals = 0, awayGoals = 0,
-                    status = MatchStatus.NOT_STARTED, startedAt = codesToDates[code]!!, homeOdds = 0f, drawOdds = 0f, awayOdds = 0f
+                    status = MatchStatus.NOT_STARTED, startedAt = codesToDates[code]!!,
                 )
             }
 
@@ -719,7 +720,7 @@ class WorldCupIntegrationTest {
             val externalMatchesChunks = externalMatches.chunked(12)
 
             every { matchClient.getMatches(any()) } returnsMany externalMatchesChunks
-            externalMatchesChunks.forEach { _ -> matchScheduler.updateMatches() }
+            externalMatchesChunks.forEach { _ -> grondona.runStatusUpdateJob() }
             grondona.syncMatches()
         }
 
@@ -775,7 +776,7 @@ class WorldCupIntegrationTest {
 
                 ExternalMatch(
                     home = homeTeam, away = awayTeam, stage = MatchStage.ROUND_OF_16, homeGoals = 0, awayGoals = 0,
-                    status = MatchStatus.NOT_STARTED, startedAt = codesToDates[code]!!, homeOdds = 0f, drawOdds = 0f, awayOdds = 0f
+                    status = MatchStatus.NOT_STARTED, startedAt = codesToDates[code]!!,
                 )
             }
 
@@ -783,7 +784,7 @@ class WorldCupIntegrationTest {
             externalMatches.addAll(newExternalMatches)
 
             every { matchClient.getMatches(any()) } returns externalMatches
-            matchScheduler.updateMatches()
+            grondona.runStatusUpdateJob()
             grondona.syncMatches()
         }
 
@@ -839,7 +840,7 @@ class WorldCupIntegrationTest {
 
                 ExternalMatch(
                     home = homeTeam, away = awayTeam, stage = MatchStage.QUARTERFINALS, homeGoals = 0, awayGoals = 0,
-                    status = MatchStatus.NOT_STARTED, startedAt = codesToDates[code]!!, homeOdds = 0f, drawOdds = 0f, awayOdds = 0f
+                    status = MatchStatus.NOT_STARTED, startedAt = codesToDates[code]!!,
                 )
             }
 
@@ -847,7 +848,7 @@ class WorldCupIntegrationTest {
             externalMatches.addAll(newExternalMatches)
 
             every { matchClient.getMatches(any()) } returns externalMatches
-            matchScheduler.updateMatches()
+            grondona.runStatusUpdateJob()
             grondona.syncMatches()
         }
 
@@ -903,7 +904,7 @@ class WorldCupIntegrationTest {
 
                 ExternalMatch(
                     home = homeTeam, away = awayTeam, stage = MatchStage.SEMIFINALS, homeGoals = 0, awayGoals = 0,
-                    status = MatchStatus.NOT_STARTED, startedAt = codesToDates[code]!!, homeOdds = 0f, drawOdds = 0f, awayOdds = 0f
+                    status = MatchStatus.NOT_STARTED, startedAt = codesToDates[code]!!,
                 )
             }
 
@@ -911,7 +912,7 @@ class WorldCupIntegrationTest {
             externalMatches.addAll(newExternalMatches)
 
             every { matchClient.getMatches(any()) } returns externalMatches
-            matchScheduler.updateMatches()
+            grondona.runStatusUpdateJob()
             grondona.syncMatches()
         }
 
@@ -936,6 +937,24 @@ class WorldCupIntegrationTest {
 
         @Test
         @Order(15)
+        fun `should update the quotas for the semifinals through the API`() {
+            // Teams created through the API store their englishKey as the team code, so the odds are keyed by code.
+            val semifinalsOdds = grondona.matches.filter { it.code in codesForSemifinals }.map {
+                ExternalOdds(
+                    homeKey = it.homeCode, awayKey = it.awayCode,
+                    homeOdds = 5.5f, drawOdds = 3.5f, awayOdds = 7.0f,
+                    startedAt = codesToDates[it.code]!!,
+                )
+            }
+
+            every { oddsClient.getOdds(any()) } returns semifinalsOdds
+            grondona.runQuotasUpdateJob()
+            // Reset so later match creation does not pick up these odds.
+            every { oddsClient.getOdds(any()) } returns emptyList()
+        }
+
+        @Test
+        @Order(16)
         fun `should submit predictions for every match in the semifinals, for both users`() {
             grondona.submitMatchPredictionsToGroup(user1Token, groupId, grondona.matches.filter { it.code in codesForSemifinals }.map {
                 SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 5, awayGoals = 0)
@@ -947,7 +966,7 @@ class WorldCupIntegrationTest {
         }
 
         @Test
-        @Order(16)
+        @Order(17)
         fun `should receive updates for every existing match in the semifinals, including new matches for the last round`() {
             val matchesToUpdate = grondona.matches.filter { it.code in codesForSemifinals }
             val newQualifiedTeams = mutableListOf<String>()
@@ -966,22 +985,21 @@ class WorldCupIntegrationTest {
                 newQualifiedTeams.add(awayTeam)
 
                 ExternalMatch(
-                    home = homeTeam, away = awayTeam,
+                    home = homeTeam, away = awayTeam, homeGoals = 0, awayGoals = 0,
                     stage = if (idx == 0) MatchStage.THIRD_PLACE else MatchStage.FINAL,
-                    homeGoals = 0, awayGoals = 0, status = MatchStatus.NOT_STARTED,
-                    startedAt = codesToDates[code]!!, homeOdds = 0f, drawOdds = 0f, awayOdds = 0f,
+                    status = MatchStatus.NOT_STARTED, startedAt = codesToDates[code]!!
                 )
             }
 
             qualifiedTeams = newQualifiedTeams
             externalMatches.addAll(newExternalMatches)
             every { matchClient.getMatches(any()) } returns externalMatches
-            matchScheduler.updateMatches()
+            grondona.runStatusUpdateJob()
             grondona.syncMatches()
         }
 
         @Test
-        @Order(17)
+        @Order(18)
         fun `should check standings after the semifinals, for both users`() {
             val standings1 = grondona.fetchGroup(user1Token, groupId).standings
             val standings2 = grondona.fetchGroup(user2Token, groupId).standings
@@ -990,17 +1008,19 @@ class WorldCupIntegrationTest {
                 assertEquals(2, standings.size)
                 assertEquals(1, standings[0].rank)
                 assertEquals(user1Id, standings[0].user.id)
-                assertEquals(298f, standings[0].points)
+                // 288 + 2 semifinals * (BONUS 5 + home quota 2.0) = 288 + 14 = 302
+                assertEquals(302f, standings[0].points)
                 assertEquals(List(3) { PredictionStatus.INCORRECT } + List(2) { PredictionStatus.BONUS }, standings[0].lastPredictions)
                 assertEquals(2, standings[1].rank)
                 assertEquals(user2Id, standings[1].user.id)
-                assertEquals(98f, standings[1].points)
+                // 96 + 2 semifinals * (PARTIAL 1 + home quota 2.0) = 96 + 6 = 102
+                assertEquals(102f, standings[1].points)
                 assertEquals(List(3) { PredictionStatus.INCORRECT } + List(2) { PredictionStatus.PARTIAL }, standings[1].lastPredictions)
             }
         }
 
         @Test
-        @Order(18)
+        @Order(19)
         fun `should update last round matches, adding a multiplier to them`() {
             val matchesToUpdate = grondona.matches.filter { it.stage == MatchStage.THIRD_PLACE || it.stage == MatchStage.FINAL }
                 .map { UpdateMatchRequest(matchId = it.id, hasMultiplier = true) }
@@ -1010,7 +1030,7 @@ class WorldCupIntegrationTest {
         }
 
         @Test
-        @Order(19)
+        @Order(20)
         fun `should submit predictions for every match in the last round, for both users`() {
             grondona.submitMatchPredictionsToGroup(user1Token, groupId, grondona.matches.filter { it.code in codesForLastRound }.map {
                 SubmitMatchPredictionRequest(matchId = it.id, homeGoals = 1, awayGoals = 0)
@@ -1022,7 +1042,7 @@ class WorldCupIntegrationTest {
         }
 
         @Test
-        @Order(20)
+        @Order(21)
         fun `should receive updates for every existing match in the last round`() {
             val newExternalMatches = grondona.matches.filter { it.code in codesForLastRound }.map {
                 ExternalMatch(
@@ -1034,11 +1054,11 @@ class WorldCupIntegrationTest {
 
             externalMatches.addAll(newExternalMatches)
             every { matchClient.getMatches(any()) } returns externalMatches
-            matchScheduler.updateMatches()
+            grondona.runStatusUpdateJob()
         }
 
         @Test
-        @Order(21)
+        @Order(22)
         fun `should check standings after the last round, for both users`() {
 
             val standings1 = grondona.fetchGroup(user1Token, groupId).standings
@@ -1050,20 +1070,22 @@ class WorldCupIntegrationTest {
                 assertEquals(2, standings.size)
                 assertEquals(1, standings[0].rank)
                 assertEquals(user1Id, standings[0].user.id)
-                assertEquals(301f, standings[0].points)
+                // 302 (incl. semifinal quotas) + last round 2 * (PARTIAL 1 * 1.5 multiplier) = 302 + 3 = 305
+                assertEquals(305f, standings[0].points)
                 assertEquals(lastPredictions1, standings[0].lastPredictions)
 
                 val lastPredictions2 =
                     listOf(PredictionStatus.INCORRECT) + List(2) { PredictionStatus.PARTIAL } + List(2) { PredictionStatus.CORRECT }
                 assertEquals(2, standings[1].rank)
                 assertEquals(user2Id, standings[1].user.id)
-                assertEquals(107f, standings[1].points)
+                // 102 (incl. semifinal quotas) + last round 2 * (CORRECT 3 * 1.5 multiplier) = 102 + 9 = 111
+                assertEquals(111f, standings[1].points)
                 assertEquals(lastPredictions2, standings[1].lastPredictions)
             }
         }
 
         @Test
-        @Order(22)
+        @Order(23)
         fun `should update tournament to set awards' winners`() {
             grondona.updateTournament(
                 request = UpdateTournamentRequest(
@@ -1079,7 +1101,7 @@ class WorldCupIntegrationTest {
         }
 
         @Test
-        @Order(23)
+        @Order(24)
         fun `should check standings after the awards, for both users`() {
             val standings1 = grondona.fetchGroup(user1Token, groupId).standings
             val standings2 = grondona.fetchGroup(user2Token, groupId).standings
@@ -1088,14 +1110,16 @@ class WorldCupIntegrationTest {
                 assertEquals(2, standings.size)
                 assertEquals(1, standings[0].rank)
                 assertEquals(user1Id, standings[0].user.id)
-                assertEquals(351f, standings[0].points)
+                // 305 (incl. semifinal quotas) + awards 50 = 355
+                assertEquals(355f, standings[0].points)
                 assertEquals(
                     listOf(PredictionStatus.INCORRECT) + List(2) { PredictionStatus.BONUS } + List(2) { PredictionStatus.PARTIAL },
                     standings[0].lastPredictions
                 )
                 assertEquals(2, standings[1].rank)
                 assertEquals(user2Id, standings[1].user.id)
-                assertEquals(140f, standings[1].points)
+                // 111 (incl. semifinal quotas) + awards 33 = 144
+                assertEquals(144f, standings[1].points)
                 assertEquals(
                     listOf(PredictionStatus.INCORRECT) + List(2) { PredictionStatus.PARTIAL } + List(2) { PredictionStatus.CORRECT },
                     standings[1].lastPredictions

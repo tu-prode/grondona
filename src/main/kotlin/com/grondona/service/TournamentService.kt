@@ -339,6 +339,7 @@ class TournamentService(
 
         val team = Team(
             tournament = tournament,
+            englishKey = request.code,
             name = request.name,
             code = request.code,
             icon = request.icon,

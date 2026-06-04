@@ -1,9 +1,11 @@
 package com.grondona.service
 
 import com.grondona.client.MatchClient
+import com.grondona.client.OddsClient
 import com.grondona.exception.BadRequestException
 import com.grondona.exception.ExternalServiceException
 import com.grondona.model.ExternalMatch
+import com.grondona.model.ExternalOdds
 import com.grondona.model.Group
 import com.grondona.model.Match
 import com.grondona.model.MatchGroup
@@ -36,6 +38,9 @@ import java.time.ZonedDateTime
 import java.util.*
 
 class MatchServiceTest {
+
+    @MockK
+    private lateinit var oddsClient: OddsClient
 
     @MockK
     private lateinit var matchClient: MatchClient
@@ -85,20 +90,26 @@ class MatchServiceTest {
         updatedAt = LocalDateTime.now()
     )
 
-    private fun teamFromDB(code: String) = Team(id = UUID.randomUUID(), tournament = testTournament, name = "Team $code", code = code)
+    private fun teamFromDB(code: String) = Team(
+        id = UUID.randomUUID(), tournament = testTournament,
+        name = "Team $code", code = code, englishKey = "$code-en"
+    )
 
     private fun matchFromDB(code: String, home: String, away: String) = Match(
         id = UUID.randomUUID(), code = code, tournament = testTournament, homeGoals = 0, awayGoals = 0,
-        homeTeam = Team(tournament = testTournament, name = home, code = home, icon = "test"),
-        awayTeam = Team(tournament = testTournament, name = away, code = away, icon = "test"),
+        homeTeam = Team(tournament = testTournament, name = home, code = home, icon = "test", englishKey = "$home-en"),
+        awayTeam = Team(tournament = testTournament, name = away, code = away, icon = "test", englishKey = "$away-en"),
         status = MatchStatus.NOT_STARTED, homeQuota = 1f, drawQuota = 1f, awayQuota = 1f,
         stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A, startedAt = ZonedDateTime.now().plusDays(1),
     )
 
     private fun externalMatch(home: String, away: String) = ExternalMatch(
         home = home, away = away, homeGoals = 1, awayGoals = 1, status = MatchStatus.IN_PROGRESS,
-        substatus = "30' PT", homeOdds = 1f, drawOdds = 1f, awayOdds = 1f, startedAt = ZonedDateTime.now(),
-        stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A,
+        substatus = "30' PT", startedAt = ZonedDateTime.now(), stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A,
+    )
+
+    private fun externalOdds(home: String, away: String) = ExternalOdds(
+        homeKey = "$home-en", awayKey = "$away-en", startedAt = ZonedDateTime.now(), homeOdds = 1f, drawOdds = 1f, awayOdds = 1f,
     )
 
     private fun predictionFromDB(
@@ -117,6 +128,7 @@ class MatchServiceTest {
 
         matchService = spyk(
             MatchService(
+                oddsClient,
                 matchClient,
                 teamRepository,
                 matchRepository,
@@ -167,14 +179,18 @@ class MatchServiceTest {
         @Test
         fun `extractMatchesToUpdateStatus returns the status-related fields of the match updated when it is in-progress in the API and not-started in the DB`() {
             val matchingId = UUID.randomUUID()
-            val matchesFromDB = listOf(match(id = matchingId, status = MatchStatus.NOT_STARTED).copy(
-                homeGoals = null, awayGoals = null, homePenalties = null, awayPenalties = null,
-                homeQuota = 1f, drawQuota = 2f, awayQuota = 3f, substatus = null, finishedAt = null,
-            ))
-            val matchesFromAPI = listOf(match(id = matchingId, status = MatchStatus.IN_PROGRESS).copy(
-                homeGoals = 1, awayGoals = 2, homePenalties = 5, awayPenalties = 4,
-                homeQuota = 2f, drawQuota = 3f, awayQuota = 4f, substatus = MatchSubstatus.PENALTIES.label, finishedAt = null,
-            ))
+            val matchesFromDB = listOf(
+                match(id = matchingId, status = MatchStatus.NOT_STARTED).copy(
+                    homeGoals = null, awayGoals = null, homePenalties = null, awayPenalties = null,
+                    homeQuota = 1f, drawQuota = 2f, awayQuota = 3f, substatus = null, finishedAt = null,
+                )
+            )
+            val matchesFromAPI = listOf(
+                match(id = matchingId, status = MatchStatus.IN_PROGRESS).copy(
+                    homeGoals = 1, awayGoals = 2, homePenalties = 5, awayPenalties = 4,
+                    homeQuota = 2f, drawQuota = 3f, awayQuota = 4f, substatus = MatchSubstatus.PENALTIES.label, finishedAt = null,
+                )
+            )
 
             val matchesToUpdate = MatchService.extractMatchesToUpdateStatus(matchesFromDB, matchesFromAPI)
             assertEquals(1, matchesToUpdate.size)
@@ -192,14 +208,18 @@ class MatchServiceTest {
         @Test
         fun `extractMatchesToUpdateStatus returns the status-related fields of the match updated when it is in-progress in the API and in-progress in the DB`() {
             val matchingId = UUID.randomUUID()
-            val matchesFromDB = listOf(match(id = matchingId, status = MatchStatus.IN_PROGRESS).copy(
-                homeGoals = 0, awayGoals = 0, homePenalties = null, awayPenalties = null,
-                homeQuota = 1f, drawQuota = 2f, awayQuota = 3f, substatus = MatchSubstatus.HALFTIME.label, finishedAt = null,
-            ))
-            val matchesFromAPI = listOf(match(id = matchingId, status = MatchStatus.IN_PROGRESS).copy(
-                homeGoals = 1, awayGoals = 2, homePenalties = 5, awayPenalties = 4,
-                homeQuota = 2f, drawQuota = 3f, awayQuota = 4f, substatus = MatchSubstatus.PENALTIES.label, finishedAt = null,
-            ))
+            val matchesFromDB = listOf(
+                match(id = matchingId, status = MatchStatus.IN_PROGRESS).copy(
+                    homeGoals = 0, awayGoals = 0, homePenalties = null, awayPenalties = null,
+                    homeQuota = 1f, drawQuota = 2f, awayQuota = 3f, substatus = MatchSubstatus.HALFTIME.label, finishedAt = null,
+                )
+            )
+            val matchesFromAPI = listOf(
+                match(id = matchingId, status = MatchStatus.IN_PROGRESS).copy(
+                    homeGoals = 1, awayGoals = 2, homePenalties = 5, awayPenalties = 4,
+                    homeQuota = 2f, drawQuota = 3f, awayQuota = 4f, substatus = MatchSubstatus.PENALTIES.label, finishedAt = null,
+                )
+            )
 
             val matchesToUpdate = MatchService.extractMatchesToUpdateStatus(matchesFromDB, matchesFromAPI)
             assertEquals(1, matchesToUpdate.size)
@@ -218,14 +238,18 @@ class MatchServiceTest {
         fun `extractMatchesToUpdateStatus returns the status-related fields of the match updated when it is finished in the API and in-progress in the DB`() {
             val matchingId = UUID.randomUUID()
             val finishedAt = ZonedDateTime.now()
-            val matchesFromDB = listOf(match(id = matchingId, status = MatchStatus.IN_PROGRESS).copy(
-                homeGoals = 0, awayGoals = 0, homePenalties = null, awayPenalties = null,
-                homeQuota = 1f, drawQuota = 2f, awayQuota = 3f, substatus = MatchSubstatus.HALFTIME.label, finishedAt = null,
-            ))
-            val matchesFromAPI = listOf(match(id = matchingId, status = MatchStatus.IN_PROGRESS).copy(
-                homeGoals = 1, awayGoals = 2, homePenalties = 5, awayPenalties = 4,
-                homeQuota = 2f, drawQuota = 3f, awayQuota = 4f, substatus = MatchSubstatus.PENALTIES.label, finishedAt = finishedAt,
-            ))
+            val matchesFromDB = listOf(
+                match(id = matchingId, status = MatchStatus.IN_PROGRESS).copy(
+                    homeGoals = 0, awayGoals = 0, homePenalties = null, awayPenalties = null,
+                    homeQuota = 1f, drawQuota = 2f, awayQuota = 3f, substatus = MatchSubstatus.HALFTIME.label, finishedAt = null,
+                )
+            )
+            val matchesFromAPI = listOf(
+                match(id = matchingId, status = MatchStatus.IN_PROGRESS).copy(
+                    homeGoals = 1, awayGoals = 2, homePenalties = 5, awayPenalties = 4,
+                    homeQuota = 2f, drawQuota = 3f, awayQuota = 4f, substatus = MatchSubstatus.PENALTIES.label, finishedAt = finishedAt,
+                )
+            )
 
             val matchesToUpdate = MatchService.extractMatchesToUpdateStatus(matchesFromDB, matchesFromAPI)
             assertEquals(1, matchesToUpdate.size)
@@ -291,14 +315,18 @@ class MatchServiceTest {
         fun `extractMatchesToUpdateQuotas returns the quotas-related fields updated of the match with when it is not-started the API and not-locked in the DB`() {
             val matchingId = UUID.randomUUID()
             val finishedAt = ZonedDateTime.now()
-            val matchesFromDB = listOf(match(id = matchingId, status = MatchStatus.NOT_STARTED).copy(
-                homeGoals = 0, awayGoals = 0, homePenalties = null, awayPenalties = null,
-                homeQuota = 1f, drawQuota = 2f, awayQuota = 3f, substatus = null, finishedAt = null,
-            ))
-            val matchesFromAPI = listOf(match(id = matchingId, status = MatchStatus.NOT_STARTED).copy(
-                homeGoals = 1, awayGoals = 2, homePenalties = 5, awayPenalties = 4, startedAt = ZonedDateTime.now().plusDays(1),
-                homeQuota = 2f, drawQuota = 3f, awayQuota = 4f, substatus = MatchSubstatus.PENALTIES.label, finishedAt = finishedAt,
-            ))
+            val matchesFromDB = listOf(
+                match(id = matchingId, status = MatchStatus.NOT_STARTED).copy(
+                    homeGoals = 0, awayGoals = 0, homePenalties = null, awayPenalties = null,
+                    homeQuota = 1f, drawQuota = 2f, awayQuota = 3f, substatus = null, finishedAt = null,
+                )
+            )
+            val matchesFromAPI = listOf(
+                match(id = matchingId, status = MatchStatus.NOT_STARTED).copy(
+                    homeGoals = 1, awayGoals = 2, homePenalties = 5, awayPenalties = 4, startedAt = ZonedDateTime.now().plusDays(1),
+                    homeQuota = 2f, drawQuota = 3f, awayQuota = 4f, substatus = MatchSubstatus.PENALTIES.label, finishedAt = finishedAt,
+                )
+            )
 
             val matchesToUpdate = MatchService.extractMatchesToUpdateQuotas(matchesFromDB, matchesFromAPI)
             assertEquals(1, matchesToUpdate.size)
@@ -430,11 +458,17 @@ class MatchServiceTest {
 
         @Test
         fun `updateMatchesStatuses saves new matches`() {
-            val externalMatches = externalMatches + externalMatch(home = "H2", away = "A5").copy(status = MatchStatus.NOT_STARTED)
+            val externalMatches = externalMatches + externalMatch(home = "H2", away = "A5")
+                .copy(status = MatchStatus.NOT_STARTED, startedAt = ZonedDateTime.now().plusDays(1))
             every { matchClient.getMatches(testTournamentId) } returns externalMatches
             every { matchRepository.findByTournamentId(testTournamentId) } returns matchesFromDB
             every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
             every { teamRepository.findByTournamentId(testTournamentId) } returns tournamentTeams
+
+            val externalOdds = externalMatches.map {
+                externalOdds(home = it.home, away = it.away).copy(homeOdds = 6f, drawOdds = 7f, awayOdds = 8f, startedAt = it.startedAt!!)
+            }
+            every { oddsClient.getOdds(testTournamentId) } returns externalOdds
 
             val matchesToUpdate = populateMatchesToUpdate(matchesFromDB, externalMatches.dropLast(1))
             every { engine.calculateTournamentStatus(matchesToUpdate) } returns null
@@ -454,6 +488,9 @@ class MatchServiceTest {
             assertEquals("M10", savedMatches.last().code)
             assertEquals("H2", savedMatches.last().homeTeam.code)
             assertEquals("A5", savedMatches.last().awayTeam.code)
+            assertEquals(6f.oddsToQuota(), savedMatches.last().homeQuota)
+            assertEquals(7f.oddsToQuota(), savedMatches.last().drawQuota)
+            assertEquals(8f.oddsToQuota(), savedMatches.last().awayQuota)
         }
 
         @Test
@@ -567,7 +604,7 @@ class MatchServiceTest {
 
         @Test
         fun `updateMatchesQuotas fails when the MatchClient fails`() {
-            every { matchClient.getMatches(testTournamentId) } throws ExternalServiceException("Unexpected error")
+            every { oddsClient.getOdds(testTournamentId) } throws ExternalServiceException("Unexpected error")
 
             val exception = assertThrows<ExternalServiceException> {
                 matchService.updateMatchesQuotas(testTournamentId)
@@ -579,14 +616,13 @@ class MatchServiceTest {
         @Test
         fun `updateMatchesQuotas saves updated quotas`() {
             val systemMatches = (1..10).map { matchFromDB(code = "$it", home = "H$it", away = "A$it") }
-            val externalMatches = (1..10).map {
-                externalMatch(home = "H$it", away = "A$it")
-                    .copy(status = MatchStatus.NOT_STARTED, substatus = null, homeOdds = 1F, drawOdds = 2F, awayOdds = 3F)
+            val externalOdds = (1..10).map {
+                externalOdds(home = "H$it", away = "A$it")
+                    .copy(homeOdds = 2f, drawOdds = 3f, awayOdds = 4f, startedAt = ZonedDateTime.now().plusDays(1))
             }
 
-            every { matchClient.getMatches(testTournamentId) } returns externalMatches
+            every { oddsClient.getOdds(testTournamentId) } returns externalOdds
             every { matchRepository.findByTournamentIdAndStatus(testTournamentId, MatchStatus.NOT_STARTED) } returns systemMatches
-            every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
             every { teamRepository.findByTournamentId(testTournamentId) } returns tournamentTeams
             every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
 
@@ -598,37 +634,10 @@ class MatchServiceTest {
             savedMatches.forEachIndexed { idx, match ->
                 assertEquals("${idx + 1}", match.code)
                 assertEquals(MatchStatus.NOT_STARTED, match.status)
-                assertEquals(1F.oddsToQuota(), match.homeQuota)
-                assertEquals(2F.oddsToQuota(), match.drawQuota)
-                assertEquals(3F.oddsToQuota(), match.awayQuota)
+                assertEquals(2F.oddsToQuota(), match.homeQuota)
+                assertEquals(3F.oddsToQuota(), match.drawQuota)
+                assertEquals(4F.oddsToQuota(), match.awayQuota)
             }
-        }
-
-        @Test
-        fun `updateMatchesQuotas saves new matches`() {
-            val systemMatches = (1..10).map { matchFromDB(code = "$it", home = "H$it", away = "A$it") }
-            val externalMatches = (1..10).map {
-                externalMatch(home = "H$it", away = "A$it")
-                    .copy(status = MatchStatus.NOT_STARTED, substatus = null, homeOdds = 1F, drawOdds = 2F, awayOdds = 3F)
-            } + externalMatch(home = "H5", away = "A6").copy(status = MatchStatus.NOT_STARTED)
-
-            every { matchClient.getMatches(testTournamentId) } returns externalMatches
-            every { matchRepository.findByTournamentIdAndStatus(testTournamentId, MatchStatus.NOT_STARTED) } returns systemMatches
-            every { tournamentRepository.findById(testTournamentId) } returns Optional.of(testTournament)
-            every { teamRepository.findByTournamentId(testTournamentId) } returns tournamentTeams
-            every { engine.generateMatchesCodes(any()) } answers
-                    { firstArg<List<Match>>().mapIndexed { idx, match -> match.copy(code = "M${idx + 10}") } }
-            every { matchRepository.saveAll(any<List<Match>>()) } answers { firstArg() }
-
-            matchService.updateMatchesQuotas(testTournamentId)
-
-            val slot = slot<List<Match>>()
-            verify(exactly = 1) { matchRepository.saveAll(capture(slot)) }
-            val savedMatches = slot.captured
-            assertEquals(11, savedMatches.size)
-            assertEquals("M10", savedMatches.last().code)
-            assertEquals("H5", savedMatches.last().homeTeam.code)
-            assertEquals("A6", savedMatches.last().awayTeam.code)
         }
     }
 }

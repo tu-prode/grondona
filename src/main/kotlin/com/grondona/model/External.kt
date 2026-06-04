@@ -2,8 +2,8 @@ package com.grondona.model
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.grondona.exception.ExternalServiceException
-import com.grondona.utils.adjustDrawQuota
 import com.grondona.utils.oddsToQuota
+import com.grondona.utils.similar
 import java.time.ZonedDateTime
 
 // Case data class extracted from the External client.
@@ -19,9 +19,6 @@ data class ExternalMatch(
     val substatus: String? = null,
     val homePenalties: Int? = null,
     val awayPenalties: Int? = null,
-    val homeOdds: Float? = null,
-    val drawOdds: Float? = null,
-    val awayOdds: Float? = null,
     val startedAt: ZonedDateTime? = null,
     val finishedAt: ZonedDateTime? = null,
 ) {
@@ -45,9 +42,6 @@ data class ExternalMatch(
             awayTeam = awayTeam,
             stage = stage,
             group = group,
-            homeQuota = homeOdds?.oddsToQuota() ?: 0f,
-            drawQuota = drawOdds?.oddsToQuota() ?: 0f,
-            awayQuota = awayOdds?.oddsToQuota() ?: 0f,
             status = MatchStatus.NOT_STARTED,
             startedAt = startedAt,
         )
@@ -57,7 +51,30 @@ data class ExternalMatch(
         matches.firstOrNull { systemMatch -> stage == systemMatch.stage && systemMatch.homeTeam.code == home && systemMatch.awayTeam.code == away }
             ?.copy(
                 homeGoals = homeGoals, awayGoals = awayGoals, homePenalties = homePenalties, awayPenalties = awayPenalties,
-                homeQuota = homeOdds?.oddsToQuota() ?: 0f, drawQuota = drawOdds?.oddsToQuota() ?: 0f, awayQuota = awayOdds?.oddsToQuota() ?: 0f,
                 status = status, substatus = substatus, finishedAt = if (status == MatchStatus.FINISHED) finishedAt ?: ZonedDateTime.now() else null,
             )
+}
+
+// Case data class extracted from the External client.
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class ExternalOdds(
+    val homeKey: String,
+    val awayKey: String,
+    val homeOdds: Float,
+    val drawOdds: Float,
+    val awayOdds: Float,
+    val startedAt: ZonedDateTime,
+) {
+    fun toMatchUpdated(matches: List<Match>, tournamentTeams: Map<String, Team>): Match? {
+        val home = tournamentTeams[homeKey]?.code  ?: run {
+            throw ExternalServiceException(message = "Home team not found in the DB: home=$homeKey")
+        }
+
+        val away = tournamentTeams[awayKey]?.code ?: run {
+            throw ExternalServiceException(message = "Away team not found in the DB: away=$awayKey")
+        }
+
+        return matches.firstOrNull { match -> match.startedAt.similar(startedAt) && match.homeTeam.code == home && match.awayTeam.code == away }
+            ?.copy(homeQuota = homeOdds.oddsToQuota(), drawQuota = drawOdds.oddsToQuota(), awayQuota = awayOdds.oddsToQuota())
+    }
 }

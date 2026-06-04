@@ -109,9 +109,10 @@ class PredictionServiceTest {
     private val testTeam = Team(
         id = UUID.randomUUID(),
         tournament = testTournament,
-        name = "Team A",
         code = "A",
-        icon = "a.png"
+        name = "Team A",
+        englishKey = "A-en",
+        icon = "a.png",
     )
 
     private val testPlayer = Player(

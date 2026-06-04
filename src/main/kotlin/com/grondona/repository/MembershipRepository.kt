@@ -1,6 +1,5 @@
 package com.grondona.repository
 
-import com.grondona.model.AwardPrediction
 import com.grondona.model.GroupUser
 import com.grondona.model.MembershipView
 import org.springframework.data.jpa.repository.JpaRepository

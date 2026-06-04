@@ -93,7 +93,7 @@ class TournamentServiceTest {
     private val testMember = GroupUser(user = testUser, group = testGroup)
 
     private fun UUID.toTeam() = Team(
-        id = this, tournament = testTournament, name = "Team", code = "TEAM", icon = "icon",
+        id = this, tournament = testTournament, name = "Team", code = "TEAM", icon = "icon", englishKey = "Team-en"
     )
 
     private fun UUID.toPlayer() = Player(
@@ -352,7 +352,7 @@ class TournamentServiceTest {
     inner class GetTournamentMatchesTests {
 
         private fun makeMatch(status: MatchStatus, startedAt: ZonedDateTime = ZonedDateTime.now().plusDays(1)): Match {
-            val team = Team(id = UUID.randomUUID(), tournament = testTournament, name = "Team", code = "T", icon = "icon.png")
+            val team = Team(id = UUID.randomUUID(), tournament = testTournament, name = "Team", code = "T", icon = "icon.png", englishKey = "T-en")
             return Match(
                 id = UUID.randomUUID(), tournament = testTournament, code = "M-${UUID.randomUUID()}",
                 stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A, startedAt = startedAt,

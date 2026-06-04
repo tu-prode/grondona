@@ -1,3 +1,5 @@
+-- Create test data for the DB
+
 INSERT INTO users (id, fullname, username, email, password_hash, permissions) VALUES
     ('60635292-4a13-43d8-b976-b2e292020deb', 'Lautaro Chamorro', 'chas', 'chas@test.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),
     ('4fc682de-233f-4b0f-b4c3-4ee0f5716675', 'Manuel Domínguez', 'manu', 'manu@test.com', '5d7845ac6ee7cfffafc5fe5f35cf666d', 'USER'),

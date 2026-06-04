@@ -1,16 +1,5 @@
 -- Initialize database schema for Grondona application
 
--- Remove existing tables
-drop table if exists match_predictions cascade;
-drop table if exists award_predictions cascade;
-drop table if exists matches cascade;
-drop table if exists teams cascade;
-drop table if exists players cascade;
-drop table if exists group_users cascade;
-drop table if exists groups cascade;
-drop table if exists tournaments cascade;
-drop table if exists users cascade;
-
 -- Automatically update updated_at on row updates
 create or replace function set_updated_at()
     returns trigger as $$
@@ -161,8 +150,9 @@ COMMENT ON COLUMN group_users.deleted_at IS 'Timestamp when the membership was d
 CREATE TABLE IF NOT EXISTS teams (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
     code TEXT NOT NULL,
+    name_es TEXT NOT NULL,
+    name_en TEXT NOT NULL,
     icon TEXT DEFAULT 'https://flagicons.lipis.dev/flags/4x3/xx.svg',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -179,7 +169,8 @@ CREATE TRIGGER trg_teams_updated_at BEFORE UPDATE ON teams FOR EACH ROW EXECUTE 
 COMMENT ON TABLE teams IS 'Teams table';
 COMMENT ON COLUMN teams.id IS 'Unique identifier for the team';
 COMMENT ON COLUMN teams.tournament_id IS 'Reference to the tournament';
-COMMENT ON COLUMN teams.name IS 'Name of the team';
+COMMENT ON COLUMN teams.name_es IS 'Name of the team (in Spanish)';
+COMMENT ON COLUMN teams.name_en IS 'Name of the team (in English)';
 COMMENT ON COLUMN teams.code IS 'FIFA code of the team';
 COMMENT ON COLUMN teams.icon IS 'URL with the team icon';
 COMMENT ON COLUMN teams.created_at IS 'Timestamp when the team was created';
