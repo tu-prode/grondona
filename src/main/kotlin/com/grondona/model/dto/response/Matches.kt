@@ -103,3 +103,5 @@ data class SimpleMatchesResponse(
         )
     }
 }
+
+data class MatchesUpdatedResponse(val total: Int)

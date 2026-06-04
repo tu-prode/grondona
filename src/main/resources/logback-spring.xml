@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Spring Boot logging defaults (color converters, CONSOLE_LOG_PATTERN, etc.). -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!--
+      Local / non-prod: keep the human-readable console output.
+    -->
+    <springProfile name="!prod">
+        <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!--
+      prod (Cloud Run): emit structured JSON to stdout so Cloud Logging maps each entry
+      to the correct `severity`. Without this, plain-text logs are ingested as textPayload
+      with DEFAULT severity and disappear under the INFO/WARNING/ERROR severity filters.
+    -->
+    <springProfile name="prod">
+        <!--
+          The included appender resolves projectId from SPRING_CLOUD_GCP_LOGGING_PROJECT_ID.
+          It only affects trace<->log correlation formatting; severity mapping works regardless.
+        -->
+        <include resource="com/google/cloud/spring/logging/logback-json-appender.xml"/>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE_JSON"/>
+        </root>
+    </springProfile>
+</configuration>

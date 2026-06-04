@@ -68,7 +68,7 @@ class MatchService(
     private val engines: Map<UUID, TournamentEngine> = enginesList.associateBy { it.tournamentId }
 
     @Transactional
-    fun updateMatchesQuotas(tournamentId: UUID) {
+    fun updateMatchesQuotas(tournamentId: UUID): List<Match> {
         logger.trace("Starting matches polling")
 
         engines[tournamentId] ?: run {
@@ -84,12 +84,14 @@ class MatchService(
 
         val tournamentTeams = teamRepository.findByTournamentId(tournamentId).associateBy { it.englishKey }
         val matchesFromAPI = externalOdds.mapNotNull { it.toMatchUpdated(matchesFromDB, tournamentTeams) }
-        val matchesToUpdate = extractMatchesToUpdateQuotas(matchesFromDB, matchesFromAPI)
+        val matchesToSave = extractMatchesToUpdateQuotas(matchesFromDB, matchesFromAPI)
 
-        if (matchesToUpdate.isNotEmpty()) {
-            logger.debug("Matches to apply quotas update in DB={}", matchesToUpdate.size)
-            matchRepository.saveAll(matchesToUpdate)
+        if (matchesToSave.isNotEmpty()) {
+            logger.debug("Quotas updated on {} matches", matchesToSave.size)
+            matchRepository.saveAll(matchesToSave)
         }
+
+        return matchesToSave
     }
 
     @Transactional
@@ -134,8 +136,8 @@ class MatchService(
         val matchesToSave = matchesToUpdate + if (prepareNewMatches && matchesToCreate.isNotEmpty())
             tournamentEngine.generateMatchesCodes(matchesToCreate) else emptyList()
         if (matchesToSave.isNotEmpty()) {
-            logger.debug("Matches to apply status update in DB={}", matchesToSave.size)
             matchRepository.saveAll(matchesToSave)
+            logger.debug("Status updated on {} matches", matchesToSave.size)
         }
 
         val anyJustFinished = matchesToUpdate.any { it.status == MatchStatus.FINISHED }
