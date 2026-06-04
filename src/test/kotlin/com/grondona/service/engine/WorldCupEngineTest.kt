@@ -28,8 +28,8 @@ class WorldCupEngineTest {
         code: String = "XXX", homeGoals: Int = 0, awayGoals: Int = 0, homeQuota: Float = 1f, drawQuota: Float = 1f, awayQuota: Float = 1f,
     ) = Match(
         id = UUID.randomUUID(), code = code,
-        homeTeam = Team(id = UUID.randomUUID(), tournament = testTournament, name = home, code = home, icon = "test"),
-        awayTeam = Team(id = UUID.randomUUID(), tournament = testTournament, name = away, code = away, icon = "test"),
+        homeTeam = Team(id = UUID.randomUUID(), tournament = testTournament, name = home, code = home, icon = "test", englishKey = "$code-en"),
+        awayTeam = Team(id = UUID.randomUUID(), tournament = testTournament, name = away, code = away, icon = "test", englishKey = "$code-en"),
         status = status, homeQuota = homeQuota, drawQuota = drawQuota, awayQuota = awayQuota, startedAt = startedAt,
         tournament = testTournament, homeGoals = homeGoals, awayGoals = awayGoals, stage = MatchStage.GROUP_STAGE,
     )

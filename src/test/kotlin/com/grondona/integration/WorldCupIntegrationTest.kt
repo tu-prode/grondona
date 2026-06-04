@@ -711,7 +711,7 @@ class WorldCupIntegrationTest {
 
                 ExternalMatch(
                     home = homeTeam, away = awayTeam, stage = MatchStage.ROUND_OF_32, homeGoals = 0, awayGoals = 0,
-                    status = MatchStatus.NOT_STARTED, startedAt = codesToDates[code]!!, homeOdds = 0f, drawOdds = 0f, awayOdds = 0f
+                    status = MatchStatus.NOT_STARTED, startedAt = codesToDates[code]!!,
                 )
             }
 
@@ -775,7 +775,7 @@ class WorldCupIntegrationTest {
 
                 ExternalMatch(
                     home = homeTeam, away = awayTeam, stage = MatchStage.ROUND_OF_16, homeGoals = 0, awayGoals = 0,
-                    status = MatchStatus.NOT_STARTED, startedAt = codesToDates[code]!!, homeOdds = 0f, drawOdds = 0f, awayOdds = 0f
+                    status = MatchStatus.NOT_STARTED, startedAt = codesToDates[code]!!,
                 )
             }
 
@@ -839,7 +839,7 @@ class WorldCupIntegrationTest {
 
                 ExternalMatch(
                     home = homeTeam, away = awayTeam, stage = MatchStage.QUARTERFINALS, homeGoals = 0, awayGoals = 0,
-                    status = MatchStatus.NOT_STARTED, startedAt = codesToDates[code]!!, homeOdds = 0f, drawOdds = 0f, awayOdds = 0f
+                    status = MatchStatus.NOT_STARTED, startedAt = codesToDates[code]!!,
                 )
             }
 
@@ -903,7 +903,7 @@ class WorldCupIntegrationTest {
 
                 ExternalMatch(
                     home = homeTeam, away = awayTeam, stage = MatchStage.SEMIFINALS, homeGoals = 0, awayGoals = 0,
-                    status = MatchStatus.NOT_STARTED, startedAt = codesToDates[code]!!, homeOdds = 0f, drawOdds = 0f, awayOdds = 0f
+                    status = MatchStatus.NOT_STARTED, startedAt = codesToDates[code]!!,
                 )
             }
 
@@ -966,10 +966,9 @@ class WorldCupIntegrationTest {
                 newQualifiedTeams.add(awayTeam)
 
                 ExternalMatch(
-                    home = homeTeam, away = awayTeam,
+                    home = homeTeam, away = awayTeam, homeGoals = 0, awayGoals = 0,
                     stage = if (idx == 0) MatchStage.THIRD_PLACE else MatchStage.FINAL,
-                    homeGoals = 0, awayGoals = 0, status = MatchStatus.NOT_STARTED,
-                    startedAt = codesToDates[code]!!, homeOdds = 0f, drawOdds = 0f, awayOdds = 0f,
+                    status = MatchStatus.NOT_STARTED, startedAt = codesToDates[code]!!
                 )
             }
 

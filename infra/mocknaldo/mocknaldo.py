@@ -574,7 +574,60 @@ ORIGINAL_MATCHES = [
   "away_penalties": 0, "home_yellows": None, "away_yellows": None, "home_reds": None, "away_reds": None,
   "home_odds": 3.10, "draw_odds": 3.20, "away_odds": 2.25, "odds_calculated_at": None, "status": "TO_START",
   "odds_changed_at": current, "started_at": datetime.strptime("2026-06-28 02:00:00", "%Y-%m-%d %H:%M:%S"),
-  "ended_at": None}, ]
+  "ended_at": None},
+]
+
+# Country code -> name_en, sourced from infra/initdb/02-real-data.sql (teams table).
+TEAM_KEYS = {
+    "GER": "Germany",
+    "KSA": "Saudi Arabia",
+    "ALG": "Algeria",
+    "ARG": "Argentina",
+    "AUS": "Australia",
+    "AUT": "Austria",
+    "BRA": "Brazil",
+    "BEL": "Belgium",
+    "CPV": "Cape Verde",
+    "CAN": "Canada",
+    "QAT": "Qatar",
+    "COL": "Colombia",
+    "KOR": "South Korea",
+    "CIV": "Ivory Coast",
+    "CRO": "Croatia",
+    "CUW": "Curaçao",
+    "ECU": "Ecuador",
+    "EGY": "Egypt",
+    "SCO": "Scotland",
+    "ESP": "Spain",
+    "USA": "USA",
+    "FRA": "France",
+    "GHA": "Ghana",
+    "HAI": "Haiti",
+    "ENG": "England",
+    "IRN": "Iran",
+    "JPN": "Japan",
+    "JOR": "Jordan",
+    "MAR": "Morocco",
+    "MEX": "Mexico",
+    "NOR": "Norway",
+    "NZL": "New Zealand",
+    "NED": "Netherlands",
+    "PAN": "Panama",
+    "PAR": "Paraguay",
+    "POR": "Portugal",
+    "SEN": "Senegal",
+    "RSA": "South Africa",
+    "SUI": "Switzerland",
+    "TUN": "Tunisia",
+    "URY": "Uruguay",
+    "UZB": "Uzbekistan",
+    "COD": "DR Congo",
+    "IRQ": "Iraq",
+    "BIH": "Bosnia & Herzegovina",
+    "SWE": "Sweden",
+    "TUR": "Turkey",
+    "CZE": "Czech Republic",
+}
 
 MATCHES_LOCK = threading.Lock()
 MATCHES = deepcopy(ORIGINAL_MATCHES)
@@ -681,7 +734,8 @@ def new_match(code, home, away, scheduled):
     elif int(code) == 104:
         stage = "F"
 
-    return {"code": code, "stage": stage, "home": home, "away": away, "minutes": 0, "half": 0, "ended_at": None,
+    return {"code": code, "stage": stage, "home": home, "away": away,
+            "home_key": TEAM_KEYS.get(home), "away_key": TEAM_KEYS.get(away), "minutes": 0, "half": 0, "ended_at": None,
             "home_goals": 0, "away_goals": 0, "home_penalties": 0, "away_penalties": 0, "home_yellows": None,
             "away_yellows": None, "home_reds": None, "away_reds": None, "home_odds": 1.00, "draw_odds": 1.00,
             "away_odds": 1.00, "odds_calculated_at": None, "status": "TO_START", "odds_changed_at": current,
@@ -946,25 +1000,30 @@ def random_date():
 #                                                  RUNNING SIMULATION                                                 #
 #######################################################################################################################
 
+def check_time():
+    global MATCHES, checkpoint, current, delta, groups_flag
+    TIME_LOCK.acquire()
+    if randomized:
+        current = random_date()
+        MATCHES_LOCK.acquire()
+        MATCHES = deepcopy(ORIGINAL_MATCHES)
+        groups_flag = False
+        MATCHES_LOCK.release()
+        logger.debug(f"Simulating @ {current.date()}")
+    else:
+        if not fixed:
+            current = current + (datetime.now() - current) * delta
+        if not checkpoint or current.date() != checkpoint:
+            logger.debug(f"Simulating @ {current.date()}")
+        checkpoint = current.date()
+    TIME_LOCK.release()
+
+
 def simulate_matches():
     if active:
 
         global MATCHES, checkpoint, current, delta, groups_flag
-        TIME_LOCK.acquire()
-        if randomized:
-            current = random_date()
-            MATCHES_LOCK.acquire()
-            MATCHES = deepcopy(ORIGINAL_MATCHES)
-            groups_flag = False
-            MATCHES_LOCK.release()
-            logger.debug(f"Simulating @ {current.date()}")
-        else:
-            if not fixed:
-                current = current + (datetime.now() - current) * delta
-            if not checkpoint or current.date() != checkpoint:
-                logger.debug(f"Simulating @ {current.date()}")
-            checkpoint = current.date()
-        TIME_LOCK.release()
+        check_time()
 
         matches_updated = 0
         for match in MATCHES:
@@ -1109,19 +1168,21 @@ def simulate_matches():
                 if match_ended:
                     check_round(match)
 
-            else:
-                # Not yet played
-                if not match["odds_calculated_at"] or diff_hours(current, match["odds_calculated_at"]) >= 24:
-                    match["home_odds"] = round(
-                        match["home_odds"] + random.choice([-1, 0, 1]) * match["home_odds"] * 0.02, 2)
-                    match["draw_odds"] = round(
-                        match["draw_odds"] + random.choice([-1, 0, 1]) * match["home_odds"] * 0.02, 2)
-                    match["away_odds"] = round(
-                        match["away_odds"] + random.choice([-1, 0, 1]) * match["home_odds"] * 0.02, 2)
-                    match["odds_calculated_at"] = current
-
         if randomized:
             logger.info(f'Matches updated: {matches_updated}')
+
+
+def simulate_odds():
+    if active:
+
+        global MATCHES, current
+        check_time()
+
+        for match in MATCHES:
+            match["home_odds"] = round(match["home_odds"] + random.choice([-1, 0, 1]) * match["home_odds"] * 0.01, 2)
+            match["draw_odds"] = round(match["draw_odds"] + random.choice([-1, 0, 1]) * match["draw_odds"] * 0.01, 2)
+            match["away_odds"] = round(match["away_odds"] + random.choice([-1, 0, 1]) * match["away_odds"] * 0.01, 2)
+            match["odds_calculated_at"] = current
 
 
 #######################################################################################################################
@@ -1240,14 +1301,34 @@ class ResultsMockerHandler(BaseHTTPRequestHandler):
                 match_copy[field] = value.isoformat() + "-03:00"
         return match_copy
 
+    @staticmethod
+    def serialize_odds(match):
+        return {
+            "home_key": TEAM_KEYS.get(match["home"]), "away_key": TEAM_KEYS.get(match["away"]),
+            "home_odds": match["home_odds"], "draw_odds": match["draw_odds"], "away_odds": match["away_odds"],
+            "started_at": match["started_at"].isoformat() + "-03:00",
+        }
+
     def _send_matches(self):
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.end_headers()
+        simulate_odds()
         simulate_matches()
         self.wfile.write(json.dumps({
             "current": current,
             "matches": [self.serialize_match(match) for match in MATCHES]
+        }, default=json_serializer).encode())
+
+    def _send_odds(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        simulate_odds()
+        simulate_matches()
+        self.wfile.write(json.dumps({
+         "current": current,
+         "odds": [self.serialize_odds(match) for match in MATCHES]
         }, default=json_serializer).encode())
 
     def _send_json(self, code, payload=None):
@@ -1261,6 +1342,8 @@ class ResultsMockerHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if urlparse(self.path).path == "/matches":
             self._send_matches()
+        if urlparse(self.path).path == "/odds":
+            self._send_odds()
         else:
             self._reject()
 

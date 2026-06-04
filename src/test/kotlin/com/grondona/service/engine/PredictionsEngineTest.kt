@@ -36,7 +36,7 @@ class PredictionsEngineTest {
         createdAt = LocalDateTime.now(), updatedAt = LocalDateTime.now()
     )
     private val anyTeam = Team(
-        id = UUID.randomUUID(), tournament = anyTournament, name = "Team", code = "T", icon = "t.png"
+        id = UUID.randomUUID(), tournament = anyTournament, name = "Team", code = "T", icon = "t.png", englishKey = "T-en"
     )
     private val anyPlayer = Player(
         id = UUID.randomUUID(), team = anyTeam, name = "Player", position = PlayerPosition.FORWARD,

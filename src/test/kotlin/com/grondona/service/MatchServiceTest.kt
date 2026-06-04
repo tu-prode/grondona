@@ -1,6 +1,7 @@
 package com.grondona.service
 
 import com.grondona.client.MatchClient
+import com.grondona.client.OddsClient
 import com.grondona.exception.BadRequestException
 import com.grondona.exception.ExternalServiceException
 import com.grondona.model.ExternalMatch
@@ -36,6 +37,9 @@ import java.time.ZonedDateTime
 import java.util.*
 
 class MatchServiceTest {
+
+    @MockK
+    private lateinit var oddsClient: OddsClient
 
     @MockK
     private lateinit var matchClient: MatchClient
@@ -85,20 +89,22 @@ class MatchServiceTest {
         updatedAt = LocalDateTime.now()
     )
 
-    private fun teamFromDB(code: String) = Team(id = UUID.randomUUID(), tournament = testTournament, name = "Team $code", code = code)
+    private fun teamFromDB(code: String) = Team(
+        id = UUID.randomUUID(), tournament = testTournament,
+        name = "Team $code", code = code, englishKey = "$code-en"
+    )
 
     private fun matchFromDB(code: String, home: String, away: String) = Match(
         id = UUID.randomUUID(), code = code, tournament = testTournament, homeGoals = 0, awayGoals = 0,
-        homeTeam = Team(tournament = testTournament, name = home, code = home, icon = "test"),
-        awayTeam = Team(tournament = testTournament, name = away, code = away, icon = "test"),
+        homeTeam = Team(tournament = testTournament, name = home, code = home, icon = "test", englishKey = "$code-en"),
+        awayTeam = Team(tournament = testTournament, name = away, code = away, icon = "test", englishKey = "$code-en"),
         status = MatchStatus.NOT_STARTED, homeQuota = 1f, drawQuota = 1f, awayQuota = 1f,
         stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A, startedAt = ZonedDateTime.now().plusDays(1),
     )
 
     private fun externalMatch(home: String, away: String) = ExternalMatch(
         home = home, away = away, homeGoals = 1, awayGoals = 1, status = MatchStatus.IN_PROGRESS,
-        substatus = "30' PT", homeOdds = 1f, drawOdds = 1f, awayOdds = 1f, startedAt = ZonedDateTime.now(),
-        stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A,
+        substatus = "30' PT", startedAt = ZonedDateTime.now(), stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A,
     )
 
     private fun predictionFromDB(
@@ -117,6 +123,7 @@ class MatchServiceTest {
 
         matchService = spyk(
             MatchService(
+                oddsClient,
                 matchClient,
                 teamRepository,
                 matchRepository,
@@ -581,7 +588,7 @@ class MatchServiceTest {
             val systemMatches = (1..10).map { matchFromDB(code = "$it", home = "H$it", away = "A$it") }
             val externalMatches = (1..10).map {
                 externalMatch(home = "H$it", away = "A$it")
-                    .copy(status = MatchStatus.NOT_STARTED, substatus = null, homeOdds = 1F, drawOdds = 2F, awayOdds = 3F)
+                    .copy(status = MatchStatus.NOT_STARTED, substatus = null)
             }
 
             every { matchClient.getMatches(testTournamentId) } returns externalMatches
@@ -609,7 +616,7 @@ class MatchServiceTest {
             val systemMatches = (1..10).map { matchFromDB(code = "$it", home = "H$it", away = "A$it") }
             val externalMatches = (1..10).map {
                 externalMatch(home = "H$it", away = "A$it")
-                    .copy(status = MatchStatus.NOT_STARTED, substatus = null, homeOdds = 1F, drawOdds = 2F, awayOdds = 3F)
+                    .copy(status = MatchStatus.NOT_STARTED, substatus = null)
             } + externalMatch(home = "H5", away = "A6").copy(status = MatchStatus.NOT_STARTED)
 
             every { matchClient.getMatches(testTournamentId) } returns externalMatches

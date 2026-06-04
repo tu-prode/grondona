@@ -21,8 +21,8 @@ class ExternalTest {
         homeGoals: Int = 0, awayGoals: Int = 0, homeQuota: Float = 1f, drawQuota: Float = 1f, awayQuota: Float = 1f,
     ) = Match(
         id = UUID.randomUUID(), stage = stage, group = group,
-        homeTeam = Team(tournament = testTournament, name = home, code = home, icon = "test"),
-        awayTeam = Team(tournament = testTournament, name = away, code = away, icon = "test"),
+        homeTeam = Team(tournament = testTournament, name = home, code = home, icon = "test", englishKey = "test-en"),
+        awayTeam = Team(tournament = testTournament, name = away, code = away, icon = "test", englishKey = "test-en"),
         status = status, homeQuota = homeQuota, drawQuota = drawQuota, awayQuota = awayQuota, startedAt = startedAt,
         tournament = testTournament, code = "test", homeGoals = homeGoals, awayGoals = awayGoals,
     )
@@ -30,10 +30,9 @@ class ExternalTest {
     private fun matchFromAPI(
         home: String = "XXX", away: String = "XXX", stage: MatchStage = MatchStage.GROUP_STAGE, group: MatchGroup = MatchGroup.GROUP_J,
         homeGoals: Int = 0, awayGoals: Int = 0, substatus: String? = null, status: MatchStatus = MatchStatus.NOT_STARTED,
-        homeOdds: Float = 1f, drawOdds: Float = 1f, awayOdds: Float = 1f,
     ) = ExternalMatch(
-        home = home, away = away, homeGoals = homeGoals, awayGoals = awayGoals, status = status, substatus = substatus,
-        stage = stage, group = group, homeOdds = homeOdds, drawOdds = drawOdds, awayOdds = awayOdds, startedAt = ZonedDateTime.now(),
+        home = home, away = away, homeGoals = homeGoals, awayGoals = awayGoals,
+        status = status, substatus = substatus, stage = stage, group = group, startedAt = ZonedDateTime.now(),
     )
 
     @Nested
@@ -42,7 +41,7 @@ class ExternalTest {
         @Test
         fun `toExistingMatch returns null when the external match is not found between the stored ones`() {
             val dbMatches = (0..9).map { matchFromDB(home = "XX$it", away = "XY$it").copy(code = "$it") }
-            val externalMatch = matchFromAPI(home = "XA1", away = "XB1", status = MatchStatus.NOT_STARTED, homeOdds = 10f, drawOdds = 10f, awayOdds = 10f)
+            val externalMatch = matchFromAPI(home = "XA1", away = "XB1", status = MatchStatus.NOT_STARTED)
             val match = externalMatch.toExistingMatch(dbMatches)
             assertNull(match)
         }
@@ -53,7 +52,6 @@ class ExternalTest {
             val dbMatches = (0..9).map { matchFromDB(home = "XX$it", away = "XY$it").copy(code = "$it") }
             val externalMatch = matchFromAPI(home = "XX1", away = "XY1").copy(
                 homeGoals = 8, awayGoals = 9, homePenalties = 10, awayPenalties = 11,
-                homeOdds = 10f, drawOdds = 11f, awayOdds = 12f,
                 status = MatchStatus.IN_PROGRESS, substatus = MatchSubstatus.PENALTIES.label, finishedAt = finishedAt,
             )
 
@@ -63,9 +61,9 @@ class ExternalTest {
             assertEquals(9, match.awayGoals)
             assertEquals(10, match.homePenalties)
             assertEquals(11, match.awayPenalties)
-            assertEquals(10f.oddsToQuota(), match.homeQuota)
-            assertEquals(11f.oddsToQuota(), match.drawQuota)
-            assertEquals(12f.oddsToQuota(), match.awayQuota)
+            assertEquals(1f.oddsToQuota(), match.homeQuota)
+            assertEquals(1f.oddsToQuota(), match.drawQuota)
+            assertEquals(1f.oddsToQuota(), match.awayQuota)
             assertEquals(MatchStatus.IN_PROGRESS, match.status)
             assertEquals(MatchSubstatus.PENALTIES.label, match.substatus)
             assertNull(match.finishedAt)
@@ -77,7 +75,6 @@ class ExternalTest {
             val dbMatches = (0..9).map { matchFromDB(home = "XX$it", away = "XY$it").copy(code = "$it") }
             val externalMatch = matchFromAPI(home = "XX1", away = "XY1").copy(
                 homeGoals = 8, awayGoals = 8, homePenalties = 10, awayPenalties = 11,
-                homeOdds = 10f, drawOdds = 11f, awayOdds = 12f,
                 status = MatchStatus.FINISHED, substatus = MatchSubstatus.FINISHED.label, finishedAt = finishedAt,
             )
 
@@ -87,9 +84,9 @@ class ExternalTest {
             assertEquals(8, match.awayGoals)
             assertEquals(10, match.homePenalties)
             assertEquals(11, match.awayPenalties)
-            assertEquals(10f.oddsToQuota(), match.homeQuota)
-            assertEquals(11f.oddsToQuota(), match.drawQuota)
-            assertEquals(12f.oddsToQuota(), match.awayQuota)
+            assertEquals(1f.oddsToQuota(), match.homeQuota)
+            assertEquals(1f.oddsToQuota(), match.drawQuota)
+            assertEquals(1f.oddsToQuota(), match.awayQuota)
             assertEquals(MatchStatus.FINISHED, match.status)
             assertEquals(MatchSubstatus.FINISHED.label, match.substatus)
             assertEquals(finishedAt, match.finishedAt)

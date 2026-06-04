@@ -23,10 +23,13 @@ data class Team(
     val tournament: Tournament,
 
     @Column(nullable = false)
+    val code: String,
+
+    @Column(name = "name_es", nullable = false)
     var name: String,
 
-    @Column(nullable = false)
-    val code: String,
+    @Column(name = "name_en", nullable = false)
+    var englishKey: String,
 
     @Column(nullable = false)
     val icon: String = "",
