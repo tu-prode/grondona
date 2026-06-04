@@ -3,13 +3,8 @@ package com.grondona.client
 import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import com.fasterxml.jackson.databind.annotation.JsonNaming
 import com.grondona.exception.ExternalServiceException
-import com.grondona.model.ExternalMatch
 import com.grondona.model.ExternalOdds
 import com.grondona.model.LOCAL
-import com.grondona.model.MatchGroup
-import com.grondona.model.MatchStage
-import com.grondona.model.MatchStatus
-import com.grondona.model.MatchSubstatus
 import com.grondona.model.PROD
 import com.grondona.model.TEST
 import com.grondona.now
@@ -70,7 +65,7 @@ interface OddsClient {
 }
 
 @Component
-@Profile(TEST, PROD)
+@Profile(LOCAL, TEST)
 class MocknaldoOddsClient(
     override val oddsWebClient: WebClient,
 ) : OddsClient {
@@ -118,7 +113,7 @@ class MocknaldoOddsClient(
 }
 
 @Component
-@Profile(LOCAL)
+@Profile(PROD)
 class OddsApiMatchClient(
     override val oddsWebClient: WebClient,
     @Value("\${external.api.odds.key}")
