@@ -252,7 +252,7 @@ class UserControllerTest {
                 permissions = UserPermissions.USER,
                 uniquePredictions = false,
             )
-            every { userService.getUserById(testUserId) } returns response
+            every { userService.getCurrentUser(testUserId) } returns response
 
             mockMvc.perform(get("/api/users/me"))
                 .andExpect(status().isOk)
@@ -265,7 +265,7 @@ class UserControllerTest {
         @Test
         fun `GET api users me should return 404 when user not found`() {
             setAuthenticatedUser(testUserId, "testuser")
-            every { userService.getUserById(testUserId) } throws NotFoundException("User not found")
+            every { userService.getCurrentUser(testUserId) } throws NotFoundException("User not found")
 
             mockMvc.perform(get("/api/users/me"))
                 .andExpect(status().isNotFound)

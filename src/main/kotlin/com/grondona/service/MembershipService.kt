@@ -19,8 +19,8 @@ import kotlin.jvm.optionals.getOrElse
 
 @Service
 class MembershipService(
-    private val groupRepository: GroupRepository,
     private val userRepository: UserRepository,
+    private val groupRepository: GroupRepository,
     private val membershipRepository: MembershipRepository,
 ) {
 

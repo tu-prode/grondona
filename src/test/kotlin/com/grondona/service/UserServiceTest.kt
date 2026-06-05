@@ -14,6 +14,7 @@ import com.grondona.model.dto.request.LoginUserRequest
 import com.grondona.model.dto.request.UpdateUserRequest
 import com.grondona.utils.hashMD5
 import com.grondona.repository.AwardPredictionRepository
+import com.grondona.repository.GroupRepository
 import com.grondona.repository.MatchPredictionRepository
 import com.grondona.repository.MembershipRepository
 import com.grondona.repository.UserRepository
@@ -39,6 +40,9 @@ class UserServiceTest {
 
     @MockK
     private lateinit var userRepository: UserRepository
+
+    @MockK
+    private lateinit var groupRepository: GroupRepository
 
     @MockK
     private lateinit var predictionService: PredictionService
@@ -438,7 +442,7 @@ class UserServiceTest {
 
             // When/Then
             val exception = assertThrows<NotFoundException> {
-                userService.getUserById(testUserId)
+                userService.getCurrentUser(testUserId)
             }
             assertEquals("User not found", exception.message)
         }
@@ -448,9 +452,10 @@ class UserServiceTest {
             // Given
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
             every { membershipRepository.findJoinRequests(testUserId) } returns emptyList()
+            every { membershipRepository.findUserGroups(testUserId) } returns emptyList()
 
             // When
-            val result = userService.getUserById(testUserId)
+            val result = userService.getCurrentUser(testUserId)
 
             // Then
             assertEquals(testUserId, result.id)
@@ -471,9 +476,10 @@ class UserServiceTest {
                 GroupUser(group = testGroup, user = candidate2, role = GroupRole.CANDIDATE),
                 GroupUser(group = testGroup2, user = candidate1, role = GroupRole.CANDIDATE),
             )
+            every { membershipRepository.findUserGroups(testUserId) } returns emptyList()
 
             // When
-            val result = userService.getUserById(testUserId)
+            val result = userService.getCurrentUser(testUserId)
 
             // Then
             assertEquals(testUserId, result.id)

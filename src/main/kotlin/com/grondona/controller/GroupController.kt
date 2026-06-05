@@ -6,9 +6,11 @@ import com.grondona.model.dto.request.CreateGroupRequest
 import com.grondona.model.dto.request.UpdateGroupRequest
 import com.grondona.model.dto.request.UpdateMemberRequest
 import com.grondona.model.dto.response.GroupResponse
+import com.grondona.model.dto.response.PredictionProfileResponse
 import com.grondona.security.JwtUserPrincipal
 import com.grondona.service.MembershipService
 import com.grondona.service.GroupService
+import com.grondona.service.UserService
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -20,6 +22,7 @@ import java.util.UUID
 @RestController
 @RequestMapping("/api/tournaments/{tournamentId}/groups")
 class GroupController(
+    private val userService: UserService,
     private val groupService: GroupService,
     private val membershipService: MembershipService,
 ) {
@@ -159,6 +162,18 @@ class GroupController(
         membershipService.rejectCandidate(userId, groupId, candidateId)
         logger.info("DELETE /api/tournaments/{}/groups/{}/members/{}/reject - Accepted successfully, userId={}", tournamentId, groupId, candidateId, userId)
         return ResponseEntity.noContent().build()
+    }
+
+    @GetMapping("/{groupId}/members/{memberId}")
+    fun getMember(
+        @AuthenticationPrincipal principal: JwtUserPrincipal?,
+        @PathVariable tournamentId: UUID, @PathVariable groupId: UUID, @PathVariable memberId: UUID,
+    ): ResponseEntity<PredictionProfileResponse> {
+        val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
+        logger.info("GET /api/tournaments/{}/groups/{}/members/{} - userId={}", tournamentId, groupId, memberId, userId)
+        val userProfile = userService.getUserProfile(userId, memberId, groupId)
+        logger.info("GET /api/tournaments/{}/groups/{}/members/{} - Fetched successfully, userId={}", tournamentId, groupId, memberId, userId)
+        return ResponseEntity.status(HttpStatus.OK).body(userProfile)
     }
 
     @PatchMapping("/{groupId}/members/{memberId}")

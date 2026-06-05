@@ -18,6 +18,7 @@ import com.grondona.model.MatchStage
 import com.grondona.model.Player
 import com.grondona.model.PlayerPosition
 import com.grondona.model.PredictionStatus
+import com.grondona.model.Score
 import com.grondona.model.Team
 import com.grondona.model.Tournament
 import com.grondona.model.TournamentStatus
@@ -166,10 +167,12 @@ class PredictionServiceTest {
         awayGoals = 0
     )
 
-    private fun mockMembership(user: User = testUser, group: Group = testGroup) {
+    private fun mockMembership(user: User = testUser, group: Group = testGroup, points: Float = 0f) {
         every { userRepository.findById(testUserId) } returns Optional.of(user)
         every { groupRepository.findById(testGroupId) } returns Optional.of(group)
-        every { membershipRepository.isMember(testUserId, testGroupId) } returns true
+        every { membershipRepository.findMember(testUserId, testGroupId) } returns Optional.of(
+            GroupUser(user = user, group = group, points = points)
+        )
     }
 
     @AfterEach
@@ -223,7 +226,7 @@ class PredictionServiceTest {
         fun `checkMembership should throw ForbiddenException when not a member`() {
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
-            every { membershipRepository.isMember(testUserId, testGroupId) } returns false
+            every { membershipRepository.findMember(testUserId, testGroupId) } returns Optional.empty()
 
             val exception = assertThrows<ForbiddenException> { predictionService.getUserMatchPredictionsForGroup(testUserId, testGroupId) }
             assertEquals("User doesn't belong to the group", exception.message)
@@ -283,7 +286,9 @@ class PredictionServiceTest {
         fun `submitSingleMatchPrediction should throw NotFoundException when match not found`() {
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
-            every { membershipRepository.isMember(testUserId, testGroupId) } returns true
+            every { membershipRepository.findMember(testUserId, testGroupId) } returns Optional.of(
+                GroupUser(user = testUser, group = testGroup)
+            )
             every { matchRepository.findById(testMatchId) } returns Optional.empty()
 
             assertThrows<NotFoundException> {
@@ -296,7 +301,9 @@ class PredictionServiceTest {
         fun `submitSingleMatchPrediction should throw BadRequestException when match is locked`() {
             every { userRepository.findById(testUserId) } returns Optional.of(testUser)
             every { groupRepository.findById(testGroupId) } returns Optional.of(testGroup)
-            every { membershipRepository.isMember(testUserId, testGroupId) } returns true
+            every { membershipRepository.findMember(testUserId, testGroupId) } returns Optional.of(
+                GroupUser(user = testUser, group = testGroup)
+            )
             every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchLocked)
 
             val exception = assertThrows<BadRequestException> {
@@ -1722,6 +1729,251 @@ class PredictionServiceTest {
                             it.awardType == AwardType.BEST_GOALKEEPER && it.player!!.id == awardPredictions[6].player!!.id
                 }
             }
+        }
+    }
+
+    @Nested
+    inner class CalculatePredictionsProfileTests {
+
+        private val testGroup = Group(
+            id = testGroupId, name = "Test Group",
+            tournament = testTournament.copy(status = TournamentStatus.NOT_STARTED),
+        )
+
+        private val winners = Awards(
+            champion = UUID.randomUUID(), topScorer = UUID.randomUUID(), bestPlayer = UUID.randomUUID(),
+            bestGoalkeeper = UUID.randomUUID(), bestYoungPlayer = UUID.randomUUID()
+        )
+
+        private fun awardPrediction(awardType: AwardType, awardId: UUID) = AwardPrediction(
+            group = testGroup.copy(tournament = testTournament.copy(awards = winners)),
+            user = testUser, awardType = awardType, team = testTeam.copy(id = awardId).takeIf { awardType == AwardType.CHAMPION },
+            player = testPlayer.copy(id = awardId).takeIf { awardType != AwardType.CHAMPION }
+        )
+
+        private fun matchPrediction(match: Match, homeGoals: Int? = null, awayGoals: Int? = null): MatchPredictionView {
+            val matchPredictionView = MatchPredictionView(user = testUser, match = match)
+            return if (homeGoals != null && awayGoals != null) {
+                matchPredictionView.copy(
+                    id = UUID.randomUUID(), prediction = MatchPrediction(
+                        group = testGroup.copy(tournament = testTournament.copy(awards = winners)),
+                        user = testUser, homeGoals = homeGoals, awayGoals = awayGoals, match = match, status = when {
+                            match.status != MatchStatus.FINISHED -> PredictionStatus.PENDING
+                            homeGoals == match.homeGoals && awayGoals == match.awayGoals && homeGoals + awayGoals >= 5 -> PredictionStatus.BONUS
+                            homeGoals == match.homeGoals && awayGoals == match.awayGoals -> PredictionStatus.CORRECT
+                            Score(homeGoals, awayGoals).outcome() == match.score()?.outcome() -> PredictionStatus.PARTIAL
+                            else -> PredictionStatus.INCORRECT
+                        }
+                    )
+                )
+            } else {
+                matchPredictionView
+            }
+        }
+
+        val testMatch1 = Match(
+            id = UUID.randomUUID(), code = "X1", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
+            homeGoals = 0, awayGoals = 0, homeQuota = 1.1f, drawQuota = 2.2f, awayQuota = 6.1f, hasMultiplier = true,
+            stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A, status = MatchStatus.FINISHED, startedAt = ZonedDateTime.now().minusDays(7)
+        )
+        val testMatch2 = Match(
+            id = UUID.randomUUID(), code = "X2", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
+            homeGoals = 1, awayGoals = 1, homeQuota = 1.9f, drawQuota = 2.1f, awayQuota = 3.9f,
+            stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_B, status = MatchStatus.FINISHED, startedAt = ZonedDateTime.now().minusDays(4)
+        )
+        val testMatch3 = Match(
+            id = UUID.randomUUID(), code = "X3", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
+            homeGoals = 1, awayGoals = 0, homeQuota = 4.4f, drawQuota = 1.9f, awayQuota = 2.0f,
+            stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_C, status = MatchStatus.FINISHED, startedAt = ZonedDateTime.now().minusDays(1)
+        )
+        val testMatch4 = Match(
+            id = UUID.randomUUID(), code = "X4", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
+            homeGoals = 4, awayGoals = 3, homeQuota = 1.6f, drawQuota = 1.8f, awayQuota = 1.7f,
+            stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_D, status = MatchStatus.FINISHED, startedAt = ZonedDateTime.now().minusDays(1)
+        )
+        val testMatch5 = Match(
+            id = UUID.randomUUID(), code = "X5", tournament = testTournament, homeTeam = testTeam, awayTeam = testTeam,
+            homeGoals = null, awayGoals = null, homeQuota = 1.2f, drawQuota = 1.3f, awayQuota = 1.3f,
+            stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_D, status = MatchStatus.NOT_STARTED, startedAt = ZonedDateTime.now().plusDays(2)
+        )
+
+        @Test
+        fun `calculatePredictionsProfile should properly calculate the profile when no match-predictions were submitted`() {
+            mockMembership(testUser, testGroup)
+
+            every { matchPredictionRepository.findGroupPredictionsForUser(testGroupId, testUserId) } returns emptyList()
+
+            val profile = predictionService.calculatePredictionsProfile(testUserId, testGroupId)
+            assertEquals(testGroup.id, profile.group.id)
+            assertEquals(0f, profile.totalPoints)
+            assertEquals(0f, profile.quotasPoints)
+            assertNull(profile.awardsPoints)
+            assertEquals(0, profile.commonMatches.missing)
+            assertEquals(0, profile.commonMatches.incorrect)
+            assertEquals(0, profile.commonMatches.partial)
+            assertEquals(0, profile.commonMatches.correct)
+            assertEquals(0, profile.commonMatches.bonus)
+            assertEquals(0, profile.highlightedMatches.missing)
+            assertEquals(0, profile.highlightedMatches.incorrect)
+            assertEquals(0, profile.highlightedMatches.partial)
+            assertEquals(0, profile.highlightedMatches.correct)
+            assertEquals(0, profile.highlightedMatches.bonus)
+            assertNull(profile.topSucceededQuota)
+            assertNull(profile.topFailedQuota)
+        }
+
+        @Test
+        fun `calculatePredictionsProfile should properly calculate the profile without missing match-predictions`() {
+            mockMembership(testUser, testGroup, points = 16.1f)
+
+            val matchPredictions = listOf(
+                matchPrediction(testMatch1, homeGoals = 0, awayGoals = 1),
+                matchPrediction(testMatch2, homeGoals = 0, awayGoals = 0),
+                matchPrediction(testMatch3, homeGoals = 1, awayGoals = 0),
+                matchPrediction(testMatch4, homeGoals = 4, awayGoals = 3),
+            )
+            every { matchPredictionRepository.findGroupPredictionsForUser(testGroupId, testUserId) } returns matchPredictions
+
+            val profile = predictionService.calculatePredictionsProfile(testUserId, testGroupId)
+            assertEquals(testGroup.id, profile.group.id)
+            assertEquals(16.1f, profile.totalPoints)
+            assertEquals(8.1f, profile.quotasPoints)
+            assertNull(profile.awardsPoints)
+            assertEquals(0, profile.commonMatches.missing)
+            assertEquals(0, profile.commonMatches.incorrect)
+            assertEquals(1, profile.commonMatches.partial)
+            assertEquals(1, profile.commonMatches.correct)
+            assertEquals(1, profile.commonMatches.bonus)
+            assertEquals(0, profile.highlightedMatches.missing)
+            assertEquals(1, profile.highlightedMatches.incorrect)
+            assertEquals(0, profile.highlightedMatches.partial)
+            assertEquals(0, profile.highlightedMatches.correct)
+            assertEquals(0, profile.highlightedMatches.bonus)
+            val topSucceeded = profile.topSucceededQuota!!
+            assertEquals(4.4f, topSucceeded.quota)
+            assertEquals(testMatch3.id, topSucceeded.prediction.match.id)
+            val topFailed = profile.topFailedQuota!!
+            assertEquals(6.1f, topFailed.quota)
+            assertEquals(testMatch1.id, topFailed.prediction.match.id)
+        }
+
+        @Test
+        fun `calculatePredictionsProfile should properly calculate the profile with missing match-predictions`() {
+            mockMembership(testUser, testGroup, points = 16.1f)
+
+            val matchPredictions = listOf(
+                matchPrediction(testMatch1, homeGoals = 0, awayGoals = 1),
+                matchPrediction(testMatch2, homeGoals = 0, awayGoals = 0),
+                matchPrediction(testMatch3, homeGoals = 1, awayGoals = 0),
+                matchPrediction(testMatch4, homeGoals = 4, awayGoals = 3),
+                matchPrediction(testMatch5),
+            )
+            every { matchPredictionRepository.findGroupPredictionsForUser(testGroupId, testUserId) } returns matchPredictions
+
+            val profile = predictionService.calculatePredictionsProfile(testUserId, testGroupId)
+            assertEquals(testGroup.id, profile.group.id)
+            assertEquals(16.1f, profile.totalPoints)
+            assertEquals(8.1f, profile.quotasPoints)
+            assertNull(profile.awardsPoints)
+            assertEquals(0, profile.commonMatches.missing)
+            assertEquals(0, profile.commonMatches.incorrect)
+            assertEquals(1, profile.commonMatches.partial)
+            assertEquals(1, profile.commonMatches.correct)
+            assertEquals(1, profile.commonMatches.bonus)
+            assertEquals(0, profile.highlightedMatches.missing)
+            assertEquals(1, profile.highlightedMatches.incorrect)
+            assertEquals(0, profile.highlightedMatches.partial)
+            assertEquals(0, profile.highlightedMatches.correct)
+            assertEquals(0, profile.highlightedMatches.bonus)
+            val topSucceeded = profile.topSucceededQuota!!
+            assertEquals(4.4f, topSucceeded.quota)
+            assertEquals(testMatch3.id, topSucceeded.prediction.match.id)
+            val topFailed = profile.topFailedQuota!!
+            assertEquals(6.1f, topFailed.quota)
+            assertEquals(testMatch1.id, topFailed.prediction.match.id)
+        }
+
+        @Test
+        fun `calculatePredictionsProfile should properly calculate the profile with award-predictions but tournament not finished`() {
+            mockMembership(testUser, testGroup, points = 16.1f)
+
+            val matchPredictions = listOf(
+                matchPrediction(testMatch1, homeGoals = 0, awayGoals = 1),
+                matchPrediction(testMatch2, homeGoals = 0, awayGoals = 0),
+                matchPrediction(testMatch3, homeGoals = 1, awayGoals = 0),
+                matchPrediction(testMatch4, homeGoals = 4, awayGoals = 3),
+                matchPrediction(testMatch5),
+            )
+            every { matchPredictionRepository.findGroupPredictionsForUser(testGroupId, testUserId) } returns matchPredictions
+            verify(exactly = 0) { awardPredictionRepository.findByUserIdAndGroupId(testUserId, testGroupId) }
+
+            val profile = predictionService.calculatePredictionsProfile(testUserId, testGroupId)
+
+            assertEquals(testGroup.id, profile.group.id)
+            assertEquals(16.1f, profile.totalPoints)
+            assertEquals(8.1f, profile.quotasPoints)
+            assertNull(profile.awardsPoints)
+            assertEquals(0, profile.commonMatches.missing)
+            assertEquals(0, profile.commonMatches.incorrect)
+            assertEquals(1, profile.commonMatches.partial)
+            assertEquals(1, profile.commonMatches.correct)
+            assertEquals(1, profile.commonMatches.bonus)
+            assertEquals(0, profile.highlightedMatches.missing)
+            assertEquals(1, profile.highlightedMatches.incorrect)
+            assertEquals(0, profile.highlightedMatches.partial)
+            assertEquals(0, profile.highlightedMatches.correct)
+            assertEquals(0, profile.highlightedMatches.bonus)
+            val topSucceeded = profile.topSucceededQuota!!
+            assertEquals(4.4f, topSucceeded.quota)
+            assertEquals(testMatch3.id, topSucceeded.prediction.match.id)
+            val topFailed = profile.topFailedQuota!!
+            assertEquals(6.1f, topFailed.quota)
+            assertEquals(testMatch1.id, topFailed.prediction.match.id)
+        }
+
+        @Test
+        fun `calculatePredictionsProfile should properly calculate the profile with award-predictions and tournament is finished`() {
+            mockMembership(testUser, testGroup.copy(tournament = testTournament.copy(status = TournamentStatus.FINISHED)), points = 16.1f)
+
+            val matchPredictions = listOf(
+                matchPrediction(testMatch1, homeGoals = 0, awayGoals = 1),
+                matchPrediction(testMatch2, homeGoals = 0, awayGoals = 0),
+                matchPrediction(testMatch3, homeGoals = 1, awayGoals = 0),
+                matchPrediction(testMatch4, homeGoals = 4, awayGoals = 3),
+                matchPrediction(testMatch5),
+            )
+            every { matchPredictionRepository.findGroupPredictionsForUser(testGroupId, testUserId) } returns matchPredictions
+
+            // Award statuses are persisted during the recalculation that runs when the tournament finishes;
+            // the profile reads them as-is. Two champions with one correct pick yields POINTS_DOUBLE_CHAMPION (5).
+            val awardPredictions = listOf(
+                awardPrediction(AwardType.CHAMPION, winners.champion).copy(status = PredictionStatus.CORRECT),
+                awardPrediction(AwardType.CHAMPION, UUID.randomUUID()).copy(status = PredictionStatus.INCORRECT),
+            )
+            every { awardPredictionRepository.findByUserIdAndGroupId(testUserId, testGroupId) } returns awardPredictions
+
+            val profile = predictionService.calculatePredictionsProfile(testUserId, testGroupId)
+
+            assertEquals(testGroup.id, profile.group.id)
+            assertEquals(16.1f, profile.totalPoints)
+            assertEquals(8.1f, profile.quotasPoints)
+            assertEquals(5.0f, profile.awardsPoints)
+            assertEquals(0, profile.commonMatches.missing)
+            assertEquals(0, profile.commonMatches.incorrect)
+            assertEquals(1, profile.commonMatches.partial)
+            assertEquals(1, profile.commonMatches.correct)
+            assertEquals(1, profile.commonMatches.bonus)
+            assertEquals(0, profile.highlightedMatches.missing)
+            assertEquals(1, profile.highlightedMatches.incorrect)
+            assertEquals(0, profile.highlightedMatches.partial)
+            assertEquals(0, profile.highlightedMatches.correct)
+            assertEquals(0, profile.highlightedMatches.bonus)
+            val topSucceeded = profile.topSucceededQuota!!
+            assertEquals(4.4f, topSucceeded.quota)
+            assertEquals(testMatch3.id, topSucceeded.prediction.match.id)
+            val topFailed = profile.topFailedQuota!!
+            assertEquals(6.1f, topFailed.quota)
+            assertEquals(testMatch1.id, topFailed.prediction.match.id)
         }
     }
 }

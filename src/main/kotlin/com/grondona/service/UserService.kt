@@ -11,8 +11,10 @@ import com.grondona.model.dto.request.ForgottenPasswordRequest
 import com.grondona.model.dto.request.LoginUserRequest
 import com.grondona.model.dto.request.UpdateUserRequest
 import com.grondona.model.dto.response.AuthenticatedUserResponse
+import com.grondona.model.dto.response.PredictionProfileResponse
 import com.grondona.model.dto.response.UserResponse
 import com.grondona.repository.AwardPredictionRepository
+import com.grondona.repository.GroupRepository
 import com.grondona.repository.MatchPredictionRepository
 import com.grondona.repository.MembershipRepository
 import com.grondona.repository.UserRepository
@@ -29,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional
 class UserService(
     private val jwtService: JwtService,
     private val userRepository: UserRepository,
+    private val groupRepository: GroupRepository,
     private val predictionService: PredictionService,
     private val membershipRepository: MembershipRepository,
     private val matchPredictionRepository: MatchPredictionRepository,
@@ -218,7 +221,7 @@ class UserService(
         logger.info("User deleted successfully: userId={}", targetUserId)
     }
 
-    fun getUserById(userId: UUID): UserResponse {
+    fun getCurrentUser(userId: UUID): UserResponse {
         logger.info("Fetching user: userId={}", userId)
 
         val user = userRepository.findById(userId).orElseThrow {
@@ -227,9 +230,25 @@ class UserService(
         }
 
         val joinRequests = membershipRepository.findJoinRequests(userId)
+        val userGroups = membershipRepository.findUserGroups(userId)
 
         logger.info("User fetched successfully: userId={}, username='{}'", user.id, user.username)
-        return UserResponse.withJoinRequests(user, joinRequests)
+        return UserResponse.from(user).withJoinRequests(joinRequests).withProfiles(userGroups.map {
+            predictionService.calculatePredictionsProfile(userId, it.group.id!!)
+        })
+    }
+
+    fun getUserProfile(currentUserId: UUID, memberId: UUID, groupId: UUID): PredictionProfileResponse {
+        groupRepository.findById(groupId).orElseThrow { NotFoundException("Group not found") }
+        userRepository.findById(currentUserId).orElseThrow { NotFoundException("User not found") }
+        userRepository.findById(memberId).orElseThrow { NotFoundException("User not found") }
+
+        if (!membershipRepository.isMember(currentUserId, groupId)) {
+            logger.warn("User={} trying to check user profile in group={}, but doesn't belong to", currentUserId, groupId)
+            throw ForbiddenException("User doesn't belong to the group")
+        }
+
+        return predictionService.calculatePredictionsProfile(memberId, groupId)
     }
 
     fun hasAdminAccess(userId: UUID): Boolean =

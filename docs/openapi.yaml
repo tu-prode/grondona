@@ -1176,6 +1176,46 @@ paths:
         schema:
           type: string
           format: uuid
+    get:
+      tags:
+        - Groups
+      summary: Fetch group member profile
+      description: |
+        Returns the profile of a certain group member
+      operationId: manageMember
+      security:
+        - bearerAuth: [ ]
+      responses:
+        "200":
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfileResponse"
+        "400":
+          description: Invalid request body or validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Tournament, group or user not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: General error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     patch:
       tags:
         - Groups
@@ -1905,6 +1945,81 @@ components:
         - USER
         - SUPERUSER
 
+    QuotasProfileResponse:
+      type: object
+      required:
+        - quota
+        - match
+      properties:
+        quota:
+          type: number
+          format: float
+          description: Quota of the match prediction
+        prediction:
+          $ref: '#/components/schemas/MatchPredictionResponse'
+
+    PredictionsProfileResponse:
+      type: object
+      required:
+        - partial
+        - correct
+        - bonus
+        - incorrect
+        - missing
+      properties:
+        partial:
+          type: number
+          format: integer
+          description: Amount of partial matches predicted
+        correct:
+          type: number
+          format: integer
+          description: Amount of correct matches predicted
+        bonus:
+          type: number
+          format: integer
+          description: Amount of bonus matches predicted
+        incorrect:
+          type: number
+          format: integer
+          description: Amount of incorrect matches predicted
+        missing:
+          type: number
+          format: integer
+          description: Amount of matches not predicted
+
+    UserProfileResponse:
+      type: object
+      required:
+        - group
+        - total_points
+        - quotas_points
+        - common_matches
+        - highlighted_matches
+      properties:
+        group:
+          $ref: '#/components/schemas/GroupResponse'
+        total_points:
+          type: number
+          format: float
+          description: Total points for a certain group
+        quotas_points:
+          type: number
+          format: float
+          description: Total points earned by quotas for a certain group
+        awards_points:
+          type: number
+          format: float
+          description: Total points earned by awards for a certain group
+        common_matches:
+          $ref: '#/components/schemas/PredictionsProfileResponse'
+        highlighted_matches:
+          $ref: '#/components/schemas/PredictionsProfileResponse'
+        top_succeeded_quota:
+          $ref: '#/components/schemas/QuotasProfileResponse'
+        top_failed_quota:
+          $ref: '#/components/schemas/QuotasProfileResponse'
+
     UserResponse:
       type: object
       required:
@@ -1913,6 +2028,7 @@ components:
         - username
         - email
         - permissions
+        - profiles
       properties:
         id:
           type: string
@@ -1934,6 +2050,10 @@ components:
           example: john@example.com
         permissions:
           $ref: '#/components/schemas/UserPermissions'
+        profiles:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserProfileResponse'
 
     CurrentUserResponse:
       allOf:
