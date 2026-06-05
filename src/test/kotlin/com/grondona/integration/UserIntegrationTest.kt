@@ -533,6 +533,484 @@ class UserIntegrationTest {
         fun `user submits predictions in group 1`() {
             val matchPredictions = listOf(
                 SubmitMatchPredictionRequest(matchId = testMatch1Id!!, homeGoals = 0, awayGoals = 0),
+            )
+            client.submitMatchPredictionsToGroup(userToken, group1Id, matchPredictions)
+        }
+
+        @Test
+        @Order(2)
+        fun `user submits predictions in group 2`() {
+            val matchPredictions = listOf(
+                SubmitMatchPredictionRequest(matchId = testMatch2Id!!, homeGoals = 1, awayGoals = 1),
+            )
+            client.submitMatchPredictionsToGroup(userToken, group2Id, matchPredictions)
+        }
+
+        @Test
+        @Order(3)
+        fun `user submits predictions in group 3`() {
+            val matchPredictions = listOf(
+                SubmitMatchPredictionRequest(matchId = testMatch3Id!!, homeGoals = 2, awayGoals = 2),
+            )
+            client.submitMatchPredictionsToGroup(userToken, group3Id, matchPredictions)
+        }
+
+        @Test
+        @Order(4)
+        fun `user checks predictions in group 1 and are the same as submitted`() {
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group1Id)
+            matchPredictions.forEach {
+                when (it.match.id) {
+                    testMatch1Id -> {
+                        Assertions.assertEquals(0, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch2Id -> {
+                        Assertions.assertEquals(1, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(1, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch3Id -> {
+                        Assertions.assertEquals(2, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(2, it.prediction!!.awayGoals)
+                    }
+                }
+            }
+        }
+
+        @Test
+        @Order(5)
+        fun `user checks predictions in group 2 and are the same as submitted`() {
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group2Id)
+            matchPredictions.forEach {
+                when (it.match.id) {
+                    testMatch1Id -> {
+                        Assertions.assertEquals(0, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch2Id -> {
+                        Assertions.assertEquals(1, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(1, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch3Id -> {
+                        Assertions.assertEquals(2, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(2, it.prediction!!.awayGoals)
+                    }
+                }
+            }
+        }
+
+        @Test
+        @Order(6)
+        fun `user checks predictions in group 3 and are the same as submitted`() {
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group3Id)
+            matchPredictions.forEach {
+                when (it.match.id) {
+                    testMatch1Id -> {
+                        Assertions.assertEquals(0, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch2Id -> {
+                        Assertions.assertEquals(1, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(1, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch3Id -> {
+                        Assertions.assertEquals(2, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(2, it.prediction!!.awayGoals)
+                    }
+                }
+            }
+        }
+
+        @Test
+        @Order(7)
+        fun `it starts match 1 and lock its predictions`() {
+            every { matchClient.getMatches(any()) } returns listOf(
+                ExternalMatch(
+                    home = testTeam1Code!!, away = testTeam2Code!!, stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A,
+                    status = MatchStatus.IN_PROGRESS, homeGoals = 1, awayGoals = 0, substatus = "25' PT", startedAt = ZonedDateTime.now().minusMinutes(25)
+                ),
+                ExternalMatch(
+                    home = testTeam3Code!!, away = testTeam4Code!!, stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A,
+                    status = MatchStatus.NOT_STARTED, homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().plusDays(1)
+                ),
+                ExternalMatch(
+                    home = testTeam5Code!!, away = testTeam6Code!!, stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A,
+                    status = MatchStatus.NOT_STARTED, homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().plusDays(2)
+                ),
+            )
+
+            matchScheduler.updateMatches()
+        }
+
+        @Test
+        @Order(8)
+        fun `user unsets uniqueness for predictions`() {
+            setPredictionUniqueness(false, group1Id)
+        }
+
+        @Test
+        @Order(9)
+        fun `user checks predictions in group 1 and they are still the same`() {
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group1Id)
+            matchPredictions.forEach {
+                when (it.match.id) {
+                    testMatch1Id -> {
+                        Assertions.assertEquals(0, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch2Id -> {
+                        Assertions.assertEquals(1, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(1, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch3Id -> {
+                        Assertions.assertEquals(2, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(2, it.prediction!!.awayGoals)
+                    }
+                }
+            }
+        }
+
+        @Test
+        @Order(10)
+        fun `user checks predictions in group 2 and they are still the same`() {
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group2Id)
+            matchPredictions.forEach {
+                when (it.match.id) {
+                    testMatch1Id -> {
+                        Assertions.assertEquals(0, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch2Id -> {
+                        Assertions.assertEquals(1, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(1, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch3Id -> {
+                        Assertions.assertEquals(2, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(2, it.prediction!!.awayGoals)
+                    }
+                }
+            }
+        }
+
+        @Test
+        @Order(11)
+        fun `user checks predictions in group 3 and they are still the same`() {
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group3Id)
+            matchPredictions.forEach {
+                when (it.match.id) {
+                    testMatch1Id -> {
+                        Assertions.assertEquals(0, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch2Id -> {
+                        Assertions.assertEquals(1, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(1, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch3Id -> {
+                        Assertions.assertEquals(2, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(2, it.prediction!!.awayGoals)
+                    }
+                }
+            }
+        }
+
+        @Test
+        @Order(12)
+        fun `user submits predictions for match 2 and 3 in group 1`() {
+            val matchPredictions = listOf(
+                SubmitMatchPredictionRequest(matchId = testMatch2Id!!, homeGoals = 1, awayGoals = 0),
+                SubmitMatchPredictionRequest(matchId = testMatch3Id!!, homeGoals = 2, awayGoals = 0),
+            )
+            client.submitMatchPredictionsToGroup(userToken, group1Id, matchPredictions)
+        }
+
+        @Test
+        @Order(13)
+        fun `user submits predictions for match 2 and 3 in group 2`() {
+            val matchPredictions = listOf(
+                SubmitMatchPredictionRequest(matchId = testMatch2Id!!, homeGoals = 2, awayGoals = 1),
+                SubmitMatchPredictionRequest(matchId = testMatch3Id!!, homeGoals = 3, awayGoals = 1),
+            )
+            client.submitMatchPredictionsToGroup(userToken, group2Id, matchPredictions)
+        }
+
+        @Test
+        @Order(14)
+        fun `user submits predictions for match 2 and 3 in group 3`() {
+            val matchPredictions = listOf(
+                SubmitMatchPredictionRequest(matchId = testMatch2Id!!, homeGoals = 3, awayGoals = 2),
+                SubmitMatchPredictionRequest(matchId = testMatch3Id!!, homeGoals = 4, awayGoals = 2),
+            )
+            client.submitMatchPredictionsToGroup(userToken, group3Id, matchPredictions)
+        }
+
+        @Test
+        @Order(15)
+        fun `user checks predictions in group 1 and are the same as submitted after the change`() {
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group1Id)
+            matchPredictions.forEach {
+                when (it.match.id) {
+                    testMatch1Id -> {
+                        Assertions.assertEquals(0, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch2Id -> {
+                        Assertions.assertEquals(1, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch3Id -> {
+                        Assertions.assertEquals(2, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                    }
+                }
+            }
+        }
+
+        @Test
+        @Order(16)
+        fun `user checks predictions in group 2 and are the same as submitted after the change`() {
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group2Id)
+            matchPredictions.forEach {
+                when (it.match.id) {
+                    testMatch1Id -> {
+                        Assertions.assertEquals(0, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch2Id -> {
+                        Assertions.assertEquals(2, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(1, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch3Id -> {
+                        Assertions.assertEquals(3, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(1, it.prediction!!.awayGoals)
+                    }
+                }
+            }
+        }
+
+        @Test
+        @Order(17)
+        fun `user checks predictions in group 3 and are the same as submitted after the change`() {
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group3Id)
+            matchPredictions.forEach {
+                when (it.match.id) {
+                    testMatch1Id -> {
+                        Assertions.assertEquals(0, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch2Id -> {
+                        Assertions.assertEquals(3, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(2, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch3Id -> {
+                        Assertions.assertEquals(4, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(2, it.prediction!!.awayGoals)
+                    }
+                }
+            }
+        }
+
+        @Test
+        @Order(18)
+        fun `it starts match 2 and lock its predictions`() {
+            every { matchClient.getMatches(any()) } returns listOf(
+                ExternalMatch(
+                    home = testTeam1Code!!, away = testTeam2Code!!, stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A,
+                    status = MatchStatus.FINISHED, homeGoals = 5, awayGoals = 0, substatus = "FIN", startedAt = ZonedDateTime.now().minusDays(2)
+                ),
+                ExternalMatch(
+                    home = testTeam3Code!!, away = testTeam4Code!!, stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A,
+                    status = MatchStatus.IN_PROGRESS, homeGoals = 0, awayGoals = 2, substatus = "14' PT", startedAt = ZonedDateTime.now().minusMinutes(14)
+                ),
+                ExternalMatch(
+                    home = testTeam5Code!!, stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A, away = testTeam6Code!!,
+                    status = MatchStatus.NOT_STARTED, homeGoals = 0, awayGoals = 0, startedAt = ZonedDateTime.now().plusDays(2)
+                ),
+            )
+
+            matchScheduler.updateMatches()
+        }
+
+        @Test
+        @Order(19)
+        fun `user sets uniqueness for predictions one more time`() {
+            setPredictionUniqueness(true, masterGroup = group1Id)
+        }
+
+        @Test
+        @Order(20)
+        fun `user checks predictions in group 1 and only the non locked one was updated`() {
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group1Id)
+            matchPredictions.forEach {
+                when (it.match.id) {
+                    testMatch1Id -> {
+                        Assertions.assertEquals(0, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch2Id -> {
+                        Assertions.assertEquals(1, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch3Id -> {
+                        Assertions.assertEquals(2, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                    }
+                }
+            }
+        }
+
+        @Test
+        @Order(21)
+        fun `user checks predictions in group 2 and only the non locked one was updated`() {
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group2Id)
+            matchPredictions.forEach {
+                when (it.match.id) {
+                    testMatch1Id -> {
+                        Assertions.assertEquals(0, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch2Id -> {
+                        Assertions.assertEquals(2, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(1, it.prediction!!.awayGoals)
+                    }
+
+                    testMatch3Id -> {
+                        Assertions.assertEquals(2, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                    }
+                }
+            }
+        }
+
+        @Test
+        @Order(22)
+        fun `user submits predictions for match 3 in group 1`() {
+            val matchPredictions = listOf(
+                SubmitMatchPredictionRequest(matchId = testMatch3Id!!, homeGoals = 5, awayGoals = 0),
+            )
+            client.submitMatchPredictionsToGroup(userToken, group1Id, matchPredictions)
+        }
+
+        @Test
+        @Order(23)
+        fun `user checks predictions in group 1 and the last match was updated`() {
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group1Id)
+            matchPredictions.forEach {
+                when (it.match.id) {
+                    testMatch3Id -> {
+                        Assertions.assertEquals(5, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                    }
+                }
+            }
+        }
+
+        @Test
+        @Order(24)
+        fun `user checks predictions in group 2 and the last match was updated`() {
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group2Id)
+            matchPredictions.forEach {
+                when (it.match.id) {
+                    testMatch3Id -> {
+                        Assertions.assertEquals(5, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                    }
+                }
+            }
+        }
+
+        @Test
+        @Order(25)
+        fun `user checks predictions in group 3 and the last match was updated`() {
+            val matchPredictions = client.fetchMatchPredictionsInGroup(userToken, group3Id)
+            matchPredictions.forEach {
+                when (it.match.id) {
+                    testMatch3Id -> {
+                        Assertions.assertEquals(5, it.prediction!!.homeGoals)
+                        Assertions.assertEquals(0, it.prediction!!.awayGoals)
+                    }
+                }
+            }
+        }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
+    inner class PredictionUniquenessFlowTests2 {
+
+        private val client = GrondonaClient(mockMvc, objectMapper)
+            .withAdminToken(adminToken!!)
+            .withTournament(testTournamentId!!)
+
+        private var userId: UUID? = null
+        private var userToken: String? = null
+
+        private var group1Id: UUID? = null
+        private var group2Id: UUID? = null
+        private var group3Id: UUID? = null
+
+        private fun setPredictionUniqueness(uniqueness: Boolean, masterGroup: UUID? = null) {
+            mockMvc.perform(
+                patch("/api/users", userId)
+                    .header("Authorization", "Bearer $userToken")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        objectMapper.writeValueAsString(
+                            UpdateUserRequest(
+                                uniquePredictions = uniqueness,
+                                uniquePredictionsMaster = masterGroup
+                            )
+                        )
+                    )
+            ).andExpect(status().isOk).andReturn()
+        }
+
+        @BeforeAll
+        fun setUp() {
+            val userResult = mockMvc.perform(
+                post("/api/users")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(createTestingUserRequest()))
+            ).andReturn()
+            val userResponse = objectMapper.readValue(userResult.response.contentAsString, AuthenticatedUserResponse::class.java)
+            userId = userResponse.userId
+            userToken = userResponse.token
+
+            group1Id = client.createGroup()
+            group2Id = client.createGroup()
+            group3Id = client.createGroup()
+            client.joinGroup(userToken, group1Id)
+            client.joinGroup(userToken, group2Id)
+            client.joinGroup(userToken, group3Id)
+        }
+
+        @Test
+        @Order(1)
+        fun `user submits predictions in group 1`() {
+            val matchPredictions = listOf(
+                SubmitMatchPredictionRequest(matchId = testMatch1Id!!, homeGoals = 0, awayGoals = 0),
                 SubmitMatchPredictionRequest(matchId = testMatch2Id!!, homeGoals = 1, awayGoals = 0),
                 SubmitMatchPredictionRequest(matchId = testMatch3Id!!, homeGoals = 2, awayGoals = 0),
             )

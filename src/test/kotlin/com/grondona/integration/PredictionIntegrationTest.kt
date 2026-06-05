@@ -476,55 +476,55 @@ class PredictionIntegrationTest {
             joinGroup(user2.token, group1Id)
             joinGroup(user2.token, group2Id)
 
-            submitBulkMatchPredictions(
-                user1.token,
-                group1Id,
+            submitBulkMatchPredictions(user1.token, group1Id,
                 SubmitBulkMatchPredictionsRequest(listOf(SubmitMatchPredictionRequest(firstMatchId, 1, 0)))
             )
-            submitBulkMatchPredictions(
-                user1.token,
-                group2Id,
+            submitBulkMatchPredictions(user1.token, group2Id,
                 SubmitBulkMatchPredictionsRequest(listOf(SubmitMatchPredictionRequest(secondMatchId, 2, 2)))
             )
 
             assertMatchPrediction(getMyMatchPredictions(user1.token, group1Id), user1.userId, firstMatchId, 1, 0)
+            assertMatchPrediction(getMyMatchPredictions(user1.token, group2Id), user1.userId, firstMatchId, 1, 0)
+            assertMatchPrediction(getMyMatchPredictions(user1.token, group1Id), user1.userId, secondMatchId, 2, 2)
             assertMatchPrediction(getMyMatchPredictions(user1.token, group2Id), user1.userId, secondMatchId, 2, 2)
 
             val user1Group1Awards = validAwardPredictionRequest(champions = listOf(teamOneId), topScorers = listOf(forwardPlayerId))
-            val user1Group2Awards = validAwardPredictionRequest(champions = listOf(teamTwoId), topScorers = listOf(youngPlayerId))
             submitAwardPredictions(user1.token, group1Id, user1Group1Awards)
-            submitAwardPredictions(user1.token, group2Id, user1Group2Awards)
 
             assertAwardPredictions(getMyAwardPredictions(user1.token, group1Id), user1.userId, listOf(teamOneId), listOf(forwardPlayerId), listOf(midfielderPlayerId), listOf(goalkeeperPlayerId), listOf(youngPlayerId))
-            assertAwardPredictions(getMyAwardPredictions(user1.token, group2Id), user1.userId, listOf(teamTwoId), listOf(youngPlayerId), listOf(midfielderPlayerId), listOf(goalkeeperPlayerId), listOf(youngPlayerId))
+            assertAwardPredictions(getMyAwardPredictions(user1.token, group2Id), user1.userId, listOf(teamOneId), listOf(forwardPlayerId), listOf(midfielderPlayerId), listOf(goalkeeperPlayerId), listOf(youngPlayerId))
 
-            submitBulkMatchPredictions(
-                user2.token,
-                group1Id,
+            submitBulkMatchPredictions(user2.token, group1Id,
                 SubmitBulkMatchPredictionsRequest(listOf(SubmitMatchPredictionRequest(firstMatchId, 3, 1)))
             )
             submitAwardPredictions(user2.token, group1Id, validAwardPredictionRequest(champions = listOf(teamOneId), topScorers = listOf(forwardPlayerId)))
 
             assertMatchPrediction(getMyMatchPredictions(user2.token, group1Id), user2.userId, firstMatchId, 3, 1)
+            assertMatchPrediction(getMyMatchPredictions(user2.token, group2Id), user2.userId, firstMatchId, 3, 1)
+            assertAwardPredictions(getMyAwardPredictions(user2.token, group2Id), user2.userId, listOf(teamOneId), listOf(forwardPlayerId), listOf(midfielderPlayerId), listOf(goalkeeperPlayerId), listOf(youngPlayerId))
             assertAwardPredictions(getMyAwardPredictions(user2.token, group1Id), user2.userId, listOf(teamOneId), listOf(forwardPlayerId), listOf(midfielderPlayerId), listOf(goalkeeperPlayerId), listOf(youngPlayerId))
 
             mockMvc.perform(
                 patch("/api/users")
                     .header("Authorization", "Bearer ${user2.token}")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(UpdateUserRequest(uniquePredictions = true, uniquePredictionsMaster = group1Id)))
+                    .content(objectMapper.writeValueAsString(UpdateUserRequest(uniquePredictions = false)))
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.unique_predictions").value(true))
+                .andExpect(jsonPath("$.unique_predictions").value(false))
 
+            assertMatchPrediction(getMyMatchPredictions(user2.token, group1Id), user2.userId, firstMatchId, 3, 1)
             assertMatchPrediction(getMyMatchPredictions(user2.token, group2Id), user2.userId, firstMatchId, 3, 1)
+            assertAwardPredictions(getMyAwardPredictions(user2.token, group1Id), user2.userId, listOf(teamOneId), listOf(forwardPlayerId), listOf(midfielderPlayerId), listOf(goalkeeperPlayerId), listOf(youngPlayerId))
             assertAwardPredictions(getMyAwardPredictions(user2.token, group2Id), user2.userId, listOf(teamOneId), listOf(forwardPlayerId), listOf(midfielderPlayerId), listOf(goalkeeperPlayerId), listOf(youngPlayerId))
 
-            submitSingleMatchPrediction(user2.token, group1Id, SubmitMatchPredictionRequest(secondMatchId, 4, 2))
-            assertMatchPrediction(getMyMatchPredictions(user2.token, group2Id), user2.userId, secondMatchId, 4, 2)
+            submitSingleMatchPrediction(user2.token, group1Id, SubmitMatchPredictionRequest(firstMatchId, 4, 2))
+            assertMatchPrediction(getMyMatchPredictions(user2.token, group1Id), user2.userId, firstMatchId, 4, 2)
+            assertMatchPrediction(getMyMatchPredictions(user2.token, group2Id), user2.userId, firstMatchId, 3, 1)
 
             submitAwardPredictions(user2.token, group2Id, validAwardPredictionRequest(champions = listOf(teamTwoId), topScorers = listOf(youngPlayerId)))
-            assertAwardPredictions(getMyAwardPredictions(user2.token, group1Id), user2.userId, listOf(teamTwoId), listOf(youngPlayerId), listOf(midfielderPlayerId), listOf(goalkeeperPlayerId), listOf(youngPlayerId))
+            assertAwardPredictions(getMyAwardPredictions(user2.token, group1Id), user2.userId, listOf(teamOneId), listOf(forwardPlayerId), listOf(midfielderPlayerId), listOf(goalkeeperPlayerId), listOf(youngPlayerId))
+            assertAwardPredictions(getMyAwardPredictions(user2.token, group2Id), user2.userId, listOf(teamTwoId), listOf(youngPlayerId), listOf(midfielderPlayerId), listOf(goalkeeperPlayerId), listOf(youngPlayerId))
         }
     }
 
