@@ -39,7 +39,7 @@ data class User(
     val permissions: UserPermissions = UserPermissions.USER,
 
     @Column(name = "unique_predictions", nullable = false)
-    val hasUniquePredictions: Boolean = false,
+    val hasUniquePredictions: Boolean = true,
 
     @Column(name = "created_at", nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
