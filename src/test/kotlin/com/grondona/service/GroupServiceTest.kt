@@ -72,12 +72,12 @@ class GroupServiceTest {
             val savedGroup = testGroup.copy(name = "New Group", maxMembers = 15)
 
             every { userRepository.findById(testUser.id!!) } returns Optional.of(testUser)
-            every { tournamentRepository.findById(testTournament.id!!) } returns Optional.of(testTournament)
+            every { tournamentRepository.findById(testTournament.id) } returns Optional.of(testTournament)
             every { groupRepository.existsByName(request.name) } returns false
             every { groupRepository.save(any()) } returns savedGroup
             every { membershipRepository.save(any()) } answers { firstArg() }
 
-            val result = groupService.createGroup(testUser.id!!, testTournament.id!!, request)
+            val result = groupService.createGroup(testUser.id!!, testTournament.id, request)
 
             assertEquals("New Group", result.name)
             assertEquals(false, result.isPrivate)
@@ -91,12 +91,12 @@ class GroupServiceTest {
             val savedGroup = testGroup.copy(name = "Private Group", isPrivate = true, maxMembers = 5)
 
             every { userRepository.findById(testUser.id!!) } returns Optional.of(testUser)
-            every { tournamentRepository.findById(testTournament.id!!) } returns Optional.of(testTournament)
+            every { tournamentRepository.findById(testTournament.id) } returns Optional.of(testTournament)
             every { groupRepository.existsByName(request.name) } returns false
             every { groupRepository.save(any()) } returns savedGroup
             every { membershipRepository.save(any()) } answers { firstArg() }
 
-            val result = groupService.createGroup(testUser.id!!, testTournament.id!!, request)
+            val result = groupService.createGroup(testUser.id!!, testTournament.id, request)
 
             assertTrue(result.isPrivate)
         }
@@ -108,7 +108,7 @@ class GroupServiceTest {
             every { groupRepository.existsByName(request.name) } returns true
 
             val exception = assertThrows<ConflictException> {
-                groupService.createGroup(testUser.id!!, testTournament.id!!, request)
+                groupService.createGroup(testUser.id!!, testTournament.id, request)
             }
             assertEquals("Group name already exists", exception.message)
             assertEquals("name", exception.field)
@@ -121,10 +121,10 @@ class GroupServiceTest {
             val request = CreateGroupRequest(name = "New Group", isPrivate = false, maxMembers = 10)
             every { userRepository.findById(testUser.id!!) } returns Optional.of(testUser)
             every { groupRepository.existsByName(request.name) } returns false
-            every { tournamentRepository.findById(testTournament.id!!) } returns Optional.empty()
+            every { tournamentRepository.findById(testTournament.id) } returns Optional.empty()
 
             val exception = assertThrows<NotFoundException> {
-                groupService.createGroup(testUser.id!!, testTournament.id!!, request)
+                groupService.createGroup(testUser.id!!, testTournament.id, request)
             }
             assertEquals("Tournament not found", exception.message)
             verify(exactly = 0) { groupRepository.save(any()) }
@@ -136,12 +136,12 @@ class GroupServiceTest {
             val savedGroup = testGroup.copy(name = "New Group", maxMembers = 15)
 
             every { userRepository.findById(testUser.id!!) } returns Optional.of(testUser)
-            every { tournamentRepository.findById(testTournament.id!!) } returns Optional.of(testTournament)
+            every { tournamentRepository.findById(testTournament.id) } returns Optional.of(testTournament)
             every { groupRepository.existsByName(request.name) } returns false
             every { groupRepository.save(any()) } returns savedGroup
             every { membershipRepository.save(any()) } answers { firstArg() }
 
-            val result = groupService.createGroup(testUser.id!!, testTournament.id!!, request)
+            val result = groupService.createGroup(testUser.id!!, testTournament.id, request)
 
             assertEquals("New Group", result.name)
             assertEquals(false, result.isPrivate)
