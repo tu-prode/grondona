@@ -59,11 +59,11 @@ data class MatchPrediction(
 }
 
 data class MatchPredictionView(
-    val id: UUID?,
+    val id: UUID? = null,
     val user: User,
-    val rank: Int?,
+    val rank: Int? = null,
     val match: Match,
-    val prediction: MatchPrediction?,
+    val prediction: MatchPrediction? = null,
 )
 
 enum class AwardType {

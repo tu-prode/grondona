@@ -11,6 +11,7 @@ import com.grondona.model.dto.response.GroupResponse
 import com.grondona.security.JwtUserPrincipal
 import com.grondona.service.MembershipService
 import com.grondona.service.GroupService
+import com.grondona.service.UserService
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -35,6 +36,7 @@ import java.util.*
 class GroupControllerTest {
 
     private lateinit var mockMvc: MockMvc
+    private lateinit var userService: UserService
     private lateinit var groupService: GroupService
     private lateinit var membershipService: MembershipService
     private lateinit var objectMapper: ObjectMapper
@@ -70,11 +72,12 @@ class GroupControllerTest {
 
     @BeforeEach
     fun setUp() {
+        userService = mockk()
         groupService = mockk()
         membershipService = mockk()
         objectMapper = ObjectMapper().findAndRegisterModules()
         mockMvc = MockMvcBuilders
-            .standaloneSetup(GroupController(groupService, membershipService))
+            .standaloneSetup(GroupController(userService, groupService, membershipService))
             .setControllerAdvice(GlobalExceptionHandler())
             .setCustomArgumentResolvers(TestPrincipalArgumentResolver())
             .build()

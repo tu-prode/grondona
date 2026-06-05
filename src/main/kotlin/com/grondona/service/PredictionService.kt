@@ -6,21 +6,25 @@ import com.grondona.exception.NotFoundException
 import com.grondona.model.AwardPrediction
 import com.grondona.model.AwardType
 import com.grondona.model.ExtendedAwards
-import com.grondona.model.Group
 import com.grondona.model.GroupUser
 import com.grondona.model.Match
+import com.grondona.model.MatchOutcome
 import com.grondona.model.MatchPrediction
 import com.grondona.model.MatchStatus
 import com.grondona.model.PlayerPosition
+import com.grondona.model.PredictionStatus
 import com.grondona.model.TournamentStatus
-import com.grondona.model.User
 import com.grondona.model.dto.request.SubmitAwardPredictionRequest
 import com.grondona.model.dto.request.SubmitMatchPredictionRequest
 import com.grondona.model.dto.request.SubmitBulkMatchPredictionsRequest
 import com.grondona.model.dto.response.AwardPredictionsResponse
 import com.grondona.model.dto.response.GroupAwardPredictionsResponse
 import com.grondona.model.dto.response.GroupMatchPredictionsResponse
+import com.grondona.model.dto.response.GroupResponse
 import com.grondona.model.dto.response.MatchPredictionResponse
+import com.grondona.model.dto.response.PredictionProfileResponse
+import com.grondona.model.dto.response.QuotasProfileResponse
+import com.grondona.model.dto.response.StatusProfileResponse
 import com.grondona.now
 import com.grondona.repository.AwardPredictionRepository
 import com.grondona.repository.GroupRepository
@@ -62,16 +66,17 @@ class PredictionService(
             match.status == MatchStatus.NOT_STARTED && match.startedAt.isAfter(now.atZone(ZoneId.systemDefault()).plus(15, ChronoUnit.MINUTES))
     }
 
-    internal fun checkMembership(userId: UUID, groupId: UUID): Pair<User, Group> {
-        val user = userRepository.findById(userId).orElseThrow { NotFoundException("User not found") }
-        val group = groupRepository.findById(groupId).orElseThrow { NotFoundException("Group not found") }
+    internal fun checkMembership(userId: UUID, groupId: UUID): GroupUser {
+        userRepository.findById(userId).orElseThrow { NotFoundException("User not found") }
+        groupRepository.findById(groupId).orElseThrow { NotFoundException("Group not found") }
 
-        if (!membershipRepository.isMember(userId, groupId)) {
+        val member = membershipRepository.findMember(userId, groupId)
+        if (member.isEmpty) {
             logger.warn("User={} trying to submit a prediction to the group={}, but doesn't belong to", userId, groupId)
             throw ForbiddenException("User doesn't belong to the group")
         }
 
-        return Pair(user, group)
+        return member.get()
     }
 
     @Transactional
@@ -82,7 +87,7 @@ class PredictionService(
     ): MatchPredictionResponse {
         logger.info("Submitting prediction for user={}, match={} at group={}", userId, request.matchId, groupId)
 
-        val (user, group) = checkMembership(userId, groupId)
+        val member = checkMembership(userId, groupId)
         val match = matchRepository.findById(request.matchId).orElseThrow { NotFoundException("Match not found") }
 
         if (!isMatchUnlocked(match)) {
@@ -91,8 +96,8 @@ class PredictionService(
         }
 
         val predictionToSave = MatchPrediction(
-            user = user,
-            group = group,
+            user = member.user,
+            group = member.group,
             match = match,
             homeGoals = request.homeGoals,
             awayGoals = request.awayGoals,
@@ -100,10 +105,10 @@ class PredictionService(
             updatedAt = LocalDateTime.now(),
         )
 
-        val savedPrediction = if (user.hasUniquePredictions) {
+        val savedPrediction = if (member.user.hasUniquePredictions) {
             val predictionsToSave = membershipRepository.findUserGroups(userId).map { predictionToSave.copy(group = it.group) }
             val savedPredictions = matchPredictionRepository.upsertAll(predictionsToSave)
-            savedPredictions.first { it.group.id == group.id }
+            savedPredictions.first { it.group.id == member.group.id }
         } else {
             matchPredictionRepository.upsert(predictionToSave)
         }
@@ -119,12 +124,12 @@ class PredictionService(
     ): GroupMatchPredictionsResponse {
         logger.info("Submitting {} predictions for user={} at group={}", request.predictions.size, userId, groupId)
 
-        val (user, group) = checkMembership(userId, groupId)
+        val member = checkMembership(userId, groupId)
         val matchesById = matchRepository.findAllById(request.predictions.map { it.matchId }).associateBy { it.id!! }
         val basePredictions = request.predictions.map { prediction ->
             MatchPrediction(
-                user = user,
-                group = group,
+                user = member.user,
+                group = member.group,
                 homeGoals = prediction.homeGoals,
                 awayGoals = prediction.awayGoals,
                 match = matchesById[prediction.matchId] ?: run {
@@ -138,7 +143,7 @@ class PredictionService(
             }
         }
 
-        val predictions = if (user.hasUniquePredictions) {
+        val predictions = if (member.user.hasUniquePredictions) {
             val userGroups = membershipRepository.findUserGroups(userId)
             userGroups.flatMap { basePredictions.map { prediction -> prediction.copy(group = it.group) } }
         } else {
@@ -146,29 +151,29 @@ class PredictionService(
         }
 
         val savedPredictions = matchPredictionRepository.upsertAll(predictions)
-        return GroupMatchPredictionsResponse.fromPredictions(group, savedPredictions.filter { it.group.id == groupId })
+        return GroupMatchPredictionsResponse.fromPredictions(member.group, savedPredictions.filter { it.group.id == groupId })
     }
 
     fun getMatchPredictionsForGroup(userId: UUID, groupId: UUID): GroupMatchPredictionsResponse {
         logger.info("Fetching predictions for user={} at group={}", userId, groupId)
 
-        val (_, group) = checkMembership(userId, groupId)
+        val member = checkMembership(userId, groupId)
         val predictions = matchPredictionRepository.findGroupPredictions(groupId)
-        return GroupMatchPredictionsResponse.fromMatchPredictionViews(group, predictions)
+        return GroupMatchPredictionsResponse.fromMatchPredictionViews(member.group, predictions)
     }
 
     fun getUserMatchPredictionsForGroup(userId: UUID, groupId: UUID): GroupMatchPredictionsResponse {
         logger.info("Fetching predictions for user={} at group={}", userId, groupId)
 
-        val (_, group) = checkMembership(userId, groupId)
+        val member = checkMembership(userId, groupId)
         val predictions = matchPredictionRepository.findGroupPredictionsForUser(groupId, userId)
-        return GroupMatchPredictionsResponse.fromMatchPredictionViews(group, predictions)
+        return GroupMatchPredictionsResponse.fromMatchPredictionViews(member.group, predictions)
     }
 
     fun getSingleMatchPredictionsForGroup(userId: UUID, groupId: UUID, matchId: UUID): GroupMatchPredictionsResponse {
         logger.info("Fetching predictions for match={} at group={}, by user={}", matchId, groupId, userId)
 
-        val (_, group) = checkMembership(userId, groupId)
+        val member = checkMembership(userId, groupId)
         val match = matchRepository.findById(matchId).orElseThrow { NotFoundException("Match not found") }
         if (isMatchUnlocked(match)) {
             logger.warn("User={} trying fetch predictions for the match={} at group={}, but it's not locked", userId, matchId, groupId)
@@ -176,7 +181,7 @@ class PredictionService(
         }
 
         val predictionViews = matchPredictionRepository.findGroupPredictionsForMatch(groupId, matchId)
-        return GroupMatchPredictionsResponse.fromMatchPredictionViews(group, predictionViews)
+        return GroupMatchPredictionsResponse.fromMatchPredictionViews(member.group, predictionViews)
     }
 
     @Transactional
@@ -186,7 +191,7 @@ class PredictionService(
     ): AwardPredictionsResponse {
         logger.info("Submitting award predictions for user={} at group={}", userId, groupId)
 
-        val (user, group) = checkMembership(userId, groupId)
+        val member = checkMembership(userId, groupId)
         val tournament = tournamentRepository.findById(tournamentId).orElseThrow { NotFoundException("Tournament not found") }
         if (tournament.status == TournamentStatus.IN_PROGRESS) {
             logger.warn(
@@ -248,18 +253,18 @@ class PredictionService(
         }
 
         val predictions = awardPredictions.champions.map {
-            AwardPrediction(user = user, group = group, awardType = AwardType.CHAMPION, team = teamRepository.getReferenceById(it))
+            AwardPrediction(user = member.user, group = member.group, awardType = AwardType.CHAMPION, team = teamRepository.getReferenceById(it))
         } + awardPredictions.topScorers.map {
-            AwardPrediction(user = user, group = group, awardType = AwardType.TOP_SCORER, player = playerRepository.getReferenceById(it))
+            AwardPrediction(user = member.user, group = member.group, awardType = AwardType.TOP_SCORER, player = playerRepository.getReferenceById(it))
         } + awardPredictions.bestPlayers.map {
-            AwardPrediction(user = user, group = group, awardType = AwardType.BEST_PLAYER, player = playerRepository.getReferenceById(it))
+            AwardPrediction(user = member.user, group = member.group, awardType = AwardType.BEST_PLAYER, player = playerRepository.getReferenceById(it))
         } + chosenGoalkeepers.map {
-            AwardPrediction(user = user, group = group, awardType = AwardType.BEST_GOALKEEPER, player = it)
+            AwardPrediction(user = member.user, group = member.group, awardType = AwardType.BEST_GOALKEEPER, player = it)
         } + chosenYoungPlayers.map {
-            AwardPrediction(user = user, group = group, awardType = AwardType.BEST_YOUNG_PLAYER, player = it)
+            AwardPrediction(user = member.user, group = member.group, awardType = AwardType.BEST_YOUNG_PLAYER, player = it)
         }
 
-        val savedPredictions = if (user.hasUniquePredictions) {
+        val savedPredictions = if (member.user.hasUniquePredictions) {
             val userGroups = membershipRepository.findUserGroups(userId)
             val userGroupsIds = userGroups.map { it.group.id!! }
             val deletedAwards = awardPredictionRepository.deleteAwardPredictionsForMultipleGroups(userId, userGroupsIds)
@@ -271,13 +276,13 @@ class PredictionService(
             logger.debug("Deleted {} previous awards from user={} in group={}", deletedAwards, userId, groupId)
             awardPredictionRepository.saveAll(predictions)
         }
-        return AwardPredictionsResponse.fromAwardPredictions(user, savedPredictions.filter { it.group.id == groupId })
+        return AwardPredictionsResponse.fromAwardPredictions(member.user, savedPredictions.filter { it.group.id == groupId })
     }
 
     fun getAwardPredictionsForGroup(userId: UUID, groupId: UUID, tournamentId: UUID): GroupAwardPredictionsResponse {
         logger.info("Fetching award predictions for group={}, by user={}", groupId, userId)
 
-        val (_, group) = checkMembership(userId, groupId)
+        val member = checkMembership(userId, groupId)
         val tournament = tournamentRepository.findById(tournamentId).orElseThrow { NotFoundException("Tournament not found") }
         if (tournament.status == TournamentStatus.NOT_STARTED) {
             logger.warn(
@@ -297,17 +302,17 @@ class PredictionService(
             )
         }.takeIf { tournament.status == TournamentStatus.FINISHED }
 
-        val predictions = awardPredictionRepository.findGroupAwardPredictions(group.id!!)
-        return GroupAwardPredictionsResponse.fromAwardPredictionsViews(group, predictions, awards)
+        val predictions = awardPredictionRepository.findGroupAwardPredictions(member.group.id!!)
+        return GroupAwardPredictionsResponse.fromAwardPredictionsViews(member.group, predictions, awards)
     }
 
     fun getUserAwardPredictionsForGroup(userId: UUID, groupId: UUID): AwardPredictionsResponse {
         logger.info("Fetching award predictions for group={}, by user={}", groupId, userId)
 
-        val (user, group) = checkMembership(userId, groupId)
-        val predictions = awardPredictionRepository.findByUserIdAndGroupId(user.id!!, group.id!!)
+        val member = checkMembership(userId, groupId)
+        val predictions = awardPredictionRepository.findByUserIdAndGroupId(member.user.id!!, member.group.id!!)
 
-        return AwardPredictionsResponse.fromAwardPredictions(user, predictions)
+        return AwardPredictionsResponse.fromAwardPredictions(member.user, predictions)
     }
 
     @Transactional
@@ -393,5 +398,80 @@ class PredictionService(
         logger.info("Total match predictions updated: {}", matchPredictionsToSave.size)
         awardPredictionRepository.saveAll(awardPredictionsToSave)
         logger.info("Total award predictions updated: {}", awardPredictionsToSave.size)
+    }
+
+    fun calculatePredictionsProfile(userId: UUID, groupId: UUID): PredictionProfileResponse {
+        logger.info("Fetching predictions profile for user={} at group={}", userId, groupId)
+
+        val member = checkMembership(userId, groupId)
+        val matchPredictions = matchPredictionRepository.findGroupPredictionsForUser(groupId, userId)
+
+        // Only finished matches count as "missing": a not-yet-played match can still be predicted.
+        val missingPredictions = matchPredictions.filter { it.prediction == null && it.match.status == MatchStatus.FINISHED }
+        val incorrectPredictions = matchPredictions.filter { it.prediction?.status == PredictionStatus.INCORRECT }
+        val partialPredictions = matchPredictions.filter { it.prediction?.status == PredictionStatus.PARTIAL }
+        val correctPredictions = matchPredictions.filter { it.prediction?.status == PredictionStatus.CORRECT }
+        val bonusPredictions = matchPredictions.filter { it.prediction?.status == PredictionStatus.BONUS }
+
+        val commonMatches = StatusProfileResponse(
+            missing = missingPredictions.filter { !it.match.hasMultiplier }.size,
+            incorrect = incorrectPredictions.filter { !it.match.hasMultiplier }.size,
+            partial = partialPredictions.filter { !it.match.hasMultiplier }.size,
+            correct = correctPredictions.filter { !it.match.hasMultiplier }.size,
+            bonus = bonusPredictions.filter { !it.match.hasMultiplier }.size,
+        )
+
+        val highlightedMatches = StatusProfileResponse(
+            missing = missingPredictions.filter { it.match.hasMultiplier }.size,
+            incorrect = incorrectPredictions.filter { it.match.hasMultiplier }.size,
+            partial = partialPredictions.filter { it.match.hasMultiplier }.size,
+            correct = correctPredictions.filter { it.match.hasMultiplier }.size,
+            bonus = bonusPredictions.filter { it.match.hasMultiplier }.size,
+        )
+
+        val succeededQuotasPerMatch = (partialPredictions + correctPredictions + bonusPredictions).mapNotNull {
+            it.prediction?.let { prediction ->
+                when (it.match.score()?.outcome()) {
+                    MatchOutcome.HOME -> prediction to it.match.homeQuota
+                    MatchOutcome.TIE -> prediction to it.match.drawQuota
+                    MatchOutcome.AWAY -> prediction to it.match.awayQuota
+                    else -> null
+                }
+            }
+        }
+
+        val pointsPerQuotas = succeededQuotasPerMatch.map { it.second }.reduceOrNull { sum, element -> sum + element } ?: 0f
+
+        val highestQuotaSucceeded = succeededQuotasPerMatch.maxByOrNull { it.second }?.let { (prediction, quota) ->
+                QuotasProfileResponse(quota = quota, prediction = MatchPredictionResponse.from(prediction))
+        }
+
+        val highestQuotaFailed = incorrectPredictions.mapNotNull {
+            when (it.prediction?.score()?.outcome()) {
+                MatchOutcome.HOME -> it.prediction to it.match.homeQuota
+                MatchOutcome.TIE -> it.prediction to it.match.drawQuota
+                MatchOutcome.AWAY -> it.prediction to it.match.awayQuota
+                else -> null
+            }
+        }.maxByOrNull { it.second }?.let { (prediction, quota) ->
+            QuotasProfileResponse(quota = quota, prediction = MatchPredictionResponse.from(prediction))
+        }
+
+        val awardPoints = member.takeIf { it.group.tournament.status == TournamentStatus.FINISHED }?.let {
+            val noPointsUser = member.copy(points = 0f)
+            val awardPredictions = awardPredictionRepository.findByUserIdAndGroupId(userId, groupId).groupBy { it.user.id!! }
+            PredictionsEngine.updateAwardPoints(listOf(noPointsUser), awardPredictions).firstOrNull()?.points
+        }
+
+        return PredictionProfileResponse(
+            group = GroupResponse.from(member.group),
+            totalPoints = member.points,
+            quotasPoints = pointsPerQuotas,
+            awardsPoints = awardPoints,
+            commonMatches = commonMatches,
+            highlightedMatches = highlightedMatches,
+            topSucceededQuota = highestQuotaSucceeded,
+            topFailedQuota = highestQuotaFailed,
+        )
     }
 }

@@ -91,7 +91,7 @@ class UserController(
         val userId = principal?.userId ?: throw UnauthorizedException("Authentication required")
 
         logger.info("GET /api/users/me - Fetching profile: userId={}", userId)
-        val response = userService.getUserById(userId)
+        val response = userService.getCurrentUser(userId)
         return ResponseEntity.ok(response)
     }
 

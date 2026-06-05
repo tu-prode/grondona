@@ -195,6 +195,14 @@ class GrondonaClient(
 
     // API methods
 
+    fun getCurrentUser(token: String): UserResponse {
+        val rawResponse = mockMvc.perform(
+            get("/api/users/me")
+                .header("Authorization", "Bearer $token")
+        ).andExpect(status().isOk).andReturn()
+        return objectMapper.readValue(rawResponse.response.contentAsString, UserResponse::class.java)
+    }
+
     fun createUser(): Pair<UUID, String> {
         val rawResponse = mockMvc.perform(
             post("/api/users")

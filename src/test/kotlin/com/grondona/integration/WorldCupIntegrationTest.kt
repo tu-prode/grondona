@@ -1126,5 +1126,80 @@ class WorldCupIntegrationTest {
                 )
             }
         }
+
+        @Test
+        @Order(25)
+        fun `should return the expected profile for both users through getCurrentUser`() {
+            // Match results across the whole tournament:
+            //   group stage (72), round of 32 (16), round of 16 (8): finished 0-0
+            //   quarterfinals (4): finished 1-0 (HOME)
+            //   semifinals (2): finished 5-0 (HOME), quotas set to home=2.0
+            //   last round (2, highlighted/multiplier): finished 3-1 (HOME)
+            // Only the semifinals carry a non-zero quota; every other match defaults to quota 0.
+
+            // user1 predicted 0-0 everywhere but 5-0 in semifinals and 1-0 in the last round.
+            val user1 = grondona.getCurrentUser(user1Token)
+            val user1Profile = user1.profiles.single { it.group.id == groupId }
+
+            // 355 total = 305 (matches incl. semifinal quotas) + 50 awards.
+            assertEquals(355f, user1Profile.totalPoints)
+            // 4.0 quotas = 2 semifinals * home quota 2.0 (all other succeeded matches default to 0).
+            assertEquals(4.0f, user1Profile.quotasPoints)
+            // single-pick awards all correct: 5 * 10 = 50.
+            assertEquals(50f, user1Profile.awardsPoints)
+
+            // Common (non-highlighted) matches: 96 CORRECT (0-0), 4 INCORRECT (QF), 2 BONUS (SF).
+            assertEquals(0, user1Profile.commonMatches.missing)
+            assertEquals(4, user1Profile.commonMatches.incorrect)
+            assertEquals(0, user1Profile.commonMatches.partial)
+            assertEquals(96, user1Profile.commonMatches.correct)
+            assertEquals(2, user1Profile.commonMatches.bonus)
+
+            // Highlighted matches (third place + final): both PARTIAL (predicted 1-0, result 3-1).
+            assertEquals(0, user1Profile.highlightedMatches.missing)
+            assertEquals(0, user1Profile.highlightedMatches.incorrect)
+            assertEquals(2, user1Profile.highlightedMatches.partial)
+            assertEquals(0, user1Profile.highlightedMatches.correct)
+            assertEquals(0, user1Profile.highlightedMatches.bonus)
+
+            val user1TopSucceeded = user1Profile.topSucceededQuota!!
+            assertEquals(2.0f, user1TopSucceeded.quota)
+            assertTrue(user1TopSucceeded.prediction.match.code in codesForSemifinals)
+            val user1TopFailed = user1Profile.topFailedQuota!!
+            assertEquals(0.0f, user1TopFailed.quota)
+            assertTrue(user1TopFailed.prediction.match.code in codesForQuarterfinals)
+
+            // user2 predicted 1-1 everywhere but 5-1 in semifinals and 3-1 in the last round.
+            val user2 = grondona.getCurrentUser(user2Token)
+            val user2Profile = user2.profiles.single { it.group.id == groupId }
+
+            // 144 total = 111 (matches incl. semifinal quotas) + 33 awards.
+            assertEquals(144f, user2Profile.totalPoints)
+            // 4.0 quotas = 2 semifinals * home quota 2.0.
+            assertEquals(4.0f, user2Profile.quotasPoints)
+            // double-pick awards all correct: champion 5 + four players * 7 = 33.
+            assertEquals(33f, user2Profile.awardsPoints)
+
+            // Common matches: 98 PARTIAL (96 from 0-0 ties + 2 semifinals), 4 INCORRECT (QF).
+            assertEquals(0, user2Profile.commonMatches.missing)
+            assertEquals(4, user2Profile.commonMatches.incorrect)
+            assertEquals(98, user2Profile.commonMatches.partial)
+            assertEquals(0, user2Profile.commonMatches.correct)
+            assertEquals(0, user2Profile.commonMatches.bonus)
+
+            // Highlighted matches: both CORRECT (predicted 3-1, result 3-1).
+            assertEquals(0, user2Profile.highlightedMatches.missing)
+            assertEquals(0, user2Profile.highlightedMatches.incorrect)
+            assertEquals(0, user2Profile.highlightedMatches.partial)
+            assertEquals(2, user2Profile.highlightedMatches.correct)
+            assertEquals(0, user2Profile.highlightedMatches.bonus)
+
+            val user2TopSucceeded = user2Profile.topSucceededQuota!!
+            assertEquals(2.0f, user2TopSucceeded.quota)
+            assertTrue(user2TopSucceeded.prediction.match.code in codesForSemifinals)
+            val user2TopFailed = user2Profile.topFailedQuota!!
+            assertEquals(0.0f, user2TopFailed.quota)
+            assertTrue(user2TopFailed.prediction.match.code in codesForQuarterfinals)
+        }
     }
 }
