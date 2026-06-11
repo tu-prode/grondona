@@ -104,8 +104,9 @@ class MatchServiceTest {
     )
 
     private fun externalMatch(home: String, away: String) = ExternalMatch(
-        home = home, away = away, homeGoals = 1, awayGoals = 1, status = MatchStatus.IN_PROGRESS,
-        substatus = "30' PT", startedAt = ZonedDateTime.now(), stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A,
+        home = home, away = away, homeGoals = 1, awayGoals = 1,
+        status = MatchStatus.IN_PROGRESS, substatus = MatchSubstatus.LIVE.label,
+        startedAt = ZonedDateTime.now(), stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A,
     )
 
     private fun externalOdds(home: String, away: String) = ExternalOdds(

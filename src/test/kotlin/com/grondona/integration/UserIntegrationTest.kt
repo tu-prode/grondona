@@ -9,6 +9,7 @@ import com.grondona.model.ExternalMatch
 import com.grondona.model.MatchGroup
 import com.grondona.model.MatchStage
 import com.grondona.model.MatchStatus
+import com.grondona.model.MatchSubstatus
 import com.grondona.model.TEST
 import com.grondona.model.Tournament
 import com.grondona.model.UserPermissions
@@ -633,7 +634,8 @@ class UserIntegrationTest {
             every { matchClient.getMatches(any()) } returns listOf(
                 ExternalMatch(
                     home = testTeam1Code!!, away = testTeam2Code!!, stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A,
-                    status = MatchStatus.IN_PROGRESS, homeGoals = 1, awayGoals = 0, substatus = "25' PT", startedAt = ZonedDateTime.now().minusMinutes(25)
+                    status = MatchStatus.IN_PROGRESS, substatus = MatchSubstatus.LIVE.label,
+                    homeGoals = 1, awayGoals = 0, startedAt = ZonedDateTime.now().minusMinutes(25)
                 ),
                 ExternalMatch(
                     home = testTeam3Code!!, away = testTeam4Code!!, stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A,
@@ -838,7 +840,8 @@ class UserIntegrationTest {
                 ),
                 ExternalMatch(
                     home = testTeam3Code!!, away = testTeam4Code!!, stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A,
-                    status = MatchStatus.IN_PROGRESS, homeGoals = 0, awayGoals = 2, substatus = "14' PT", startedAt = ZonedDateTime.now().minusMinutes(14)
+                    status = MatchStatus.IN_PROGRESS, substatus = MatchSubstatus.LIVE.label,
+                    homeGoals = 0, awayGoals = 2, startedAt = ZonedDateTime.now().minusMinutes(14)
                 ),
                 ExternalMatch(
                     home = testTeam5Code!!, stage = MatchStage.GROUP_STAGE, group = MatchGroup.GROUP_A, away = testTeam6Code!!,
