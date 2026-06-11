@@ -20,7 +20,9 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import reactor.core.publisher.Mono
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 interface MatchClient {
@@ -309,6 +311,9 @@ class FootballDataMatchClient(
                 when (status) {
                     Status.SCHEDULED.name, Status.TIMED.name -> {
                         newStatus = MatchStatus.NOT_STARTED
+                        if (utcDate.isBefore(now.atZone(ZoneId.systemDefault()).plus(15, ChronoUnit.MINUTES))) {
+                            newSubstatus = MatchSubstatus.NEXT.label
+                        }
                     }
 
                     Status.IN_PLAY.name -> {

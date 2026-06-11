@@ -38,7 +38,7 @@ enum class MatchStatus {
 }
 
 enum class MatchSubstatus(val label: String) {
-    LIVE("VIVO"), HALFTIME("ET"), PENALTIES("PEN"), FINISHED("FIN"), SUSPENDED("SUSP")
+    NEXT("PRÓXIMO"), LIVE("VIVO"), HALFTIME("ET"), PENALTIES("PEN"), FINISHED("FIN"), SUSPENDED("SUSP")
 }
 
 @Entity
