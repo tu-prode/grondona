@@ -347,9 +347,8 @@ class MatchClientTest {
             status: String = FootballDataMatchClient.Response.Match.Status.TIMED.name, minutes: Int = 0, injuryTime: Int? = null,
             homePenalties: Int? = null, awayPenalties: Int? = null,
         ) = FootballDataMatchClient.Response.Match(
-            utcDate = startedAt, lastUpdated = endedAt ?: ZonedDateTime.now(), status = status, minute = minutes, injuryTime = injuryTime,
+            utcDate = startedAt, lastUpdated = endedAt ?: ZonedDateTime.now(), status = status, stage = stage, group = group,
             homeTeam = FootballDataMatchClient.Response.Match.Team(tla = home), awayTeam = FootballDataMatchClient.Response.Match.Team(tla = away),
-            stage = stage, group = group,
             score = FootballDataMatchClient.Response.Match.Score(
                 duration = when {
                     homePenalties != null -> FootballDataMatchClient.Response.Match.ScoreDuration.PENALTY_SHOOTOUT
@@ -398,7 +397,7 @@ class MatchClientTest {
             assertEquals("T1", resultMatch.home)
             assertEquals("T2", resultMatch.away)
             assertEquals(MatchStatus.IN_PROGRESS, resultMatch.status)
-            assertEquals("15' PT", resultMatch.substatus)
+            assertEquals(MatchSubstatus.LIVE.label, resultMatch.substatus)
             assertEquals(1, resultMatch.homeGoals)
             assertEquals(0, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
@@ -415,7 +414,7 @@ class MatchClientTest {
             assertEquals("T1", resultMatch.home)
             assertEquals("T2", resultMatch.away)
             assertEquals(MatchStatus.IN_PROGRESS, resultMatch.status)
-            assertEquals("45+3' PT", resultMatch.substatus)
+            assertEquals(MatchSubstatus.LIVE.label, resultMatch.substatus)
             assertEquals(1, resultMatch.homeGoals)
             assertEquals(1, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
@@ -449,7 +448,7 @@ class MatchClientTest {
             assertEquals("T1", resultMatch.home)
             assertEquals("T2", resultMatch.away)
             assertEquals(MatchStatus.IN_PROGRESS, resultMatch.status)
-            assertEquals("12' ST", resultMatch.substatus)
+            assertEquals(MatchSubstatus.LIVE.label, resultMatch.substatus)
             assertEquals(2, resultMatch.homeGoals)
             assertEquals(1, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
@@ -466,7 +465,7 @@ class MatchClientTest {
             assertEquals("T1", resultMatch.home)
             assertEquals("T2", resultMatch.away)
             assertEquals(MatchStatus.IN_PROGRESS, resultMatch.status)
-            assertEquals("45+1' ST", resultMatch.substatus)
+            assertEquals(MatchSubstatus.LIVE.label, resultMatch.substatus)
             assertEquals(2, resultMatch.homeGoals)
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
@@ -519,7 +518,7 @@ class MatchClientTest {
             assertEquals("T1", resultMatch.home)
             assertEquals("T2", resultMatch.away)
             assertEquals(MatchStatus.IN_PROGRESS, resultMatch.status)
-            assertEquals("9' PTE", resultMatch.substatus)
+            assertEquals(MatchSubstatus.LIVE.label, resultMatch.substatus)
             assertEquals(2, resultMatch.homeGoals)
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
@@ -537,7 +536,7 @@ class MatchClientTest {
             assertEquals("T1", resultMatch.home)
             assertEquals("T2", resultMatch.away)
             assertEquals(MatchStatus.IN_PROGRESS, resultMatch.status)
-            assertEquals("15+1' PTE", resultMatch.substatus)
+            assertEquals(MatchSubstatus.LIVE.label, resultMatch.substatus)
             assertEquals(3, resultMatch.homeGoals)
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
@@ -573,7 +572,7 @@ class MatchClientTest {
             assertEquals("T1", resultMatch.home)
             assertEquals("T2", resultMatch.away)
             assertEquals(MatchStatus.IN_PROGRESS, resultMatch.status)
-            assertEquals("1' STE", resultMatch.substatus)
+            assertEquals(MatchSubstatus.LIVE.label, resultMatch.substatus)
             assertEquals(3, resultMatch.homeGoals)
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
@@ -591,7 +590,7 @@ class MatchClientTest {
             assertEquals("T1", resultMatch.home)
             assertEquals("T2", resultMatch.away)
             assertEquals(MatchStatus.IN_PROGRESS, resultMatch.status)
-            assertEquals("15+2' STE", resultMatch.substatus)
+            assertEquals(MatchSubstatus.LIVE.label, resultMatch.substatus)
             assertEquals(3, resultMatch.homeGoals)
             assertEquals(2, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)

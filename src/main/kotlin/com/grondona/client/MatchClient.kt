@@ -256,8 +256,6 @@ class FootballDataMatchClient(
             val stage: String,
             val group: String? = null,
             val score: Score,
-            val minute: Int? = null,
-            val injuryTime: Int? = null,
         ) {
             internal enum class Status { SCHEDULED, TIMED, IN_PLAY, PAUSED, FINISHED, POSTPONED, SUSPENDED, CANCELLED }
             internal enum class ScoreDuration { REGULAR, EXTRA_TIME, PENALTY_SHOOTOUT }
@@ -320,18 +318,9 @@ class FootballDataMatchClient(
                         newAwayGoals = parsedScore.awayGoals
                         newHomePenalties = parsedScore.homePenalties
                         newAwayPenalties = parsedScore.awayPenalties
-                        newSubstatus = when {
-                            score.duration == ScoreDuration.PENALTY_SHOOTOUT.name -> MatchSubstatus.PENALTIES.label
-                            minute == null -> "0' PT"
-                            minute <= 45 && (injuryTime ?: 0) == 0 -> "$minute' PT"
-                            minute == 45 -> "$minute+${injuryTime ?: 0}' PT"
-                            minute <= 90 && (injuryTime ?: 0) == 0 -> "${minute - 45}' ST"
-                            minute == 90 -> "${minute - 45}+${injuryTime ?: 0}' ST"
-                            minute <= 105 && (injuryTime ?: 0) == 0 -> "${minute - 90}' PTE"
-                            minute == 105 -> "${minute - 90}+${injuryTime ?: 0}' PTE"
-                            minute <= 120 && (injuryTime ?: 0) == 0 -> "${minute - 105}' STE"
-                            minute == 120 -> "${minute - 105}+${injuryTime ?: 0}' STE"
-                            else -> null
+                        newSubstatus = MatchSubstatus.LIVE.label
+                        if (newHomePenalties != null && newAwayPenalties != null) {
+                            newSubstatus = MatchSubstatus.PENALTIES.label
                         }
                     }
 
