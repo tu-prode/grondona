@@ -337,7 +337,7 @@ class MatchClientTest {
     @Nested
     inner class FootballDataTest {
 
-        private val started = ZonedDateTime.now().minusHours(12)
+        private val started = ZonedDateTime.now().minusMinutes(20)
         private val finished = ZonedDateTime.now().minusHours(1)
 
         private fun matchFromAPI(
@@ -374,7 +374,8 @@ class MatchClientTest {
 
         @Test
         fun `toExternalMatch properly maps a non-started match`() {
-            val apiMatch = matchFromAPI(status = "TIMED")
+            val newStarted = ZonedDateTime.now().plusMinutes(20)
+            val apiMatch = matchFromAPI(status = "TIMED", startedAt = newStarted)
             val resultMatch = apiMatch.toExternalMatch()!!
 
             assertEquals("T1", resultMatch.home)
@@ -385,7 +386,25 @@ class MatchClientTest {
             assertEquals(0, resultMatch.awayGoals)
             assertNull(resultMatch.homePenalties)
             assertNull(resultMatch.awayPenalties)
-            assertEquals(started, resultMatch.startedAt)
+            assertEquals(newStarted, resultMatch.startedAt)
+            assertNull(resultMatch.finishedAt)
+        }
+
+        @Test
+        fun `toExternalMatch properly maps a coming-soon match`() {
+            val newStarted = ZonedDateTime.now().plusMinutes(5)
+            val apiMatch = matchFromAPI(status = "TIMED", startedAt = newStarted)
+            val resultMatch = apiMatch.toExternalMatch()!!
+
+            assertEquals("T1", resultMatch.home)
+            assertEquals("T2", resultMatch.away)
+            assertEquals(MatchStatus.NOT_STARTED, resultMatch.status)
+            assertEquals(MatchSubstatus.NEXT.label, resultMatch.substatus)
+            assertEquals(0, resultMatch.homeGoals)
+            assertEquals(0, resultMatch.awayGoals)
+            assertNull(resultMatch.homePenalties)
+            assertNull(resultMatch.awayPenalties)
+            assertEquals(newStarted, resultMatch.startedAt)
             assertNull(resultMatch.finishedAt)
         }
 
