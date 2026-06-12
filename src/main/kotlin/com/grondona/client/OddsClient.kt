@@ -7,7 +7,7 @@ import com.grondona.model.ExternalOdds
 import com.grondona.model.LOCAL
 import com.grondona.model.PROD
 import com.grondona.model.TEST
-import com.grondona.now
+import com.grondona.utils.Clock
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Profile
@@ -108,13 +108,13 @@ class MocknaldoOddsClient(
 
     override fun onMatchesResponseReceived(body: Any?) {
         val response = body as? Response ?: return
-        now = response.current
+        Clock.sync(response.current)
     }
 }
 
 @Component
 @Profile(PROD)
-class OddsApiMatchClient(
+class TheApiOddsClient(
     override val oddsWebClient: WebClient,
     @Value("\${external.api.odds.key}")
     private val apiKey: String,

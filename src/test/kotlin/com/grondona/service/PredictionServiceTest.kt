@@ -1,6 +1,7 @@
 package com.grondona.service
 
 import com.grondona.exception.BadRequestException
+import com.grondona.utils.Clock
 import com.grondona.exception.ForbiddenException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.AwardPrediction
@@ -182,6 +183,8 @@ class PredictionServiceTest {
 
     @BeforeEach
     fun setUp() {
+        Clock.configureForSimulation()
+        Clock.sync(LocalDateTime.now())
         MockKAnnotations.init(this)
     }
 
@@ -190,13 +193,13 @@ class PredictionServiceTest {
 
         @Test
         fun `canSubmit returns true when match starts more than 15 minutes from now`() {
-            val match = testMatchOpen.copy(startedAt = ZonedDateTime.now().plusHours(1))
+            val match = testMatchOpen.copy(startedAt = Clock.now().plusHours(1))
             assertTrue(PredictionService.isMatchUnlocked(match))
         }
 
         @Test
         fun `canSubmit returns false when match starts in less than 15 minutes`() {
-            val match = testMatchOpen.copy(startedAt = ZonedDateTime.now().plusMinutes(5))
+            val match = testMatchOpen.copy(startedAt = Clock.now().plusMinutes(5))
             assertFalse(PredictionService.isMatchUnlocked(match))
         }
 
@@ -470,6 +473,25 @@ class PredictionServiceTest {
 
             mockMembership()
             every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchLocked)
+            every { matchPredictionRepository.findGroupPredictionsForMatch(testGroupId, testMatchId) } returns listOf(predictionView)
+
+            val result = predictionService.getSingleMatchPredictionsForGroup(testUserId, testGroupId, testMatchId)
+            assertEquals(testGroupId, result.group.id)
+            assertEquals(1, result.predictions.size)
+        }
+
+        @Test
+        fun `getSingleMatchPredictionsForGroup should return predictions for a non-started locked match`() {
+            val nonStartedLockedMatch = testMatchLocked.copy(
+                status = MatchStatus.NOT_STARTED,
+                startedAt = Clock.now().plusMinutes(15),
+            )
+            val predictionView = MatchPredictionView(
+                id = UUID.randomUUID(), user = testUser, rank = 1, match = nonStartedLockedMatch, prediction = testPrediction
+            )
+
+            mockMembership()
+            every { matchRepository.findById(testMatchId) } returns Optional.of(nonStartedLockedMatch)
             every { matchPredictionRepository.findGroupPredictionsForMatch(testGroupId, testMatchId) } returns listOf(predictionView)
 
             val result = predictionService.getSingleMatchPredictionsForGroup(testUserId, testGroupId, testMatchId)

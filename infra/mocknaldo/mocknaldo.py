@@ -41,7 +41,7 @@ randomized = execution == RANDOMIZED
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 stop = False
 active = True
@@ -1223,8 +1223,8 @@ class ResultsMockerHandler(BaseHTTPRequestHandler):
             return 400, {"error": "'time' is required"}
         try:
             global current
-            current = datetime.fromisoformat(new_time)
-            logger.info(f"Current changed to {new_time}")
+            current = datetime.fromisoformat(new_time).astimezone(timezone.utc).replace(tzinfo=None)
+            logger.info(f"Current changed to {current}")
             for match in MATCHES:
                 match["odds_changed_at"] = current
             return 202, None
