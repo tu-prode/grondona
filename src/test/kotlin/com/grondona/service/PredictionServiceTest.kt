@@ -1,7 +1,7 @@
 package com.grondona.service
 
 import com.grondona.exception.BadRequestException
-import com.grondona.now
+import com.grondona.utils.Clock
 import com.grondona.exception.ForbiddenException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.AwardPrediction
@@ -49,7 +49,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.*
 
@@ -184,7 +183,8 @@ class PredictionServiceTest {
 
     @BeforeEach
     fun setUp() {
-        now = LocalDateTime.now()
+        Clock.configureForSimulation()
+        Clock.sync(LocalDateTime.now())
         MockKAnnotations.init(this)
     }
 
@@ -193,13 +193,13 @@ class PredictionServiceTest {
 
         @Test
         fun `canSubmit returns true when match starts more than 15 minutes from now`() {
-            val match = testMatchOpen.copy(startedAt = ZonedDateTime.now().plusHours(1))
+            val match = testMatchOpen.copy(startedAt = Clock.now().plusHours(1))
             assertTrue(PredictionService.isMatchUnlocked(match))
         }
 
         @Test
         fun `canSubmit returns false when match starts in less than 15 minutes`() {
-            val match = testMatchOpen.copy(startedAt = ZonedDateTime.now().plusMinutes(5))
+            val match = testMatchOpen.copy(startedAt = Clock.now().plusMinutes(5))
             assertFalse(PredictionService.isMatchUnlocked(match))
         }
 
@@ -484,7 +484,7 @@ class PredictionServiceTest {
         fun `getSingleMatchPredictionsForGroup should return predictions for a non-started locked match`() {
             val nonStartedLockedMatch = testMatchLocked.copy(
                 status = MatchStatus.NOT_STARTED,
-                startedAt = now!!.atZone(ZoneId.systemDefault()).plusMinutes(15),
+                startedAt = Clock.now().plusMinutes(15),
             )
             val predictionView = MatchPredictionView(
                 id = UUID.randomUUID(), user = testUser, rank = 1, match = nonStartedLockedMatch, prediction = testPrediction

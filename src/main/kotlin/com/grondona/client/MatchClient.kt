@@ -11,7 +11,7 @@ import com.grondona.model.MatchStatus
 import com.grondona.model.MatchSubstatus
 import com.grondona.model.PROD
 import com.grondona.model.TEST
-import com.grondona.now
+import com.grondona.utils.Clock
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Profile
@@ -20,7 +20,6 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import reactor.core.publisher.Mono
 import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import java.util.UUID
@@ -225,7 +224,7 @@ class MocknaldoMatchClient(
 
     override fun onMatchesResponseReceived(body: Any?) {
         val response = body as? Response ?: return
-        now = response.current
+        Clock.sync(response.current)
     }
 }
 
@@ -311,8 +310,7 @@ class FootballDataMatchClient(
                 when (status) {
                     Status.SCHEDULED.name, Status.TIMED.name -> {
                         newStatus = MatchStatus.NOT_STARTED
-                        val current = now
-                        if (current != null && utcDate.isBefore(current.atZone(ZoneId.systemDefault()).plus(15, ChronoUnit.MINUTES))) {
+                        if (utcDate.isBefore(Clock.now().plus(15, ChronoUnit.MINUTES))) {
                             newSubstatus = MatchSubstatus.NEXT.label
                         }
                     }

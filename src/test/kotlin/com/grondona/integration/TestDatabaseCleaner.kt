@@ -1,6 +1,6 @@
 package com.grondona.integration
 
-import com.grondona.now
+import com.grondona.utils.Clock
 import jakarta.persistence.EntityManager
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -13,7 +13,7 @@ class TestDatabaseCleaner(
 
     @Transactional
     fun cleanAll() {
-        now = LocalDateTime.now()
+        Clock.sync(LocalDateTime.now())
         entityManager.createNativeQuery("DELETE FROM match_predictions").executeUpdate()
         entityManager.createNativeQuery("DELETE FROM award_predictions").executeUpdate()
         entityManager.createNativeQuery("DELETE FROM group_users").executeUpdate()

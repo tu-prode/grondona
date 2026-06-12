@@ -25,7 +25,7 @@ import com.grondona.model.dto.response.MatchPredictionResponse
 import com.grondona.model.dto.response.PredictionProfileResponse
 import com.grondona.model.dto.response.QuotasProfileResponse
 import com.grondona.model.dto.response.StatusProfileResponse
-import com.grondona.now
+import com.grondona.utils.Clock
 import com.grondona.repository.AwardPredictionRepository
 import com.grondona.repository.GroupRepository
 import com.grondona.repository.MembershipRepository
@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 
@@ -64,7 +63,7 @@ class PredictionService(
 
         fun isMatchUnlocked(match: Match): Boolean =
             match.status == MatchStatus.NOT_STARTED &&
-                    match.startedAt.isAfter((now ?: LocalDateTime.now()).atZone(ZoneId.systemDefault()).plus(15, ChronoUnit.MINUTES))
+                match.startedAt.isAfter(Clock.now().plus(15, ChronoUnit.MINUTES))
     }
 
     internal fun checkMembership(userId: UUID, groupId: UUID): GroupUser {
@@ -177,7 +176,7 @@ class PredictionService(
         val member = checkMembership(userId, groupId)
         val match = matchRepository.findById(matchId).orElseThrow { NotFoundException("Match not found") }
         if (isMatchUnlocked(match)) {
-            logger.warn("User={} trying fetch predictions for the match={} at group={}, but it's not locked (now={}, status={}, startedAt={})", userId, matchId, groupId, now, match.status, match.startedAt)
+            logger.warn("User={} trying fetch predictions for the match={} at group={}, but it's not locked (now={}, status={}, startedAt={})", userId, matchId, groupId, Clock.now(), match.status, match.startedAt)
             throw BadRequestException("Match is still open")
         }
 

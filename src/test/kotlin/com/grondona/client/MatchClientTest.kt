@@ -1,6 +1,6 @@
 package com.grondona.client
 
-import com.grondona.now
+import com.grondona.utils.Clock
 import com.grondona.model.MatchGroup
 import com.grondona.model.MatchStage
 import com.grondona.model.MatchStatus
@@ -342,7 +342,8 @@ class MatchClientTest {
 
         @BeforeEach
         fun setUpNow() {
-            now = LocalDateTime.now()
+            Clock.configureForSimulation()
+            Clock.sync(LocalDateTime.now())
         }
 
         private val started = ZonedDateTime.now().minusMinutes(20)
@@ -382,7 +383,7 @@ class MatchClientTest {
 
         @Test
         fun `toExternalMatch properly maps a non-started match`() {
-            val newStarted = ZonedDateTime.now().plusMinutes(20)
+            val newStarted = Clock.now().plusMinutes(20)
             val apiMatch = matchFromAPI(status = "TIMED", startedAt = newStarted)
             val resultMatch = apiMatch.toExternalMatch()!!
 
@@ -400,7 +401,7 @@ class MatchClientTest {
 
         @Test
         fun `toExternalMatch properly maps a coming-soon match`() {
-            val newStarted = ZonedDateTime.now().plusMinutes(5)
+            val newStarted = Clock.now().plusMinutes(5)
             val apiMatch = matchFromAPI(status = "TIMED", startedAt = newStarted)
             val resultMatch = apiMatch.toExternalMatch()!!
 
