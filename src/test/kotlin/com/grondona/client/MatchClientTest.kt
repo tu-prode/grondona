@@ -1,12 +1,15 @@
 package com.grondona.client
 
+import com.grondona.now
 import com.grondona.model.MatchGroup
 import com.grondona.model.MatchStage
 import com.grondona.model.MatchStatus
 import com.grondona.model.MatchSubstatus
 import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import java.time.LocalDateTime
 import java.time.ZonedDateTime
 
 class MatchClientTest {
@@ -336,6 +339,11 @@ class MatchClientTest {
 
     @Nested
     inner class FootballDataTest {
+
+        @BeforeEach
+        fun setUpNow() {
+            now = LocalDateTime.now()
+        }
 
         private val started = ZonedDateTime.now().minusMinutes(20)
         private val finished = ZonedDateTime.now().minusHours(1)

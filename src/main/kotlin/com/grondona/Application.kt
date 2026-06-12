@@ -9,7 +9,7 @@ import java.time.LocalDateTime
 @EnableScheduling
 class GrondonaApplication
 
-var now: LocalDateTime = LocalDateTime.now()
+var now: LocalDateTime? = null
 
 fun main(args: Array<String>) {
     runApplication<GrondonaApplication>(*args)

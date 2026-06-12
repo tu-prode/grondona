@@ -311,7 +311,8 @@ class FootballDataMatchClient(
                 when (status) {
                     Status.SCHEDULED.name, Status.TIMED.name -> {
                         newStatus = MatchStatus.NOT_STARTED
-                        if (utcDate.isBefore(now.atZone(ZoneId.systemDefault()).plus(15, ChronoUnit.MINUTES))) {
+                        val current = now
+                        if (current != null && utcDate.isBefore(current.atZone(ZoneId.systemDefault()).plus(15, ChronoUnit.MINUTES))) {
                             newSubstatus = MatchSubstatus.NEXT.label
                         }
                     }

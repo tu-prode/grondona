@@ -1,6 +1,7 @@
 package com.grondona.service
 
 import com.grondona.exception.BadRequestException
+import com.grondona.now
 import com.grondona.exception.ForbiddenException
 import com.grondona.exception.NotFoundException
 import com.grondona.model.AwardPrediction
@@ -48,6 +49,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.*
 
@@ -182,6 +184,7 @@ class PredictionServiceTest {
 
     @BeforeEach
     fun setUp() {
+        now = LocalDateTime.now()
         MockKAnnotations.init(this)
     }
 
@@ -479,7 +482,10 @@ class PredictionServiceTest {
 
         @Test
         fun `getSingleMatchPredictionsForGroup should return predictions for a non-started locked match`() {
-            val nonStartedLockedMatch = testMatchLocked.copy(status = MatchStatus.NOT_STARTED, startedAt = ZonedDateTime.now().plusMinutes(15))
+            val nonStartedLockedMatch = testMatchLocked.copy(
+                status = MatchStatus.NOT_STARTED,
+                startedAt = now!!.atZone(ZoneId.systemDefault()).plusMinutes(15),
+            )
             val predictionView = MatchPredictionView(
                 id = UUID.randomUUID(), user = testUser, rank = 1, match = nonStartedLockedMatch, prediction = testPrediction
             )

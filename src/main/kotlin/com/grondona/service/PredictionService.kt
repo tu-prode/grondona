@@ -63,7 +63,8 @@ class PredictionService(
         private val logger = LoggerFactory.getLogger(PredictionService::class.java)
 
         fun isMatchUnlocked(match: Match): Boolean =
-            match.status == MatchStatus.NOT_STARTED && match.startedAt.isAfter(now.atZone(ZoneId.systemDefault()).plus(15, ChronoUnit.MINUTES))
+            match.status == MatchStatus.NOT_STARTED &&
+                    match.startedAt.isAfter((now ?: LocalDateTime.now()).atZone(ZoneId.systemDefault()).plus(15, ChronoUnit.MINUTES))
     }
 
     internal fun checkMembership(userId: UUID, groupId: UUID): GroupUser {
