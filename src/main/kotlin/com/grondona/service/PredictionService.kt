@@ -176,7 +176,7 @@ class PredictionService(
         val member = checkMembership(userId, groupId)
         val match = matchRepository.findById(matchId).orElseThrow { NotFoundException("Match not found") }
         if (isMatchUnlocked(match)) {
-            logger.warn("User={} trying fetch predictions for the match={} at group={}, but it's not locked", userId, matchId, groupId)
+            logger.warn("User={} trying fetch predictions for the match={} at group={}, but it's not locked (now={}, status={}, startedAt={})", userId, matchId, groupId, now, match.status, match.startedAt)
             throw BadRequestException("Match is still open")
         }
 

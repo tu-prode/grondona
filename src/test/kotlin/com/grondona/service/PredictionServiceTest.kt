@@ -478,6 +478,22 @@ class PredictionServiceTest {
         }
 
         @Test
+        fun `getSingleMatchPredictionsForGroup should return predictions for a non-started locked match`() {
+            val nonStartedLockedMatch = testMatchLocked.copy(status = MatchStatus.NOT_STARTED, startedAt = ZonedDateTime.now().plusMinutes(15))
+            val predictionView = MatchPredictionView(
+                id = UUID.randomUUID(), user = testUser, rank = 1, match = nonStartedLockedMatch, prediction = testPrediction
+            )
+
+            mockMembership()
+            every { matchRepository.findById(testMatchId) } returns Optional.of(nonStartedLockedMatch)
+            every { matchPredictionRepository.findGroupPredictionsForMatch(testGroupId, testMatchId) } returns listOf(predictionView)
+
+            val result = predictionService.getSingleMatchPredictionsForGroup(testUserId, testGroupId, testMatchId)
+            assertEquals(testGroupId, result.group.id)
+            assertEquals(1, result.predictions.size)
+        }
+
+        @Test
         fun `getSingleMatchPredictionsForGroup should throw BadRequestException when match is still open`() {
             mockMembership()
             every { matchRepository.findById(testMatchId) } returns Optional.of(testMatchOpen)
