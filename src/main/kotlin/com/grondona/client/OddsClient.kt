@@ -114,7 +114,7 @@ class MocknaldoOddsClient(
 
 @Component
 @Profile(PROD)
-class OddsApiMatchClient(
+class TheApiOddsClient(
     override val oddsWebClient: WebClient,
     @Value("\${external.api.odds.key}")
     private val apiKey: String,
